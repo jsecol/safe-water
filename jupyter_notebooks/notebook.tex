@@ -1,0 +1,1713 @@
+
+% Default to the notebook output style
+
+    
+
+
+% Inherit from the specified cell style.
+
+
+
+
+    
+\documentclass[11pt]{article}
+
+    
+    
+    \usepackage[T1]{fontenc}
+    % Nicer default font (+ math font) than Computer Modern for most use cases
+    \usepackage{mathpazo}
+
+    % Basic figure setup, for now with no caption control since it's done
+    % automatically by Pandoc (which extracts ![](path) syntax from Markdown).
+    \usepackage{graphicx}
+    % We will generate all images so they have a width \maxwidth. This means
+    % that they will get their normal width if they fit onto the page, but
+    % are scaled down if they would overflow the margins.
+    \makeatletter
+    \def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth
+    \else\Gin@nat@width\fi}
+    \makeatother
+    \let\Oldincludegraphics\includegraphics
+    % Set max figure width to be 80% of text width, for now hardcoded.
+    \renewcommand{\includegraphics}[1]{\Oldincludegraphics[width=.8\maxwidth]{#1}}
+    % Ensure that by default, figures have no caption (until we provide a
+    % proper Figure object with a Caption API and a way to capture that
+    % in the conversion process - todo).
+    \usepackage{caption}
+    \DeclareCaptionLabelFormat{nolabel}{}
+    \captionsetup{labelformat=nolabel}
+
+    \usepackage{adjustbox} % Used to constrain images to a maximum size 
+    \usepackage{xcolor} % Allow colors to be defined
+    \usepackage{enumerate} % Needed for markdown enumerations to work
+    \usepackage{geometry} % Used to adjust the document margins
+    \usepackage{amsmath} % Equations
+    \usepackage{amssymb} % Equations
+    \usepackage{textcomp} % defines textquotesingle
+    % Hack from http://tex.stackexchange.com/a/47451/13684:
+    \AtBeginDocument{%
+        \def\PYZsq{\textquotesingle}% Upright quotes in Pygmentized code
+    }
+    \usepackage{upquote} % Upright quotes for verbatim code
+    \usepackage{eurosym} % defines \euro
+    \usepackage[mathletters]{ucs} % Extended unicode (utf-8) support
+    \usepackage[utf8x]{inputenc} % Allow utf-8 characters in the tex document
+    \usepackage{fancyvrb} % verbatim replacement that allows latex
+    \usepackage{grffile} % extends the file name processing of package graphics 
+                         % to support a larger range 
+    % The hyperref package gives us a pdf with properly built
+    % internal navigation ('pdf bookmarks' for the table of contents,
+    % internal cross-reference links, web links for URLs, etc.)
+    \usepackage{hyperref}
+    \usepackage{longtable} % longtable support required by pandoc >1.10
+    \usepackage{booktabs}  % table support for pandoc > 1.12.2
+    \usepackage[inline]{enumitem} % IRkernel/repr support (it uses the enumerate* environment)
+    \usepackage[normalem]{ulem} % ulem is needed to support strikethroughs (\sout)
+                                % normalem makes italics be italics, not underlines
+    
+
+    
+    
+    % Colors for the hyperref package
+    \definecolor{urlcolor}{rgb}{0,.145,.698}
+    \definecolor{linkcolor}{rgb}{.71,0.21,0.01}
+    \definecolor{citecolor}{rgb}{.12,.54,.11}
+
+    % ANSI colors
+    \definecolor{ansi-black}{HTML}{3E424D}
+    \definecolor{ansi-black-intense}{HTML}{282C36}
+    \definecolor{ansi-red}{HTML}{E75C58}
+    \definecolor{ansi-red-intense}{HTML}{B22B31}
+    \definecolor{ansi-green}{HTML}{00A250}
+    \definecolor{ansi-green-intense}{HTML}{007427}
+    \definecolor{ansi-yellow}{HTML}{DDB62B}
+    \definecolor{ansi-yellow-intense}{HTML}{B27D12}
+    \definecolor{ansi-blue}{HTML}{208FFB}
+    \definecolor{ansi-blue-intense}{HTML}{0065CA}
+    \definecolor{ansi-magenta}{HTML}{D160C4}
+    \definecolor{ansi-magenta-intense}{HTML}{A03196}
+    \definecolor{ansi-cyan}{HTML}{60C6C8}
+    \definecolor{ansi-cyan-intense}{HTML}{258F8F}
+    \definecolor{ansi-white}{HTML}{C5C1B4}
+    \definecolor{ansi-white-intense}{HTML}{A1A6B2}
+
+    % commands and environments needed by pandoc snippets
+    % extracted from the output of `pandoc -s`
+    \providecommand{\tightlist}{%
+      \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+    \DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+    % Add ',fontsize=\small' for more characters per line
+    \newenvironment{Shaded}{}{}
+    \newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{\textbf{{#1}}}}
+    \newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.56,0.13,0.00}{{#1}}}
+    \newcommand{\DecValTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{{#1}}}
+    \newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{{#1}}}
+    \newcommand{\FloatTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{{#1}}}
+    \newcommand{\CharTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{{#1}}}
+    \newcommand{\StringTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{{#1}}}
+    \newcommand{\CommentTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textit{{#1}}}}
+    \newcommand{\OtherTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{{#1}}}
+    \newcommand{\AlertTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{{#1}}}}
+    \newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.02,0.16,0.49}{{#1}}}
+    \newcommand{\RegionMarkerTok}[1]{{#1}}
+    \newcommand{\ErrorTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{{#1}}}}
+    \newcommand{\NormalTok}[1]{{#1}}
+    
+    % Additional commands for more recent versions of Pandoc
+    \newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.53,0.00,0.00}{{#1}}}
+    \newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{{#1}}}
+    \newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{{#1}}}
+    \newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.73,0.40,0.53}{{#1}}}
+    \newcommand{\ImportTok}[1]{{#1}}
+    \newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.73,0.13,0.13}{\textit{{#1}}}}
+    \newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{{#1}}}}}
+    \newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{{#1}}}}}
+    \newcommand{\VariableTok}[1]{\textcolor[rgb]{0.10,0.09,0.49}{{#1}}}
+    \newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{\textbf{{#1}}}}
+    \newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.40,0.40,0.40}{{#1}}}
+    \newcommand{\BuiltInTok}[1]{{#1}}
+    \newcommand{\ExtensionTok}[1]{{#1}}
+    \newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.74,0.48,0.00}{{#1}}}
+    \newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.49,0.56,0.16}{{#1}}}
+    \newcommand{\InformationTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{{#1}}}}}
+    \newcommand{\WarningTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{{#1}}}}}
+    
+    
+    % Define a nice break command that doesn't care if a line doesn't already
+    % exist.
+    \def\br{\hspace*{\fill} \\* }
+    % Math Jax compatability definitions
+    \def\gt{>}
+    \def\lt{<}
+    % Document parameters
+    \title{sdwis\_echo\_matching}
+    
+    
+    
+
+    % Pygments definitions
+    
+\makeatletter
+\def\PY@reset{\let\PY@it=\relax \let\PY@bf=\relax%
+    \let\PY@ul=\relax \let\PY@tc=\relax%
+    \let\PY@bc=\relax \let\PY@ff=\relax}
+\def\PY@tok#1{\csname PY@tok@#1\endcsname}
+\def\PY@toks#1+{\ifx\relax#1\empty\else%
+    \PY@tok{#1}\expandafter\PY@toks\fi}
+\def\PY@do#1{\PY@bc{\PY@tc{\PY@ul{%
+    \PY@it{\PY@bf{\PY@ff{#1}}}}}}}
+\def\PY#1#2{\PY@reset\PY@toks#1+\relax+\PY@do{#2}}
+
+\expandafter\def\csname PY@tok@w\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.73,0.73}{##1}}}
+\expandafter\def\csname PY@tok@c\endcsname{\let\PY@it=\textit\def\PY@tc##1{\textcolor[rgb]{0.25,0.50,0.50}{##1}}}
+\expandafter\def\csname PY@tok@cp\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.74,0.48,0.00}{##1}}}
+\expandafter\def\csname PY@tok@k\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@kp\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@kt\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.69,0.00,0.25}{##1}}}
+\expandafter\def\csname PY@tok@o\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
+\expandafter\def\csname PY@tok@ow\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.67,0.13,1.00}{##1}}}
+\expandafter\def\csname PY@tok@nb\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@nf\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.00,0.00,1.00}{##1}}}
+\expandafter\def\csname PY@tok@nc\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.00,1.00}{##1}}}
+\expandafter\def\csname PY@tok@nn\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.00,1.00}{##1}}}
+\expandafter\def\csname PY@tok@ne\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.82,0.25,0.23}{##1}}}
+\expandafter\def\csname PY@tok@nv\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.10,0.09,0.49}{##1}}}
+\expandafter\def\csname PY@tok@no\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.53,0.00,0.00}{##1}}}
+\expandafter\def\csname PY@tok@nl\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.63,0.63,0.00}{##1}}}
+\expandafter\def\csname PY@tok@ni\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.60,0.60,0.60}{##1}}}
+\expandafter\def\csname PY@tok@na\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.49,0.56,0.16}{##1}}}
+\expandafter\def\csname PY@tok@nt\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@nd\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.67,0.13,1.00}{##1}}}
+\expandafter\def\csname PY@tok@s\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.13,0.13}{##1}}}
+\expandafter\def\csname PY@tok@sd\endcsname{\let\PY@it=\textit\def\PY@tc##1{\textcolor[rgb]{0.73,0.13,0.13}{##1}}}
+\expandafter\def\csname PY@tok@si\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.73,0.40,0.53}{##1}}}
+\expandafter\def\csname PY@tok@se\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.73,0.40,0.13}{##1}}}
+\expandafter\def\csname PY@tok@sr\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.40,0.53}{##1}}}
+\expandafter\def\csname PY@tok@ss\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.10,0.09,0.49}{##1}}}
+\expandafter\def\csname PY@tok@sx\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@m\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
+\expandafter\def\csname PY@tok@gh\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.00,0.50}{##1}}}
+\expandafter\def\csname PY@tok@gu\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.50,0.00,0.50}{##1}}}
+\expandafter\def\csname PY@tok@gd\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.63,0.00,0.00}{##1}}}
+\expandafter\def\csname PY@tok@gi\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.00,0.63,0.00}{##1}}}
+\expandafter\def\csname PY@tok@gr\endcsname{\def\PY@tc##1{\textcolor[rgb]{1.00,0.00,0.00}{##1}}}
+\expandafter\def\csname PY@tok@ge\endcsname{\let\PY@it=\textit}
+\expandafter\def\csname PY@tok@gs\endcsname{\let\PY@bf=\textbf}
+\expandafter\def\csname PY@tok@gp\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.00,0.50}{##1}}}
+\expandafter\def\csname PY@tok@go\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.53,0.53,0.53}{##1}}}
+\expandafter\def\csname PY@tok@gt\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.00,0.27,0.87}{##1}}}
+\expandafter\def\csname PY@tok@err\endcsname{\def\PY@bc##1{\setlength{\fboxsep}{0pt}\fcolorbox[rgb]{1.00,0.00,0.00}{1,1,1}{\strut ##1}}}
+\expandafter\def\csname PY@tok@kc\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@kd\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@kn\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@kr\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@bp\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@fm\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.00,0.00,1.00}{##1}}}
+\expandafter\def\csname PY@tok@vc\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.10,0.09,0.49}{##1}}}
+\expandafter\def\csname PY@tok@vg\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.10,0.09,0.49}{##1}}}
+\expandafter\def\csname PY@tok@vi\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.10,0.09,0.49}{##1}}}
+\expandafter\def\csname PY@tok@vm\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.10,0.09,0.49}{##1}}}
+\expandafter\def\csname PY@tok@sa\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.13,0.13}{##1}}}
+\expandafter\def\csname PY@tok@sb\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.13,0.13}{##1}}}
+\expandafter\def\csname PY@tok@sc\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.13,0.13}{##1}}}
+\expandafter\def\csname PY@tok@dl\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.13,0.13}{##1}}}
+\expandafter\def\csname PY@tok@s2\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.13,0.13}{##1}}}
+\expandafter\def\csname PY@tok@sh\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.13,0.13}{##1}}}
+\expandafter\def\csname PY@tok@s1\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.13,0.13}{##1}}}
+\expandafter\def\csname PY@tok@mb\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
+\expandafter\def\csname PY@tok@mf\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
+\expandafter\def\csname PY@tok@mh\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
+\expandafter\def\csname PY@tok@mi\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
+\expandafter\def\csname PY@tok@il\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
+\expandafter\def\csname PY@tok@mo\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
+\expandafter\def\csname PY@tok@ch\endcsname{\let\PY@it=\textit\def\PY@tc##1{\textcolor[rgb]{0.25,0.50,0.50}{##1}}}
+\expandafter\def\csname PY@tok@cm\endcsname{\let\PY@it=\textit\def\PY@tc##1{\textcolor[rgb]{0.25,0.50,0.50}{##1}}}
+\expandafter\def\csname PY@tok@cpf\endcsname{\let\PY@it=\textit\def\PY@tc##1{\textcolor[rgb]{0.25,0.50,0.50}{##1}}}
+\expandafter\def\csname PY@tok@c1\endcsname{\let\PY@it=\textit\def\PY@tc##1{\textcolor[rgb]{0.25,0.50,0.50}{##1}}}
+\expandafter\def\csname PY@tok@cs\endcsname{\let\PY@it=\textit\def\PY@tc##1{\textcolor[rgb]{0.25,0.50,0.50}{##1}}}
+
+\def\PYZbs{\char`\\}
+\def\PYZus{\char`\_}
+\def\PYZob{\char`\{}
+\def\PYZcb{\char`\}}
+\def\PYZca{\char`\^}
+\def\PYZam{\char`\&}
+\def\PYZlt{\char`\<}
+\def\PYZgt{\char`\>}
+\def\PYZsh{\char`\#}
+\def\PYZpc{\char`\%}
+\def\PYZdl{\char`\$}
+\def\PYZhy{\char`\-}
+\def\PYZsq{\char`\'}
+\def\PYZdq{\char`\"}
+\def\PYZti{\char`\~}
+% for compatibility with earlier versions
+\def\PYZat{@}
+\def\PYZlb{[}
+\def\PYZrb{]}
+\makeatother
+
+
+    % Exact colors from NB
+    \definecolor{incolor}{rgb}{0.0, 0.0, 0.5}
+    \definecolor{outcolor}{rgb}{0.545, 0.0, 0.0}
+
+
+
+    
+    % Prevent overflowing lines due to hard-to-break entities
+    \sloppy 
+    % Setup hyperref package
+    \hypersetup{
+      breaklinks=true,  % so long urls are correctly broken across lines
+      colorlinks=true,
+      urlcolor=urlcolor,
+      linkcolor=linkcolor,
+      citecolor=citecolor,
+      }
+    % Slightly bigger margins than the latex defaults
+    
+    \geometry{verbose,tmargin=1in,bmargin=1in,lmargin=1in,rmargin=1in}
+    
+    
+
+    \begin{document}
+    
+    
+    \maketitle
+    
+    
+
+    
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}57}]:} \PY{k+kn}{import} \PY{n+nn}{os}
+         \PY{k+kn}{import} \PY{n+nn}{pandas} \PY{k}{as} \PY{n+nn}{pd}
+         \PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
+         \PY{k+kn}{from} \PY{n+nn}{IPython}\PY{n+nn}{.}\PY{n+nn}{display} \PY{k}{import} \PY{n}{display}\PY{p}{,} \PY{n}{HTML}
+         
+         \PY{n}{DATABASE\PYZus{}PATH} \PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{../data/simple\PYZus{}time\PYZus{}based\PYZus{}model.zip}\PY{l+s+s1}{\PYZsq{}}
+         
+         \PY{c+c1}{\PYZsh{} Allow us to display all the columns in a dataframe}
+         \PY{n}{pd}\PY{o}{.}\PY{n}{options}\PY{o}{.}\PY{n}{display}\PY{o}{.}\PY{n}{max\PYZus{}columns} \PY{o}{=} \PY{k+kc}{None}
+\end{Verbatim}
+
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}3}]:} \PY{n}{df} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}csv}\PY{p}{(}\PY{n}{DATABASE\PYZus{}PATH}\PY{p}{,} \PY{n}{compression}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{zip}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{header}\PY{o}{=}\PY{l+m+mi}{0}\PY{p}{,} \PY{n}{sep}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{,}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{quotechar}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{\PYZdq{}}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{low\PYZus{}memory}\PY{o}{=}\PY{k+kc}{False}\PY{p}{,} \PY{n}{index\PYZus{}col}\PY{o}{=}\PY{k+kc}{False}\PY{p}{)}
+        \PY{n}{df}\PY{o}{.}\PY{n}{shape}
+\end{Verbatim}
+
+
+\begin{Verbatim}[commandchars=\\\{\}]
+{\color{outcolor}Out[{\color{outcolor}3}]:} (2106220, 27)
+\end{Verbatim}
+            
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}4}]:} \PY{n}{df}\PY{o}{.}\PY{n}{head}\PY{p}{(}\PY{l+m+mi}{5}\PY{p}{)}
+\end{Verbatim}
+
+
+\begin{Verbatim}[commandchars=\\\{\}]
+{\color{outcolor}Out[{\color{outcolor}4}]:}   EPA\_REGION  POPULATION\_SERVED\_COUNT PRIMACY\_TYPE PRIMARY\_SOURCE\_CODE  \textbackslash{}
+        0          1                  39552.0       Tribal                  GU   
+        1          1                  41185.0       Tribal                  GW   
+        2          1                  37860.0       Tribal                 SWP   
+        3          1                     84.0       Tribal                  GW   
+        4          1                     30.0       Tribal                  GW   
+        
+          PWS\_ACTIVITY\_CODE      PWSID PWS\_TYPE\_CODE SERVICE\_CONNECTIONS\_COUNT  \textbackslash{}
+        0                 A  010106001           CWS                       143   
+        1                 I  010109001        NTNCWS                         1   
+        2                 A  010109005           CWS                        20   
+        3                 A  010307001           CWS                        33   
+        4                 I  010502001         TNCWS                         2   
+        
+          STATE\_CODE    ZIP\_CODE    YEAR  HEALTH\_BASED\_VIOLATION\_THIS\_YEAR  \textbackslash{}
+        0         CT  06339-3060  2018.0                               0.0   
+        1        NaN         NaN  2018.0                               0.0   
+        2         CT       06382  2018.0                               0.0   
+        3         MA       02535  2018.0                               0.0   
+        4         RI       02813  2018.0                               0.0   
+        
+           NUM\_HEALTH\_BASED\_VIOLATIONS\_PREVIOUS\_YEAR  \textbackslash{}
+        0                                        0.0   
+        1                                        0.0   
+        2                                        0.0   
+        3                                        0.0   
+        4                                        0.0   
+        
+           NUM\_NON\_HEALTH\_BASED\_VIOLATIONS\_PREVIOUS\_YEAR  \textbackslash{}
+        0                                            0.0   
+        1                                            0.0   
+        2                                            0.0   
+        3                                            0.0   
+        4                                            0.0   
+        
+           NUM\_HEALTH\_BASED\_VIOLATIONS\_2\_YEARS\_AGO  \textbackslash{}
+        0                                      0.0   
+        1                                      0.0   
+        2                                      0.0   
+        3                                      0.0   
+        4                                      0.0   
+        
+           NUM\_NON\_HEALTH\_BASED\_VIOLATIONS\_2\_YEARS\_AGO  \textbackslash{}
+        0                                          0.0   
+        1                                          0.0   
+        2                                          0.0   
+        3                                          0.0   
+        4                                          0.0   
+        
+           NUM\_HEALTH\_BASED\_VIOLATIONS\_3\_YEARS\_AGO  \textbackslash{}
+        0                                      0.0   
+        1                                      0.0   
+        2                                      0.0   
+        3                                      0.0   
+        4                                      0.0   
+        
+           NUM\_NON\_HEALTH\_BASED\_VIOLATIONS\_3\_YEARS\_AGO  \textbackslash{}
+        0                                          0.0   
+        1                                          0.0   
+        2                                          0.0   
+        3                                          0.0   
+        4                                          0.0   
+        
+           NUM\_HEALTH\_BASED\_VIOLATIONS\_4\_YEARS\_AGO  \textbackslash{}
+        0                                      0.0   
+        1                                      0.0   
+        2                                      0.0   
+        3                                      0.0   
+        4                                      0.0   
+        
+           NUM\_NON\_HEALTH\_BASED\_VIOLATIONS\_4\_YEARS\_AGO  \textbackslash{}
+        0                                          0.0   
+        1                                          0.0   
+        2                                          0.0   
+        3                                          0.0   
+        4                                          0.0   
+        
+           NUM\_HEALTH\_BASED\_VIOLATIONS\_5\_YEARS\_AGO  \textbackslash{}
+        0                                      0.0   
+        1                                      0.0   
+        2                                      0.0   
+        3                                      0.0   
+        4                                      0.0   
+        
+           NUM\_NON\_HEALTH\_BASED\_VIOLATIONS\_5\_YEARS\_AGO  \textbackslash{}
+        0                                          0.0   
+        1                                          0.0   
+        2                                          0.0   
+        3                                          0.0   
+        4                                          0.0   
+        
+           NUM\_ENFORCEMENTS\_PREVIOUS\_YEAR  NUM\_ENFORCEMENTS\_2\_YEARS\_AGO  \textbackslash{}
+        0                            90.0                           1.0   
+        1                             0.0                           0.0   
+        2                             1.0                           1.0   
+        3                             0.0                          10.0   
+        4                             0.0                           0.0   
+        
+           NUM\_ENFORCEMENTS\_3\_YEARS\_AGO  NUM\_ENFORCEMENTS\_4\_YEARS\_AGO  \textbackslash{}
+        0                           0.0                           0.0   
+        1                           0.0                           0.0   
+        2                           0.0                           1.0   
+        3                           5.0                           4.0   
+        4                           0.0                           0.0   
+        
+           NUM\_ENFORCEMENTS\_5\_YEARS\_AGO  
+        0                           0.0  
+        1                           0.0  
+        2                           0.0  
+        3                           2.0  
+        4                           0.0  
+\end{Verbatim}
+            
+    \hypertarget{i.-getting-distinct-pwsids-with-some-columns}{%
+\paragraph{I. Getting distinct PWSIDs with some
+columns}\label{i.-getting-distinct-pwsids-with-some-columns}}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}5}]:} \PY{n}{df\PYZus{}distinct} \PY{o}{=} \PY{n}{df}\PY{o}{.}\PY{n}{loc}\PY{p}{[}\PY{p}{:}\PY{p}{,} \PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{PWSID}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{PWS\PYZus{}TYPE\PYZus{}CODE}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{STATE\PYZus{}CODE}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ZIP\PYZus{}CODE}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{]}\PY{o}{.}\PY{n}{drop\PYZus{}duplicates}\PY{p}{(}\PY{p}{)}
+        \PY{n+nb}{len}\PY{p}{(}\PY{n}{df\PYZus{}distinct}\PY{p}{)}
+\end{Verbatim}
+
+
+\begin{Verbatim}[commandchars=\\\{\}]
+{\color{outcolor}Out[{\color{outcolor}5}]:} 421244
+\end{Verbatim}
+            
+    \hypertarget{ii.-loading-a-filtered-version-sdwis_flag-y-of-the-full-echo-data}{%
+\paragraph{II. Loading a filtered version (SDWIS\_FLAG = Y) of the full
+ECHO
+data}\label{ii.-loading-a-filtered-version-sdwis_flag-y-of-the-full-echo-data}}
+
+https://echo.epa.gov/tools/data-downloads\#exporter (downloaded 1/8/19)
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}6}]:} \PY{c+c1}{\PYZsh{} couldn\PYZsq{}t write it as .zip for some reason, but gzip worked}
+        \PY{n}{ECHODATA\PYZus{}PATH} \PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{../data/echo\PYZus{}exporter\PYZus{}sdwis.csv.gz}\PY{l+s+s1}{\PYZsq{}} 
+        
+        \PY{n}{ECHOdata\PYZus{}sdwis} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}csv}\PY{p}{(}\PY{n}{ECHODATA\PYZus{}PATH}\PY{p}{,} \PY{n}{compression}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{gzip}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{header}\PY{o}{=}\PY{l+m+mi}{0}\PY{p}{,} \PY{n}{sep}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{,}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} 
+                                \PY{n}{dtype}\PY{o}{=}\PY{p}{\PYZob{}}\PY{l+m+mi}{0}\PY{p}{:}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{str}\PY{l+s+s1}{\PYZsq{}}\PY{p}{\PYZcb{}}\PY{p}{,} \PY{n}{quotechar}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{\PYZdq{}}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{low\PYZus{}memory}\PY{o}{=}\PY{k+kc}{False}\PY{p}{,} \PY{n}{index\PYZus{}col}\PY{o}{=}\PY{l+m+mi}{0}\PY{p}{)}
+        
+        \PY{n}{ECHOdata\PYZus{}sdwis}\PY{o}{.}\PY{n}{shape}
+\end{Verbatim}
+
+
+\begin{Verbatim}[commandchars=\\\{\}]
+{\color{outcolor}Out[{\color{outcolor}6}]:} (420290, 134)
+\end{Verbatim}
+            
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}7}]:} \PY{n}{ECHOdata\PYZus{}sdwis}\PY{o}{.}\PY{n}{head}\PY{p}{(}\PY{l+m+mi}{5}\PY{p}{)}
+\end{Verbatim}
+
+
+\begin{Verbatim}[commandchars=\\\{\}]
+{\color{outcolor}Out[{\color{outcolor}7}]:}       REGISTRY\_ID                                  FAC\_NAME  \textbackslash{}
+        61   1.100099e+11                      MDC-CAMP CUSINO WWSL   
+        121  1.100130e+11                TEL COMPANY 3 WATER SYSTEM   
+        122  1.100006e+11   BLACK HILLS CORP - NEIL SIMPSON COMPLEX   
+        125  1.100082e+11         LEWIS RIVER STATE SALMON HATCHERY   
+        135  1.100168e+11  SEVERANCE PHASE I MUNICIPAL WATER SYSTEM   
+        
+                                 FAC\_STREET    FAC\_CITY FAC\_STATE FAC\_ZIP FAC\_COUNTY  \textbackslash{}
+        61                 CAMP CUSINO WWSL  SHINGLETON        MI   49884      ALGER   
+        121  GOLDFINCH LN AND CULTUS BAY RD     CLINTON        WA   98236     ISLAND   
+        122                13151 HIGHWAY 51    GILLETTE        WY   82718   CAMPBELL   
+        125             4404 LEWIS RIVER RD    WOODLAND        WA   98674    COWLITZ   
+        135                             UNK         UNK        CO   99999       WELD   
+        
+             FAC\_FIPS\_CODE  FAC\_EPA\_REGION FAC\_INDIAN\_CNTRY\_FLG FAC\_FEDERAL\_FLG  \textbackslash{}
+        61         26003.0             5.0                    N             NaN   
+        121        53029.0            10.0                    N             NaN   
+        122        56005.0             8.0                    N             NaN   
+        125        53015.0            10.0                    N             NaN   
+        135            NaN             8.0                    N             NaN   
+        
+            FAC\_US\_MEX\_BORDER\_FLG FAC\_CHESAPEAKE\_BAY\_FLG FAC\_NAA\_FLAG    FAC\_LAT  \textbackslash{}
+        61                    NaN                    NaN          NaN  46.345220   
+        121                   NaN                    NaN          NaN  47.986938   
+        122                   NaN                    NaN          NaN  44.285366   
+        125                   NaN                    NaN          NaN  45.936900   
+        135                   NaN                    NaN          NaN  40.555794   
+        
+               FAC\_LONG       FAC\_MAP\_ICON FAC\_COLLECTION\_METHOD FAC\_REFERENCE\_POINT  \textbackslash{}
+        61   -86.462140  MULT-SNC-MN-1.png               UNKNOWN                 NaN   
+        121 -122.397780   SDWA-IC-MN-N.png   INTERPOLATION-PHOTO   FACILITY CENTROID   
+        122 -105.382490   MULT-IC-MJ-2.png   INTERPOLATION-PHOTO  CENTER OF FACILITY   
+        125 -122.615973  MULT-UNK-MN-N.png   INTERPOLATION-PHOTO   FACILITY CENTROID   
+        135 -104.383649          no\_ll.png       County Centroid                 NaN   
+        
+             FAC\_ACCURACY\_METERS                                 FAC\_DERIVED\_TRIBES  \textbackslash{}
+        61               17445.0  Sault Ste. Marie Tribe of Chippewa Indians, Mi{\ldots}   
+        121                347.0  Tulalip Tribes of Washington - 4.3 mile(s), Po{\ldots}   
+        122                 19.0                                                NaN   
+        125                180.0                   Cowlitz Indian Tribe - 7 mile(s)   
+        135              30000.0                                                NaN   
+        
+             FAC\_DERIVED\_HUC  FAC\_DERIVED\_WBD  FAC\_DERIVED\_STCTY\_FIPS  \textbackslash{}
+        61         4060106.0     4.060106e+10                 26003.0   
+        121       17110019.0     1.711002e+11                 53029.0   
+        122       10120201.0     1.012020e+11                 56005.0   
+        125       17080002.0     1.708000e+11                 53015.0   
+        135              NaN              NaN                     NaN   
+        
+             FAC\_DERIVED\_ZIP  FAC\_DERIVED\_CD113  FAC\_DERIVED\_CB2010  \textbackslash{}
+        61           49884.0                1.0        2.600300e+14   
+        121          98236.0                2.0        5.302997e+14   
+        122          82718.0                1.0        5.600500e+14   
+        125          98674.0                3.0        5.301500e+14   
+        135              NaN                NaN                 NaN   
+        
+             FAC\_PERCENT\_MINORITY  FAC\_POP\_DEN FAC\_MAJOR\_FLAG FAC\_ACTIVE\_FLAG  \textbackslash{}
+        61                 14.754         8.58            NaN               Y   
+        121                 7.900       204.96            NaN               Y   
+        122                 9.836        83.04              Y               Y   
+        125                 8.367        96.39            NaN               Y   
+        135                   NaN          NaN            NaN               Y   
+        
+            FAC\_MYRTK\_UNIVERSE  FAC\_INSPECTION\_COUNT FAC\_DATE\_LAST\_INSPECTION  \textbackslash{}
+        61                 NNN                     3               11/01/2018   
+        121                NNN                     0                      NaN   
+        122                NNN                     5               12/06/2017   
+        125                NNN                     0               05/02/2013   
+        135                NNN                     0                      NaN   
+        
+             FAC\_DAYS\_LAST\_INSPECTION  FAC\_INFORMAL\_COUNT  \textbackslash{}
+        61                       52.0                   0   
+        121                       NaN                   0   
+        122                     382.0                   0   
+        125                    2061.0                   0   
+        135                       NaN                   2   
+        
+            FAC\_DATE\_LAST\_INFORMAL\_ACTION  FAC\_FORMAL\_ACTION\_COUNT  \textbackslash{}
+        61                     05/05/2001                        0   
+        121                    12/14/2011                        0   
+        122                    02/13/2013                        0   
+        125                           NaN                        0   
+        135                    10/09/2015                        0   
+        
+            FAC\_DATE\_LAST\_FORMAL\_ACTION  FAC\_TOTAL\_PENALTIES  FAC\_PENALTY\_COUNT  \textbackslash{}
+        61                          NaN                    0                NaN   
+        121                         NaN                    0                NaN   
+        122                  06/25/2013                    0                NaN   
+        125                         NaN                    0                NaN   
+        135                         NaN                    0                NaN   
+        
+            FAC\_DATE\_LAST\_PENALTY  FAC\_LAST\_PENALTY\_AMT  FAC\_QTRS\_WITH\_NC  \textbackslash{}
+        61                    NaN                   NaN               5.0   
+        121                   NaN                   NaN               1.0   
+        122            06/25/2013               10000.0               1.0   
+        125                   NaN                   NaN               0.0   
+        135                   NaN                   NaN               9.0   
+        
+             FAC\_PROGRAMS\_WITH\_SNC FAC\_COMPLIANCE\_STATUS FAC\_SNC\_FLG  \textbackslash{}
+        61                       1      SNC/Serious Viol           Y   
+        121                      0          No Violation           N   
+        122                      0          No Violation           N   
+        125                      0               Unknown           N   
+        135                      0          No Violation           N   
+        
+            FAC\_3YR\_COMPLIANCE\_HISTORY AIR\_FLAG NPDES\_FLAG SDWIS\_FLAG RCRA\_FLAG  \textbackslash{}
+        61                VUU\_U\_\_SSSS\_        N          Y          Y         Y   
+        121               V\_\_\_\_\_\_\_\_\_\_\_        N          N          Y         N   
+        122               \_V\_\_\_\_\_\_\_\_\_U        Y          N          Y         Y   
+        125               UUUUUUUUUUU\_        N          Y          Y         Y   
+        135               VVVVVVVVV\_\_\_        N          N          Y         N   
+        
+            TRI\_FLAG GHG\_FLAG                                AIR\_IDS CAA\_PERMIT\_TYPES  \textbackslash{}
+        61         N        N                                    NaN              NaN   
+        121        N        N                                    NaN              NaN   
+        122        Y        Y  WY0000005600500002 WY0000005600500281  Major Emissions   
+        125        N        N                                    NaN              NaN   
+        135        N        N                                    NaN              NaN   
+        
+            CAA\_NAICS CAA\_SICS  CAA\_EVALUATION\_COUNT  CAA\_DAYS\_LAST\_EVALUATION  \textbackslash{}
+        61        NaN      NaN                   NaN                       NaN   
+        121       NaN      NaN                   NaN                       NaN   
+        122    221112      NaN                   4.0                    1873.0   
+        125       NaN      NaN                   NaN                       NaN   
+        135       NaN      NaN                   NaN                       NaN   
+        
+             CAA\_INFORMAL\_COUNT  CAA\_FORMAL\_ACTION\_COUNT CAA\_DATE\_LAST\_FORMAL\_ACTION  \textbackslash{}
+        61                  NaN                      NaN                         NaN   
+        121                 NaN                      NaN                         NaN   
+        122                 NaN                      NaN                  06/25/2013   
+        125                 NaN                      NaN                         NaN   
+        135                 NaN                      NaN                         NaN   
+        
+             CAA\_PENALTIES CAA\_LAST\_PENALTY\_DATE  CAA\_LAST\_PENALTY\_AMT  \textbackslash{}
+        61             NaN                   NaN                   NaN   
+        121            NaN                   NaN                   NaN   
+        122            NaN            06/25/2013               10000.0   
+        125            NaN                   NaN                   NaN   
+        135            NaN                   NaN                   NaN   
+        
+             CAA\_QTRS\_WITH\_NC CAA\_COMPLIANCE\_STATUS CAA\_HPV\_FLAG  \textbackslash{}
+        61                NaN                   NaN            N   
+        121               NaN                   NaN            N   
+        122               0.0         Not Available            N   
+        125               NaN                   NaN            N   
+        135               NaN                   NaN            N   
+        
+            CAA\_3YR\_COMPL\_QTRS\_HISTORY  NPDES\_IDS CWA\_PERMIT\_TYPES  \textbackslash{}
+        61                         NaN  MIG580372            Minor   
+        121                        NaN        NaN              NaN   
+        122               \_\_\_\_\_\_\_\_\_\_\_\_        NaN              NaN   
+        125                        NaN  WAG131040            Minor   
+        135                        NaN        NaN              NaN   
+        
+            CWA\_COMPLIANCE\_TRACKING CWA\_NAICS CWA\_SICS  CWA\_INSPECTION\_COUNT  \textbackslash{}
+        61                       On       NaN     4952                   3.0   
+        121                     NaN       NaN      NaN                   NaN   
+        122                     NaN       NaN      NaN                   NaN   
+        125                 Partial       NaN     0921                   NaN   
+        135                     NaN       NaN      NaN                   NaN   
+        
+             CWA\_DAYS\_LAST\_INSPECTION  CWA\_INFORMAL\_COUNT  CWA\_FORMAL\_ACTION\_COUNT  \textbackslash{}
+        61                       52.0                 NaN                      NaN   
+        121                       NaN                 NaN                      NaN   
+        122                       NaN                 NaN                      NaN   
+        125                    2061.0                 NaN                      NaN   
+        135                       NaN                 NaN                      NaN   
+        
+            CWA\_DATE\_LAST\_FORMAL\_ACTION  CWA\_PENALTIES CWA\_LAST\_PENALTY\_DATE  \textbackslash{}
+        61                          NaN            NaN                   NaN   
+        121                         NaN            NaN                   NaN   
+        122                         NaN            NaN                   NaN   
+        125                         NaN            NaN                   NaN   
+        135                         NaN            NaN                   NaN   
+        
+             CWA\_LAST\_PENALTY\_AMT  CWA\_QTRS\_WITH\_NC CWA\_COMPLIANCE\_STATUS  \textbackslash{}
+        61                    NaN               6.0             D(DMR NR)   
+        121                   NaN               NaN                   NaN   
+        122                   NaN               NaN                   NaN   
+        125                   NaN               0.0               Unknown   
+        135                   NaN               NaN                   NaN   
+        
+            CWA\_SNC\_FLAG CWA\_13QTRS\_COMPL\_HISTORY  CWA\_13QTRS\_EFFLNT\_EXCEEDANCES  \textbackslash{}
+        61             Y            VVUU\_U\_\_SSSS\_                            NaN   
+        121            N                      NaN                            NaN   
+        122            N                      NaN                            NaN   
+        125            N            UUUUUUUUUUUU\_                            NaN   
+        135            N                      NaN                            NaN   
+        
+             CWA\_3\_YR\_QNCR\_CODES      RCRA\_IDS RCRA\_PERMIT\_TYPES RCRA\_NAICS  \textbackslash{}
+        61                   NaN  MID985619279              VSQG      92214   
+        121                  NaN           NaN               NaN        NaN   
+        122                  NaN  WYD988874376              VSQG     221112   
+        125                  NaN  WAD988470399             Other      92411   
+        135                  NaN           NaN               NaN        NaN   
+        
+             RCRA\_INSPECTION\_COUNT  RCRA\_DAYS\_LAST\_EVALUATION  RCRA\_INFORMAL\_COUNT  \textbackslash{}
+        61                     NaN                        NaN                  NaN   
+        121                    NaN                        NaN                  NaN   
+        122                    1.0                      990.0                  NaN   
+        125                    NaN                        NaN                  NaN   
+        135                    NaN                        NaN                  NaN   
+        
+             RCRA\_FORMAL\_ACTION\_COUNT RCRA\_DATE\_LAST\_FORMAL\_ACTION  RCRA\_PENALTIES  \textbackslash{}
+        61                        NaN                          NaN             NaN   
+        121                       NaN                          NaN             NaN   
+        122                       NaN                          NaN             NaN   
+        125                       NaN                          NaN             NaN   
+        135                       NaN                          NaN             NaN   
+        
+            RCRA\_LAST\_PENALTY\_DATE  RCRA\_LAST\_PENALTY\_AMT  RCRA\_QTRS\_WITH\_NC  \textbackslash{}
+        61                     NaN                    NaN                0.0   
+        121                    NaN                    NaN                NaN   
+        122                    NaN                    NaN                1.0   
+        125                    NaN                    NaN                0.0   
+        135                    NaN                    NaN                NaN   
+        
+            RCRA\_COMPLIANCE\_STATUS RCRA\_SNC\_FLAG RCRA\_3YR\_COMPL\_QTRS\_HISTORY  \textbackslash{}
+        61            No Violation             N                \_\_\_\_\_\_\_\_\_\_\_\_   
+        121                    NaN             N                         NaN   
+        122           No Violation             N                \_V\_\_\_\_\_\_\_\_\_\_   
+        125           No Violation             N                \_\_\_\_\_\_\_\_\_\_\_\_   
+        135                    NaN             N                         NaN   
+        
+              SDWA\_IDS                   SDWA\_SYSTEM\_TYPES  SDWA\_INFORMAL\_COUNT  \textbackslash{}
+        61   MI0001055              Community water system                  NaN   
+        121  WA5393945              Community water system                  NaN   
+        122  WY5600135  Non-Transient non-community system                  NaN   
+        125  WA5347043      Transient non-community system                  NaN   
+        135  CO0162707              Community water system                  2.0   
+        
+             SDWA\_FORMAL\_ACTION\_COUNT SDWA\_COMPLIANCE\_STATUS SDWA\_SNC\_FLAG  \textbackslash{}
+        61                        NaN           No Violation             N   
+        121                       NaN           No Violation             N   
+        122                       NaN           No Violation             N   
+        125                       NaN           No Violation             N   
+        135                       NaN           No Violation             N   
+        
+                     TRI\_IDS  TRI\_RELEASES\_TRANSFERS  TRI\_ON\_SITE\_RELEASES  \textbackslash{}
+        61               NaN                     NaN                   NaN   
+        121              NaN                     NaN                   NaN   
+        122  82716NLSMP13151               2250537.0             2250537.0   
+        125              NaN                     NaN                   NaN   
+        135              NaN                     NaN                   NaN   
+        
+             TRI\_OFF\_SITE\_TRANSFERS TRI\_REPORTER\_IN\_PAST  \textbackslash{}
+        61                      NaN                  NaN   
+        121                     NaN                  NaN   
+        122                     0.0                    Y   
+        125                     NaN                  NaN   
+        135                     NaN                  NaN   
+        
+                                                  FEC\_CASE\_IDS  FEC\_NUMBER\_OF\_CASES  \textbackslash{}
+        61                                                 NaN                  NaN   
+        121                                                NaN                  NaN   
+        122  WY000A0000560050000200016 WY000A00005600500002{\ldots}                  NaN   
+        125                                                NaN                  NaN   
+        135                                                NaN                  NaN   
+        
+            FEC\_LAST\_CASE\_DATE  FEC\_TOTAL\_PENALTIES          GHG\_IDS  \textbackslash{}
+        61                 NaN                  NaN              NaN   
+        121                NaN                  NaN              NaN   
+        122                NaN                  NaN  1000598 1000827   
+        125                NaN                  NaN              NaN   
+        135                NaN                  NaN              NaN   
+        
+             GHG\_CO2\_RELEASES                                            DFR\_URL  \textbackslash{}
+        61                NaN  http://echo.epa.gov/detailed-facility-report?f{\ldots}   
+        121               NaN  http://echo.epa.gov/detailed-facility-report?f{\ldots}   
+        122            4333.0  http://echo.epa.gov/detailed-facility-report?f{\ldots}   
+        125               NaN  http://echo.epa.gov/detailed-facility-report?f{\ldots}   
+        135               NaN  http://echo.epa.gov/detailed-facility-report?f{\ldots}   
+        
+            FAC\_SIC\_CODES FAC\_NAICS\_CODES FAC\_DATE\_LAST\_INSPECTION\_EPA  \textbackslash{}
+        61           4952           92214                          NaN   
+        121           NaN             NaN                          NaN   
+        122     4911 1221   221112 221122                   09/14/2005   
+        125          0921           92411                          NaN   
+        135           NaN             NaN                          NaN   
+        
+            FAC\_DATE\_LAST\_INSPECTION\_STATE FAC\_DATE\_LAST\_FORMAL\_ACT\_EPA  \textbackslash{}
+        61                      11/01/2018                          NaN   
+        121                            NaN                          NaN   
+        122                     12/06/2017                          NaN   
+        125                     05/02/2013                          NaN   
+        135                            NaN                          NaN   
+        
+            FAC\_DATE\_LAST\_FORMAL\_ACT\_ST FAC\_DATE\_LAST\_INFORMAL\_ACT\_EPA  \textbackslash{}
+        61                          NaN                            NaN   
+        121                         NaN                            NaN   
+        122                  06/25/2013                     02/13/2013   
+        125                         NaN                            NaN   
+        135                         NaN                            NaN   
+        
+            FAC\_DATE\_LAST\_INFORMAL\_ACT\_ST FAC\_FEDERAL\_AGENCY TRI\_REPORTER  \textbackslash{}
+        61                     05/05/2001                NaN          NaN   
+        121                    12/14/2011                NaN          NaN   
+        122                    02/04/2013                NaN            Y   
+        125                           NaN                NaN          NaN   
+        135                    10/09/2015                NaN          NaN   
+        
+            FAC\_IMP\_WATER\_FLG EJSCREEN\_FLAG\_US  
+        61                NaN                N  
+        121               NaN                N  
+        122               NaN                N  
+        125               NaN                N  
+        135               NaN                N  
+\end{Verbatim}
+            
+    \hypertarget{iii.-matching-up-the-data}{%
+\paragraph{III. Matching up the data}\label{iii.-matching-up-the-data}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  SDWA\_IDS is kind of a mess, with some having multiple ID's, some with
+  two-letter state codes to start, others not
+\item
+  Started with filtering down ECHO data to those that don't match up
+  with simple\_time\_based\_model.csv PWSID (just to see them)
+\end{enumerate}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}8}]:} \PY{n}{ECHOdata\PYZus{}sdwis\PYZus{}m1} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{merge}\PY{p}{(}\PY{n}{ECHOdata\PYZus{}sdwis}\PY{p}{,} \PY{n}{df\PYZus{}distinct}\PY{p}{,} \PY{n}{left\PYZus{}on}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{SDWA\PYZus{}IDS}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{right\PYZus{}on}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{PWSID}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{how}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{left}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{validate}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{1:1}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+        
+        \PY{n}{ECHOdata\PYZus{}sdwis\PYZus{}m1}\PY{o}{.}\PY{n}{shape}
+\end{Verbatim}
+
+
+\begin{Verbatim}[commandchars=\\\{\}]
+{\color{outcolor}Out[{\color{outcolor}8}]:} (420290, 138)
+\end{Verbatim}
+            
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}9}]:} \PY{n}{ECHOdata\PYZus{}no\PYZus{}sdwis} \PY{o}{=} \PY{n}{ECHOdata\PYZus{}sdwis\PYZus{}m1}\PY{o}{.}\PY{n}{loc}\PY{p}{[}\PY{p}{:}\PY{p}{,} \PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{REGISTRY\PYZus{}ID}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{FAC\PYZus{}NAME}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{SDWA\PYZus{}IDS}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{PWSID}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{]}
+        \PY{n}{ECHOdata\PYZus{}no\PYZus{}sdwis} \PY{o}{=} \PY{n}{ECHOdata\PYZus{}no\PYZus{}sdwis}\PY{p}{[}\PY{n}{ECHOdata\PYZus{}no\PYZus{}sdwis}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{PWSID}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{isnull}\PY{p}{(}\PY{p}{)}\PY{p}{]}
+        \PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{unmatched = }\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n+nb}{len}\PY{p}{(}\PY{n}{ECHOdata\PYZus{}no\PYZus{}sdwis}\PY{p}{)}\PY{p}{)}
+        \PY{n}{ECHOdata\PYZus{}no\PYZus{}sdwis}\PY{o}{.}\PY{n}{head}\PY{p}{(}\PY{l+m+mi}{10}\PY{p}{)} \PY{c+c1}{\PYZsh{} just to see some, multiple SDWA\PYZus{}IDS, etc.}
+\end{Verbatim}
+
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+unmatched =  1598
+
+    \end{Verbatim}
+
+\begin{Verbatim}[commandchars=\\\{\}]
+{\color{outcolor}Out[{\color{outcolor}9}]:}        REGISTRY\_ID                                 FAC\_NAME  \textbackslash{}
+        265            NaN  AMERIPORT CRYOGENIC VESSEL ALTERNATIVES   
+        433            NaN         MT VISTA CONDOMINIUM ASSOCIATION   
+        570            NaN      Here We Grow Early Childhood Center   
+        1140  1.100488e+11                ROXBURY TWP W DEPT-KENVIL   
+        1213  1.100500e+11                 BENJAMIN E OLIVER SCHOOL   
+        1471  1.100479e+11                   20 TAI LANE APARTMENTS   
+        2045           NaN            GRACE UNITED METHODIST CHURCH   
+        2121           NaN              DOLLAR GENERAL NEW RINGGOLD   
+        2450  1.100129e+11                        DARBONNE WS SOUTH   
+        2622           NaN                    OTTERY TRANSPORTATION   
+        
+                                                       SDWA\_IDS PWSID  
+        265                                           TX0360147   NaN  
+        433                                           ME0092698   NaN  
+        570                                           MN5070436   NaN  
+        1140                                NJ1406007 NJ1436008   NaN  
+        1213  VI0000204 VI0000206 VI0000207 VI0000208 VI0000209   NaN  
+        1471                                MT0000469 MT0002560   NaN  
+        2045                                          PA5630442   NaN  
+        2121                                          PA3540982   NaN  
+        2450                                LA1111023 LA1111024   NaN  
+        2622                                          WI4201547   NaN  
+\end{Verbatim}
+            
+    \begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  Now the other way
+\end{enumerate}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}10}]:} \PY{n}{sdwis\PYZus{}ECHOdata\PYZus{}m1} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{merge}\PY{p}{(}\PY{n}{df\PYZus{}distinct}\PY{p}{,} \PY{n}{ECHOdata\PYZus{}sdwis}\PY{p}{,} \PY{n}{left\PYZus{}on}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{PWSID}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{right\PYZus{}on}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{SDWA\PYZus{}IDS}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{how}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{left}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{validate}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{1:1}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+         
+         \PY{n+nb}{print}\PY{p}{(}\PY{n}{sdwis\PYZus{}ECHOdata\PYZus{}m1}\PY{o}{.}\PY{n}{shape}\PY{p}{)}
+         
+         \PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{unmatched = }\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n+nb}{len}\PY{p}{(}\PY{n}{sdwis\PYZus{}ECHOdata\PYZus{}m1}\PY{p}{[}\PY{n}{sdwis\PYZus{}ECHOdata\PYZus{}m1}\PY{o}{.}\PY{n}{SDWA\PYZus{}IDS}\PY{o}{.}\PY{n}{isnull}\PY{p}{(}\PY{p}{)}\PY{p}{]}\PY{p}{)}\PY{p}{)}
+\end{Verbatim}
+
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+(421244, 138)
+unmatched =  2552
+
+    \end{Verbatim}
+
+    \begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+  Finally to filter down to lat/lon and some columns
+\end{enumerate}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}11}]:} \PY{n}{sdwis\PYZus{}ECHOcoords} \PY{o}{=} \PY{n}{sdwis\PYZus{}ECHOdata\PYZus{}m1}\PY{o}{.}\PY{n}{loc}\PY{p}{[}\PY{p}{:}\PY{p}{,} \PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{REGISTRY\PYZus{}ID}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{FAC\PYZus{}NAME}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{SDWA\PYZus{}IDS}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{FAC\PYZus{}LAT}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{FAC\PYZus{}LONG}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} 
+                                                    \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{FAC\PYZus{}COLLECTION\PYZus{}METHOD}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{FAC\PYZus{}REFERENCE\PYZus{}POINT}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{FAC\PYZus{}ACCURACY\PYZus{}METERS}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{]}
+         \PY{n}{sdwis\PYZus{}ECHOcoords} \PY{o}{=} \PY{n}{sdwis\PYZus{}ECHOcoords}\PY{p}{[}\PY{n}{sdwis\PYZus{}ECHOcoords}\PY{o}{.}\PY{n}{FAC\PYZus{}LAT}\PY{o}{.}\PY{n}{notnull}\PY{p}{(}\PY{p}{)}\PY{p}{]}
+         \PY{n+nb}{len}\PY{p}{(}\PY{n}{sdwis\PYZus{}ECHOcoords}\PY{p}{)}
+\end{Verbatim}
+
+
+\begin{Verbatim}[commandchars=\\\{\}]
+{\color{outcolor}Out[{\color{outcolor}11}]:} 396660
+\end{Verbatim}
+            
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}12}]:} \PY{n}{sdwis\PYZus{}ECHOcoords}\PY{o}{.}\PY{n}{head}\PY{p}{(}\PY{l+m+mi}{5}\PY{p}{)}
+\end{Verbatim}
+
+
+\begin{Verbatim}[commandchars=\\\{\}]
+{\color{outcolor}Out[{\color{outcolor}12}]:}      REGISTRY\_ID                                           FAC\_NAME  \textbackslash{}
+         7   1.100510e+11                  NARRAGANSETT INDIAN HEALTH CENTER   
+         8   1.100129e+11                                   JIMMERSONTOWN WS   
+         27  1.100129e+11  POARCH BAND OF CREEK INDIANS MONAIC RECREATION{\ldots}   
+         44  1.100479e+11                            PHEASANT CREEK (SOCO I)   
+         45  1.100479e+11                                       MINGUS CREEK   
+         
+              SDWA\_IDS    FAC\_LAT   FAC\_LONG          FAC\_COLLECTION\_METHOD  \textbackslash{}
+         7   010502004  41.415060 -71.647920  ADDRESS MATCHING-HOUSE NUMBER   
+         8   020000001  42.159880 -78.723560  ADDRESS MATCHING-HOUSE NUMBER   
+         27  040000002  31.123594 -87.627224  ADDRESS MATCHING-HOUSE NUMBER   
+         44  043700001  35.539710 -79.130864                 State Centroid   
+         45  043700002  35.539710 -79.130864                 State Centroid   
+         
+                                 FAC\_REFERENCE\_POINT  FAC\_ACCURACY\_METERS  
+         7           CENTER OF A FACILITY OR STATION                 30.0  
+         8           CENTER OF A FACILITY OR STATION                 30.0  
+         27  ENTRANCE POINT OF A FACILITY OR STATION                 50.0  
+         44                                      NaN             100000.0  
+         45                                      NaN             100000.0  
+\end{Verbatim}
+            
+    \begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{4}
+\tightlist
+\item
+  Get obverall frequencies by FAC\_COLLECTION\_METHOD
+\end{enumerate}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}13}]:} \PY{n}{FACtype\PYZus{}tab} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{crosstab}\PY{p}{(}\PY{n}{index}\PY{o}{=}\PY{n}{sdwis\PYZus{}ECHOcoords}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{FAC\PYZus{}COLLECTION\PYZus{}METHOD}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{,} \PY{n}{columns}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{count}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)} 
+         
+         \PY{n}{FACtype\PYZus{}tab}\PY{o}{.}\PY{n}{sort\PYZus{}values}\PY{p}{(}\PY{n}{by} \PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{count}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{ascending} \PY{o}{=} \PY{k+kc}{False}\PY{p}{)}
+\end{Verbatim}
+
+
+\begin{Verbatim}[commandchars=\\\{\}]
+{\color{outcolor}Out[{\color{outcolor}13}]:} col\_0                                                count
+         FAC\_COLLECTION\_METHOD                                     
+         State Centroid                                      217793
+         County Centroid                                     132878
+         Zip Code Centroid                                    24008
+         ADDRESS MATCHING-HOUSE NUMBER                        11337
+         INTERPOLATION-PHOTO                                   4095
+         Place Name Centroid                                   2904
+         INTERPOLATION-MAP                                      776
+         ADDRESS MATCHING-BLOCK FACE                            263
+         UNKNOWN                                                226
+         ZIP CODE-CENTROID                                      205
+         GPS - UNSPECIFIED                                      203
+         GPS CODE (PSEUDO RANGE) DIFFERENTIAL                   175
+         Post Office Name Centroid                              136
+         GPS CARRIER PHASE STATIC RELATIVE POSITION             135
+         ADDRESS MATCHING-NEAREST INTERSECTION                  125
+         INTERPOLATION-SATELLITE                                 99
+         INTERPOLATION - DIGITAL MAP SRCE (TIGER)                69
+         THE GEOGRAPHIC COORDINATE DETERMINATION METHOD {\ldots}      39
+         INTERPOLATION-OTHER                                     36
+         GPS CODE (PSEUDO RANGE) PRECISE POSITION                31
+         ADDRESS MATCHING-OTHER                                  29
+         CLASSICAL SURVEYING TECHNIQUES                          16
+         THE GEOGRAPHIC COORDINATE DETERMINATION METHOD {\ldots}      16
+         GPS CODE (PSEUDO RANGE) STANDARD POSITION (SA OFF)      16
+         THE GEOGRAPHIC COORDINATE DETERMINATION METHOD {\ldots}      14
+         THE GEOGRAPHIC COORDINATE DETERMINATION METHOD {\ldots}      10
+         US BUREAU OF CENSUS BLOCK ESTABLISHED FOR YEAR {\ldots}       9
+         CENSUS BLOCK/GROUP-1990-CENTROID                         5
+         ADDRESS MATCHING-DIGITIZED                               3
+         GPS CODE (PSEUDO RANGE) STANDARD POSITION (SA ON)        3
+         GDT-ADDRESS MATCHING (GEOCODING)                         3
+         PUBLIC LAND SURVEY-SECTION                               2
+         CENSUS BLOCK/TRACT-1990-CENTROID                         2
+         ADDRESS MATCHING-STREET CENTERLINE                       2
+         ZIP+2 CENTROID                                           1
+         ZIP+4 CENTROID                                           1
+         CENSUS-OTHER                                             1
+         PUBLIC LAND SURVEY-QUARTER SECTION                       1
+         PUBLIC LAND SURVEY - SIXTEENTH SECTION                   1
+         LORAN C                                                  1
+         GPS CARRIER PHASE KINEMATIC RELATIVE POSITION            1
+         PUBLIC LAND SURVEY - FOOTING                             1
+\end{Verbatim}
+            
+    \begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{5}
+\tightlist
+\item
+  Now add attributes back in (using one year on sdwis df to filter =
+  distinct values) for better crosstabs
+\end{enumerate}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}14}]:} \PY{n}{sdwis\PYZus{}ECHOcoords\PYZus{}add} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{merge}\PY{p}{(}\PY{n}{sdwis\PYZus{}ECHOcoords}\PY{p}{,} \PY{n}{df}\PY{p}{[}\PY{n}{df}\PY{o}{.}\PY{n}{YEAR}\PY{o}{==}\PY{l+m+mi}{2018}\PY{p}{]}\PY{p}{,} \PY{n}{left\PYZus{}on}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{SDWA\PYZus{}IDS}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{right\PYZus{}on}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{PWSID}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{how}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{left}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{validate}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{1:1}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+         \PY{n}{sdwis\PYZus{}ECHOcoords\PYZus{}add}\PY{o}{.}\PY{n}{shape}
+\end{Verbatim}
+
+
+\begin{Verbatim}[commandchars=\\\{\}]
+{\color{outcolor}Out[{\color{outcolor}14}]:} (396660, 35)
+\end{Verbatim}
+            
+    \begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{6}
+\tightlist
+\item
+  Add new column for grouping small, medium, large (arbitrary on my
+  part, small cutoff from PNAS paper)
+\end{enumerate}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}23}]:} \PY{n}{sdwis\PYZus{}ECHOcoords\PYZus{}add}\PY{o}{.}\PY{n}{POPULATION\PYZus{}SERVED\PYZus{}COUNT}\PY{o}{.}\PY{n}{max}\PY{p}{(}\PY{p}{)}
+\end{Verbatim}
+
+
+\begin{Verbatim}[commandchars=\\\{\}]
+{\color{outcolor}Out[{\color{outcolor}23}]:} 10000000.0
+\end{Verbatim}
+            
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}24}]:} \PY{c+c1}{\PYZsh{} If just 2:}
+         \PY{c+c1}{\PYZsh{} sdwis\PYZus{}ECHOcoords\PYZus{}add[\PYZsq{}POP\PYZus{}SERV\PYZus{}CAT\PYZsq{}] = np.where(sdwis\PYZus{}ECHOcoords\PYZus{}add[\PYZsq{}POPULATION\PYZus{}SERVED\PYZus{}COUNT\PYZsq{}] \PYZlt{} 1000, \PYZsq{}Small\PYZsq{}, \PYZsq{}Large\PYZsq{})}
+         
+         \PY{n}{sdwis\PYZus{}ECHOcoords\PYZus{}add}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{POP\PYZus{}SERV\PYZus{}CAT}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{cut}\PY{p}{(}\PY{n}{sdwis\PYZus{}ECHOcoords\PYZus{}add}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{POPULATION\PYZus{}SERVED\PYZus{}COUNT}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{,} \PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,}\PY{l+m+mi}{500}\PY{p}{,}\PY{l+m+mi}{10000}\PY{p}{,}\PY{l+m+mi}{10000000}\PY{p}{]}\PY{p}{,} 
+                                                       \PY{n}{include\PYZus{}lowest}\PY{o}{=}\PY{k+kc}{True}\PY{p}{,} \PY{n}{labels}\PY{o}{=}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{small}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{medium}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{large}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}\PY{p}{)}
+         
+         \PY{n}{sdwis\PYZus{}ECHOcoords\PYZus{}add}\PY{o}{.}\PY{n}{head}\PY{p}{(}\PY{l+m+mi}{5}\PY{p}{)}
+\end{Verbatim}
+
+
+\begin{Verbatim}[commandchars=\\\{\}]
+{\color{outcolor}Out[{\color{outcolor}24}]:}     REGISTRY\_ID                                           FAC\_NAME   SDWA\_IDS  \textbackslash{}
+         0  1.100510e+11                  NARRAGANSETT INDIAN HEALTH CENTER  010502004   
+         1  1.100129e+11                                   JIMMERSONTOWN WS  020000001   
+         2  1.100129e+11  POARCH BAND OF CREEK INDIANS MONAIC RECREATION{\ldots}  040000002   
+         3  1.100479e+11                            PHEASANT CREEK (SOCO I)  043700001   
+         4  1.100479e+11                                       MINGUS CREEK  043700002   
+         
+              FAC\_LAT   FAC\_LONG          FAC\_COLLECTION\_METHOD  \textbackslash{}
+         0  41.415060 -71.647920  ADDRESS MATCHING-HOUSE NUMBER   
+         1  42.159880 -78.723560  ADDRESS MATCHING-HOUSE NUMBER   
+         2  31.123594 -87.627224  ADDRESS MATCHING-HOUSE NUMBER   
+         3  35.539710 -79.130864                 State Centroid   
+         4  35.539710 -79.130864                 State Centroid   
+         
+                                FAC\_REFERENCE\_POINT  FAC\_ACCURACY\_METERS EPA\_REGION  \textbackslash{}
+         0          CENTER OF A FACILITY OR STATION                 30.0          1   
+         1          CENTER OF A FACILITY OR STATION                 30.0          2   
+         2  ENTRANCE POINT OF A FACILITY OR STATION                 50.0          4   
+         3                                      NaN             100000.0          4   
+         4                                      NaN             100000.0          4   
+         
+            POPULATION\_SERVED\_COUNT PRIMACY\_TYPE PRIMARY\_SOURCE\_CODE PWS\_ACTIVITY\_CODE  \textbackslash{}
+         0                     40.0       Tribal                  GW                 I   
+         1                    296.0       Tribal                  GW                 A   
+         2                    750.0       Tribal                  GW                 A   
+         3                    800.0       Tribal                  SW                 I   
+         4                   1581.0       Tribal                  SW                 I   
+         
+                PWSID PWS\_TYPE\_CODE SERVICE\_CONNECTIONS\_COUNT STATE\_CODE ZIP\_CODE  \textbackslash{}
+         0  010502004         TNCWS                         1         RI    02813   
+         1  020000001           CWS                       120         NY    14779   
+         2  040000002           CWS                        71         AL    36502   
+         3  043700001           CWS                         1         NC    28719   
+         4  043700002           CWS                       527         NC    28719   
+         
+              YEAR  HEALTH\_BASED\_VIOLATION\_THIS\_YEAR  \textbackslash{}
+         0  2018.0                               0.0   
+         1  2018.0                               0.0   
+         2  2018.0                               0.0   
+         3  2018.0                               0.0   
+         4  2018.0                               0.0   
+         
+            NUM\_HEALTH\_BASED\_VIOLATIONS\_PREVIOUS\_YEAR  \textbackslash{}
+         0                                        0.0   
+         1                                        0.0   
+         2                                        0.0   
+         3                                        0.0   
+         4                                        0.0   
+         
+            NUM\_NON\_HEALTH\_BASED\_VIOLATIONS\_PREVIOUS\_YEAR  \textbackslash{}
+         0                                            0.0   
+         1                                            0.0   
+         2                                            0.0   
+         3                                            0.0   
+         4                                            0.0   
+         
+            NUM\_HEALTH\_BASED\_VIOLATIONS\_2\_YEARS\_AGO  \textbackslash{}
+         0                                      0.0   
+         1                                      0.0   
+         2                                      0.0   
+         3                                      0.0   
+         4                                      0.0   
+         
+            NUM\_NON\_HEALTH\_BASED\_VIOLATIONS\_2\_YEARS\_AGO  \textbackslash{}
+         0                                          0.0   
+         1                                          0.0   
+         2                                          0.0   
+         3                                          0.0   
+         4                                          0.0   
+         
+            NUM\_HEALTH\_BASED\_VIOLATIONS\_3\_YEARS\_AGO  \textbackslash{}
+         0                                      0.0   
+         1                                      0.0   
+         2                                      0.0   
+         3                                      0.0   
+         4                                      0.0   
+         
+            NUM\_NON\_HEALTH\_BASED\_VIOLATIONS\_3\_YEARS\_AGO  \textbackslash{}
+         0                                          0.0   
+         1                                          0.0   
+         2                                          0.0   
+         3                                          0.0   
+         4                                          0.0   
+         
+            NUM\_HEALTH\_BASED\_VIOLATIONS\_4\_YEARS\_AGO  \textbackslash{}
+         0                                      0.0   
+         1                                      0.0   
+         2                                      0.0   
+         3                                      0.0   
+         4                                      0.0   
+         
+            NUM\_NON\_HEALTH\_BASED\_VIOLATIONS\_4\_YEARS\_AGO  \textbackslash{}
+         0                                          0.0   
+         1                                          0.0   
+         2                                          0.0   
+         3                                          0.0   
+         4                                          0.0   
+         
+            NUM\_HEALTH\_BASED\_VIOLATIONS\_5\_YEARS\_AGO  \textbackslash{}
+         0                                      0.0   
+         1                                      0.0   
+         2                                      0.0   
+         3                                      0.0   
+         4                                      0.0   
+         
+            NUM\_NON\_HEALTH\_BASED\_VIOLATIONS\_5\_YEARS\_AGO  \textbackslash{}
+         0                                          0.0   
+         1                                          0.0   
+         2                                          0.0   
+         3                                          0.0   
+         4                                          0.0   
+         
+            NUM\_ENFORCEMENTS\_PREVIOUS\_YEAR  NUM\_ENFORCEMENTS\_2\_YEARS\_AGO  \textbackslash{}
+         0                             0.0                           0.0   
+         1                             0.0                           0.0   
+         2                             0.0                           0.0   
+         3                             0.0                           0.0   
+         4                             0.0                           0.0   
+         
+            NUM\_ENFORCEMENTS\_3\_YEARS\_AGO  NUM\_ENFORCEMENTS\_4\_YEARS\_AGO  \textbackslash{}
+         0                           2.0                           0.0   
+         1                           0.0                           1.0   
+         2                           0.0                           0.0   
+         3                           0.0                           0.0   
+         4                           0.0                           0.0   
+         
+            NUM\_ENFORCEMENTS\_5\_YEARS\_AGO POP\_SERV\_CAT  
+         0                           0.0        small  
+         1                           0.0        small  
+         2                           0.0       medium  
+         3                           0.0       medium  
+         4                           0.0       medium  
+\end{Verbatim}
+            
+    \begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{7}
+\tightlist
+\item
+  Crosstabs: also filtering to PWS\_TYPE\_CODE = `CWS' \&
+  PWS\_ACTIVITY\_CODE = `A'
+\end{enumerate}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}81}]:} \PY{n}{my\PYZus{}style} \PY{o}{=} \PY{l+s+s2}{\PYZdq{}\PYZdq{}\PYZdq{}}\PY{l+s+s2}{background\PYZhy{}color: rgba(0, 0, 0, 0);}
+         \PY{l+s+s2}{border\PYZhy{}bottom\PYZhy{}color: rgb(0, 0, 0);}
+         \PY{l+s+s2}{border\PYZhy{}bottom\PYZhy{}style: none;}
+         \PY{l+s+s2}{border\PYZhy{}bottom\PYZhy{}width: 0px;}
+         \PY{l+s+s2}{border\PYZhy{}collapse: collapse;}
+         \PY{l+s+s2}{border\PYZhy{}image\PYZhy{}outset: 0px;}
+         \PY{l+s+s2}{border\PYZhy{}image\PYZhy{}repeat: stretch;}
+         \PY{l+s+s2}{border\PYZhy{}image\PYZhy{}slice: 100}\PY{l+s+s2}{\PYZpc{}}\PY{l+s+s2}{;}
+         \PY{l+s+s2}{border\PYZhy{}image\PYZhy{}source: none;}
+         \PY{l+s+s2}{border\PYZhy{}image\PYZhy{}width: 1;}
+         \PY{l+s+s2}{border\PYZhy{}left\PYZhy{}color: rgb(0, 0, 0);}
+         \PY{l+s+s2}{border\PYZhy{}left\PYZhy{}style: none;}
+         \PY{l+s+s2}{border\PYZhy{}left\PYZhy{}width: 0px;}
+         \PY{l+s+s2}{border\PYZhy{}right\PYZhy{}color: rgb(0, 0, 0);}
+         \PY{l+s+s2}{border\PYZhy{}right\PYZhy{}style: none;}
+         \PY{l+s+s2}{border\PYZhy{}right\PYZhy{}width: 0px;}
+         \PY{l+s+s2}{border\PYZhy{}top\PYZhy{}color: rgb(0, 0, 0);}
+         \PY{l+s+s2}{border\PYZhy{}top\PYZhy{}style: none;}
+         \PY{l+s+s2}{border\PYZhy{}top\PYZhy{}width: 0px;}
+         \PY{l+s+s2}{box\PYZhy{}sizing: border\PYZhy{}box;}
+         \PY{l+s+s2}{color: rgb(0, 0, 0);}
+         \PY{l+s+s2}{display: table;}
+         \PY{l+s+s2}{font\PYZhy{}family: }\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Helvetica Neue}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{, Helvetica, Arial, sans\PYZhy{}serif;}
+         \PY{l+s+s2}{font\PYZhy{}size: 12px;}
+         \PY{l+s+s2}{height: 1675px;}
+         \PY{l+s+s2}{line\PYZhy{}height: 20px;}
+         \PY{l+s+s2}{margin\PYZhy{}left: 0px;}
+         \PY{l+s+s2}{margin\PYZhy{}right: 0px;}
+         \PY{l+s+s2}{margin\PYZhy{}top: 12px;}
+         \PY{l+s+s2}{table\PYZhy{}layout: fixed;}
+         \PY{l+s+s2}{text\PYZhy{}size\PYZhy{}adjust: 100}\PY{l+s+s2}{\PYZpc{}}\PY{l+s+s2}{;}
+         \PY{l+s+s2}{width: 700px;}
+         \PY{l+s+s2}{\PYZhy{}webkit\PYZhy{}border\PYZhy{}horizontal\PYZhy{}spacing: 0px;}
+         \PY{l+s+s2}{\PYZhy{}webkit\PYZhy{}border\PYZhy{}vertical\PYZhy{}spacing: 0px;}
+         \PY{l+s+s2}{\PYZhy{}webkit\PYZhy{}tap\PYZhy{}highlight\PYZhy{}color: rgba(0, 0, 0, 0);}\PY{l+s+s2}{\PYZdq{}\PYZdq{}\PYZdq{}}
+\end{Verbatim}
+
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}82}]:} \PY{k}{def} \PY{n+nf}{HTML\PYZus{}with\PYZus{}style}\PY{p}{(}\PY{n}{df}\PY{p}{,} \PY{n}{style}\PY{o}{=}\PY{k+kc}{None}\PY{p}{,} \PY{n}{random\PYZus{}id}\PY{o}{=}\PY{k+kc}{None}\PY{p}{)}\PY{p}{:}
+             \PY{k+kn}{from} \PY{n+nn}{IPython}\PY{n+nn}{.}\PY{n+nn}{display} \PY{k}{import} \PY{n}{HTML}
+             \PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
+             \PY{k+kn}{import} \PY{n+nn}{re}
+         
+             \PY{n}{df\PYZus{}html} \PY{o}{=} \PY{n}{df}\PY{o}{.}\PY{n}{to\PYZus{}html}\PY{p}{(}\PY{p}{)}
+         
+             \PY{k}{if} \PY{n}{random\PYZus{}id} \PY{o+ow}{is} \PY{k+kc}{None}\PY{p}{:}
+                 \PY{n}{random\PYZus{}id} \PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{id}\PY{l+s+si}{\PYZpc{}d}\PY{l+s+s1}{\PYZsq{}} \PY{o}{\PYZpc{}} \PY{n}{np}\PY{o}{.}\PY{n}{random}\PY{o}{.}\PY{n}{choice}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{arange}\PY{p}{(}\PY{l+m+mi}{1000000}\PY{p}{)}\PY{p}{)}
+         
+             \PY{k}{if} \PY{n}{style} \PY{o+ow}{is} \PY{k+kc}{None}\PY{p}{:}
+                 \PY{n}{style} \PY{o}{=} \PY{l+s+s2}{\PYZdq{}\PYZdq{}\PYZdq{}}
+         \PY{l+s+s2}{        \PYZlt{}style\PYZgt{}}
+         \PY{l+s+s2}{            table\PYZsh{}}\PY{l+s+si}{\PYZob{}random\PYZus{}id\PYZcb{}}\PY{l+s+s2}{ }\PY{l+s+s2}{\PYZob{}\PYZob{}}\PY{l+s+s2}{color: blue\PYZcb{}\PYZcb{}}
+         \PY{l+s+s2}{        \PYZlt{}/style\PYZgt{}}
+         \PY{l+s+s2}{        }\PY{l+s+s2}{\PYZdq{}\PYZdq{}\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{random\PYZus{}id}\PY{o}{=}\PY{n}{random\PYZus{}id}\PY{p}{)}
+             \PY{k}{else}\PY{p}{:}
+                 \PY{n}{new\PYZus{}style} \PY{o}{=} \PY{p}{[}\PY{p}{]}
+                 \PY{n}{s} \PY{o}{=} \PY{n}{re}\PY{o}{.}\PY{n}{sub}\PY{p}{(}\PY{l+s+sa}{r}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{\PYZlt{}/?style\PYZgt{}}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{style}\PY{p}{)}\PY{o}{.}\PY{n}{strip}\PY{p}{(}\PY{p}{)}
+                 \PY{k}{for} \PY{n}{line} \PY{o+ow}{in} \PY{n}{s}\PY{o}{.}\PY{n}{split}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+se}{\PYZbs{}n}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}\PY{p}{:}
+                         \PY{n}{line} \PY{o}{=} \PY{n}{line}\PY{o}{.}\PY{n}{strip}\PY{p}{(}\PY{p}{)}
+                         \PY{k}{if} \PY{o+ow}{not} \PY{n}{re}\PY{o}{.}\PY{n}{match}\PY{p}{(}\PY{l+s+sa}{r}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{\PYZca{}table}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{line}\PY{p}{)}\PY{p}{:}
+                             \PY{n}{line} \PY{o}{=} \PY{n}{re}\PY{o}{.}\PY{n}{sub}\PY{p}{(}\PY{l+s+sa}{r}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{\PYZca{}}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{table }\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{line}\PY{p}{)}
+                         \PY{n}{new\PYZus{}style}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{line}\PY{p}{)}
+                 \PY{n}{new\PYZus{}style} \PY{o}{=} \PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{\PYZlt{}style\PYZgt{}}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{+} \PY{n}{new\PYZus{}style} \PY{o}{+} \PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{\PYZlt{}/style\PYZgt{}}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}
+         
+                 \PY{n}{style} \PY{o}{=} \PY{n}{re}\PY{o}{.}\PY{n}{sub}\PY{p}{(}\PY{l+s+sa}{r}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{table(\PYZsh{}}\PY{l+s+s1}{\PYZbs{}}\PY{l+s+s1}{S+)?}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{table\PYZsh{}}\PY{l+s+si}{\PYZpc{}s}\PY{l+s+s1}{\PYZsq{}} \PY{o}{\PYZpc{}} \PY{n}{random\PYZus{}id}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+se}{\PYZbs{}n}\PY{l+s+s1}{\PYZsq{}}\PY{o}{.}\PY{n}{join}\PY{p}{(}\PY{n}{new\PYZus{}style}\PY{p}{)}\PY{p}{)}
+         
+             \PY{n}{df\PYZus{}html} \PY{o}{=} \PY{n}{re}\PY{o}{.}\PY{n}{sub}\PY{p}{(}\PY{l+s+sa}{r}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{\PYZlt{}table}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+sa}{r}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{\PYZlt{}table id=}\PY{l+s+si}{\PYZpc{}s}\PY{l+s+s1}{ }\PY{l+s+s1}{\PYZsq{}} \PY{o}{\PYZpc{}} \PY{n}{random\PYZus{}id}\PY{p}{,} \PY{n}{df\PYZus{}html}\PY{p}{)}
+         
+             \PY{k}{return} \PY{n}{HTML}\PY{p}{(}\PY{n}{style} \PY{o}{+} \PY{n}{df\PYZus{}html}\PY{p}{)}
+\end{Verbatim}
+
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}86}]:} \PY{n}{filtered1} \PY{o}{=} \PY{n}{sdwis\PYZus{}ECHOcoords\PYZus{}add}\PY{p}{[}\PY{p}{(}\PY{n}{sdwis\PYZus{}ECHOcoords\PYZus{}add}\PY{o}{.}\PY{n}{PWS\PYZus{}TYPE\PYZus{}CODE} \PY{o}{==} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{CWS}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)} \PY{o}{\PYZam{}}
+                                          \PY{p}{(}\PY{n}{sdwis\PYZus{}ECHOcoords\PYZus{}add}\PY{o}{.}\PY{n}{PWS\PYZus{}ACTIVITY\PYZus{}CODE} \PY{o}{==} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{A}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}\PY{p}{]}
+         \PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{number of filtered records}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n+nb}{len}\PY{p}{(}\PY{n}{filtered1}\PY{o}{.}\PY{n}{index}\PY{p}{)}\PY{p}{)}
+         
+         \PY{n}{FACtype\PYZus{}tab2} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{crosstab}\PY{p}{(}\PY{n}{filtered1}\PY{o}{.}\PY{n}{FAC\PYZus{}COLLECTION\PYZus{}METHOD}\PY{p}{,} 
+                                    \PY{n}{filtered1}\PY{o}{.}\PY{n}{POP\PYZus{}SERV\PYZus{}CAT}\PY{p}{,} \PY{n}{margins}\PY{o}{=}\PY{k+kc}{False}\PY{p}{)} \PY{c+c1}{\PYZsh{}, normalize = \PYZsq{}columns\PYZsq{})}
+         
+         
+         \PY{n}{FACtype\PYZus{}tab2} \PY{o}{=} \PY{n}{FACtype\PYZus{}tab2}\PY{o}{.}\PY{n}{sort\PYZus{}values}\PY{p}{(}\PY{n}{by} \PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{small}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{ascending} \PY{o}{=} \PY{k+kc}{False}\PY{p}{)}
+         \PY{c+c1}{\PYZsh{} print(FACtype\PYZus{}tab2.to\PYZus{}html(border=0, justify=\PYZsq{}inherit\PYZsq{}))}
+         \PY{c+c1}{\PYZsh{} HTML\PYZus{}with\PYZus{}style(FACtype\PYZus{}tab2, \PYZsq{}\PYZlt{}style\PYZgt{}table \PYZob{}\PYZob{}\PYZob{}\PYZcb{}\PYZcb{}\PYZcb{}\PYZlt{}/style\PYZgt{}\PYZsq{}.format(my\PYZus{}style))}
+\end{Verbatim}
+
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+number of filtered records 48580
+
+    \end{Verbatim}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}89}]:} \PY{n}{FACtype\PYZus{}tab2}
+\end{Verbatim}
+
+
+\begin{Verbatim}[commandchars=\\\{\}]
+{\color{outcolor}Out[{\color{outcolor}89}]:} POP\_SERV\_CAT                                        small  medium  large
+         FAC\_COLLECTION\_METHOD                                                   
+         County Centroid                                     15184    8945   1685
+         ADDRESS MATCHING-HOUSE NUMBER                        3506    3636   1137
+         Zip Code Centroid                                    2666    1530    445
+         INTERPOLATION-PHOTO                                  2342     679    181
+         Place Name Centroid                                   935    1360    385
+         State Centroid                                        749     539    133
+         INTERPOLATION-MAP                                     148     365     69
+         ADDRESS MATCHING-BLOCK FACE                           124      68      9
+         ZIP CODE-CENTROID                                      90      64      2
+         GPS - UNSPECIFIED                                      73      69     15
+         Post Office Name Centroid                              73      28      8
+         UNKNOWN                                                53      57     13
+         ADDRESS MATCHING-NEAREST INTERSECTION                  48      46      4
+         GPS CODE (PSEUDO RANGE) DIFFERENTIAL                   40      77     19
+         GPS CARRIER PHASE STATIC RELATIVE POSITION             33      50     23
+         INTERPOLATION-SATELLITE                                15      11      5
+         INTERPOLATION-OTHER                                    13       4      0
+         GPS CODE (PSEUDO RANGE) PRECISE POSITION                9      13      3
+         ADDRESS MATCHING-OTHER                                  7       9      4
+         INTERPOLATION - DIGITAL MAP SRCE (TIGER)                7      12     33
+         THE GEOGRAPHIC COORDINATE DETERMINATION METHOD {\ldots}      7       6      0
+         THE GEOGRAPHIC COORDINATE DETERMINATION METHOD {\ldots}      4      25      5
+         GPS CODE (PSEUDO RANGE) STANDARD POSITION (SA OFF)      2       3      3
+         THE GEOGRAPHIC COORDINATE DETERMINATION METHOD {\ldots}      2       6      0
+         ADDRESS MATCHING-STREET CENTERLINE                      2       0      0
+         THE GEOGRAPHIC COORDINATE DETERMINATION METHOD {\ldots}      1       7      5
+         PUBLIC LAND SURVEY - FOOTING                            1       0      0
+         PUBLIC LAND SURVEY-SECTION                              1       1      0
+         PUBLIC LAND SURVEY - SIXTEENTH SECTION                  1       0      0
+         CLASSICAL SURVEYING TECHNIQUES                          1       2      0
+         PUBLIC LAND SURVEY-QUARTER SECTION                      0       1      0
+         CENSUS BLOCK/GROUP-1990-CENTROID                        0       1      0
+         GPS CODE (PSEUDO RANGE) STANDARD POSITION (SA ON)       0       0      1
+         GDT-ADDRESS MATCHING (GEOCODING)                        0       1      1
+         US BUREAU OF CENSUS BLOCK ESTABLISHED FOR YEAR {\ldots}      0       6      2
+         CENSUS BLOCK/TRACT-1990-CENTROID                        0       1      0
+         CENSUS-OTHER                                            0       0      1
+\end{Verbatim}
+            
+    \begin{center}\rule{0.5\linewidth}{\linethickness}\end{center}
+
+\hypertarget{misc}{%
+\subsubsection{MISC}\label{misc}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Check on a Boston facility:
+\end{enumerate}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}53}]:} \PY{n}{ECHOdata\PYZus{}sdwis}\PY{p}{[}\PY{n}{ECHOdata\PYZus{}sdwis}\PY{o}{.}\PY{n}{FAC\PYZus{}CITY} \PY{o}{==} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{BOSTON}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}
+\end{Verbatim}
+
+
+\begin{Verbatim}[commandchars=\\\{\}]
+{\color{outcolor}Out[{\color{outcolor}53}]:}           REGISTRY\_ID                         FAC\_NAME FAC\_STREET FAC\_CITY  \textbackslash{}
+         4394     1.100519e+11         BLUEDROPWATER @ MASSPORT        NaN   BOSTON   
+         1130479  1.100224e+11                             MWRA        NaN   BOSTON   
+         1223420  1.100519e+11  REVLYN CONTRACTING COMPANY(VND)        NaN   BOSTON   
+         1971619  1.100131e+11                           BOSTON        NaN   BOSTON   
+         
+                 FAC\_STATE FAC\_ZIP FAC\_COUNTY  FAC\_FIPS\_CODE  FAC\_EPA\_REGION  \textbackslash{}
+         4394           MA   02210    SUFFOLK            NaN             1.0   
+         1130479        MA     NaN    SUFFOLK            NaN             1.0   
+         1223420        MA   02128    SUFFOLK            NaN             1.0   
+         1971619        GA     NaN     THOMAS            NaN             4.0   
+         
+                 FAC\_INDIAN\_CNTRY\_FLG FAC\_FEDERAL\_FLG FAC\_US\_MEX\_BORDER\_FLG  \textbackslash{}
+         4394                       N             NaN                   NaN   
+         1130479                    N             NaN                   NaN   
+         1223420                    N             NaN                   NaN   
+         1971619                    N             NaN                   NaN   
+         
+                 FAC\_CHESAPEAKE\_BAY\_FLG FAC\_NAA\_FLAG    FAC\_LAT   FAC\_LONG  \textbackslash{}
+         4394                       NaN          NaN  42.348790 -71.041485   
+         1130479                    NaN          NaN  42.331960 -71.020173   
+         1223420                    NaN          NaN  42.380761 -71.040320   
+         1971619                    NaN          NaN  30.791208 -83.789352   
+         
+                 FAC\_MAP\_ICON FAC\_COLLECTION\_METHOD FAC\_REFERENCE\_POINT  \textbackslash{}
+         4394       no\_ll.png     Zip Code Centroid                 NaN   
+         1130479    no\_ll.png   Place Name Centroid                 NaN   
+         1223420    no\_ll.png     Zip Code Centroid                 NaN   
+         1971619    no\_ll.png   Place Name Centroid                 NaN   
+         
+                  FAC\_ACCURACY\_METERS FAC\_DERIVED\_TRIBES  FAC\_DERIVED\_HUC  \textbackslash{}
+         4394                 10000.0                NaN              NaN   
+         1130479              20000.0                NaN              NaN   
+         1223420              10000.0                NaN              NaN   
+         1971619              20000.0                NaN              NaN   
+         
+                  FAC\_DERIVED\_WBD  FAC\_DERIVED\_STCTY\_FIPS  FAC\_DERIVED\_ZIP  \textbackslash{}
+         4394                 NaN                     NaN              NaN   
+         1130479              NaN                     NaN              NaN   
+         1223420              NaN                     NaN              NaN   
+         1971619              NaN                     NaN              NaN   
+         
+                  FAC\_DERIVED\_CD113  FAC\_DERIVED\_CB2010  FAC\_PERCENT\_MINORITY  \textbackslash{}
+         4394                   NaN                 NaN                   NaN   
+         1130479                NaN                 NaN                   NaN   
+         1223420                NaN                 NaN                   NaN   
+         1971619                NaN                 NaN                   NaN   
+         
+                  FAC\_POP\_DEN FAC\_MAJOR\_FLAG FAC\_ACTIVE\_FLAG FAC\_MYRTK\_UNIVERSE  \textbackslash{}
+         4394             NaN            NaN             NaN                NNN   
+         1130479          NaN            NaN               Y                NNN   
+         1223420          NaN            NaN             NaN                NNN   
+         1971619          NaN            NaN               Y                NNN   
+         
+                  FAC\_INSPECTION\_COUNT FAC\_DATE\_LAST\_INSPECTION  \textbackslash{}
+         4394                        0                      NaN   
+         1130479                     0                      NaN   
+         1223420                     0                      NaN   
+         1971619                     0                      NaN   
+         
+                  FAC\_DAYS\_LAST\_INSPECTION  FAC\_INFORMAL\_COUNT  \textbackslash{}
+         4394                          NaN                   0   
+         1130479                       NaN                   0   
+         1223420                       NaN                   0   
+         1971619                       NaN                   3   
+         
+                 FAC\_DATE\_LAST\_INFORMAL\_ACTION  FAC\_FORMAL\_ACTION\_COUNT  \textbackslash{}
+         4394                              NaN                        0   
+         1130479                           NaN                        0   
+         1223420                           NaN                        0   
+         1971619                    12/27/2017                        0   
+         
+                 FAC\_DATE\_LAST\_FORMAL\_ACTION  FAC\_TOTAL\_PENALTIES  FAC\_PENALTY\_COUNT  \textbackslash{}
+         4394                            NaN                    0                NaN   
+         1130479                  07/12/2001                    0                NaN   
+         1223420                  12/01/2008                    0                NaN   
+         1971619                         NaN                    0                NaN   
+         
+                 FAC\_DATE\_LAST\_PENALTY  FAC\_LAST\_PENALTY\_AMT  FAC\_QTRS\_WITH\_NC  \textbackslash{}
+         4394                      NaN                   NaN               0.0   
+         1130479                   NaN                   NaN               0.0   
+         1223420                   NaN                   NaN               0.0   
+         1971619                   NaN                   NaN               4.0   
+         
+                  FAC\_PROGRAMS\_WITH\_SNC FAC\_COMPLIANCE\_STATUS FAC\_SNC\_FLG  \textbackslash{}
+         4394                         0          No Violation           N   
+         1130479                      0          No Violation           N   
+         1223420                      0          No Violation           N   
+         1971619                      0          No Violation           N   
+         
+                 FAC\_3YR\_COMPLIANCE\_HISTORY AIR\_FLAG NPDES\_FLAG SDWIS\_FLAG RCRA\_FLAG  \textbackslash{}
+         4394                  \_\_\_\_\_\_\_\_\_\_\_\_        N          N          Y         N   
+         1130479               \_\_\_\_\_\_\_\_\_\_\_\_        N          N          Y         N   
+         1223420               \_\_\_\_\_\_\_\_\_\_\_\_        N          N          Y         N   
+         1971619               \_\_\_\_VVVV\_\_\_\_        N          N          Y         N   
+         
+                 TRI\_FLAG GHG\_FLAG AIR\_IDS CAA\_PERMIT\_TYPES CAA\_NAICS CAA\_SICS  \textbackslash{}
+         4394           N        N     NaN              NaN       NaN      NaN   
+         1130479        N        N     NaN              NaN       NaN      NaN   
+         1223420        N        N     NaN              NaN       NaN      NaN   
+         1971619        N        N     NaN              NaN       NaN      NaN   
+         
+                  CAA\_EVALUATION\_COUNT  CAA\_DAYS\_LAST\_EVALUATION  CAA\_INFORMAL\_COUNT  \textbackslash{}
+         4394                      NaN                       NaN                 NaN   
+         1130479                   NaN                       NaN                 NaN   
+         1223420                   NaN                       NaN                 NaN   
+         1971619                   NaN                       NaN                 NaN   
+         
+                  CAA\_FORMAL\_ACTION\_COUNT CAA\_DATE\_LAST\_FORMAL\_ACTION  CAA\_PENALTIES  \textbackslash{}
+         4394                         NaN                         NaN            NaN   
+         1130479                      NaN                         NaN            NaN   
+         1223420                      NaN                         NaN            NaN   
+         1971619                      NaN                         NaN            NaN   
+         
+                 CAA\_LAST\_PENALTY\_DATE  CAA\_LAST\_PENALTY\_AMT  CAA\_QTRS\_WITH\_NC  \textbackslash{}
+         4394                      NaN                   NaN               NaN   
+         1130479                   NaN                   NaN               NaN   
+         1223420                   NaN                   NaN               NaN   
+         1971619                   NaN                   NaN               NaN   
+         
+                 CAA\_COMPLIANCE\_STATUS CAA\_HPV\_FLAG CAA\_3YR\_COMPL\_QTRS\_HISTORY  \textbackslash{}
+         4394                      NaN            N                        NaN   
+         1130479                   NaN            N                        NaN   
+         1223420                   NaN            N                        NaN   
+         1971619                   NaN            N                        NaN   
+         
+                 NPDES\_IDS CWA\_PERMIT\_TYPES CWA\_COMPLIANCE\_TRACKING CWA\_NAICS CWA\_SICS  \textbackslash{}
+         4394          NaN              NaN                     NaN       NaN      NaN   
+         1130479       NaN              NaN                     NaN       NaN      NaN   
+         1223420       NaN              NaN                     NaN       NaN      NaN   
+         1971619       NaN              NaN                     NaN       NaN      NaN   
+         
+                  CWA\_INSPECTION\_COUNT  CWA\_DAYS\_LAST\_INSPECTION  CWA\_INFORMAL\_COUNT  \textbackslash{}
+         4394                      NaN                       NaN                 NaN   
+         1130479                   NaN                       NaN                 NaN   
+         1223420                   NaN                       NaN                 NaN   
+         1971619                   NaN                       NaN                 NaN   
+         
+                  CWA\_FORMAL\_ACTION\_COUNT CWA\_DATE\_LAST\_FORMAL\_ACTION  CWA\_PENALTIES  \textbackslash{}
+         4394                         NaN                         NaN            NaN   
+         1130479                      NaN                         NaN            NaN   
+         1223420                      NaN                         NaN            NaN   
+         1971619                      NaN                         NaN            NaN   
+         
+                 CWA\_LAST\_PENALTY\_DATE  CWA\_LAST\_PENALTY\_AMT  CWA\_QTRS\_WITH\_NC  \textbackslash{}
+         4394                      NaN                   NaN               NaN   
+         1130479                   NaN                   NaN               NaN   
+         1223420                   NaN                   NaN               NaN   
+         1971619                   NaN                   NaN               NaN   
+         
+                 CWA\_COMPLIANCE\_STATUS CWA\_SNC\_FLAG CWA\_13QTRS\_COMPL\_HISTORY  \textbackslash{}
+         4394                      NaN            N                      NaN   
+         1130479                   NaN            N                      NaN   
+         1223420                   NaN            N                      NaN   
+         1971619                   NaN            N                      NaN   
+         
+                  CWA\_13QTRS\_EFFLNT\_EXCEEDANCES  CWA\_3\_YR\_QNCR\_CODES RCRA\_IDS  \textbackslash{}
+         4394                               NaN                  NaN      NaN   
+         1130479                            NaN                  NaN      NaN   
+         1223420                            NaN                  NaN      NaN   
+         1971619                            NaN                  NaN      NaN   
+         
+                 RCRA\_PERMIT\_TYPES RCRA\_NAICS  RCRA\_INSPECTION\_COUNT  \textbackslash{}
+         4394                  NaN        NaN                    NaN   
+         1130479               NaN        NaN                    NaN   
+         1223420               NaN        NaN                    NaN   
+         1971619               NaN        NaN                    NaN   
+         
+                  RCRA\_DAYS\_LAST\_EVALUATION  RCRA\_INFORMAL\_COUNT  \textbackslash{}
+         4394                           NaN                  NaN   
+         1130479                        NaN                  NaN   
+         1223420                        NaN                  NaN   
+         1971619                        NaN                  NaN   
+         
+                  RCRA\_FORMAL\_ACTION\_COUNT RCRA\_DATE\_LAST\_FORMAL\_ACTION  \textbackslash{}
+         4394                          NaN                          NaN   
+         1130479                       NaN                          NaN   
+         1223420                       NaN                          NaN   
+         1971619                       NaN                          NaN   
+         
+                  RCRA\_PENALTIES RCRA\_LAST\_PENALTY\_DATE  RCRA\_LAST\_PENALTY\_AMT  \textbackslash{}
+         4394                NaN                    NaN                    NaN   
+         1130479             NaN                    NaN                    NaN   
+         1223420             NaN                    NaN                    NaN   
+         1971619             NaN                    NaN                    NaN   
+         
+                  RCRA\_QTRS\_WITH\_NC RCRA\_COMPLIANCE\_STATUS RCRA\_SNC\_FLAG  \textbackslash{}
+         4394                   NaN                    NaN             N   
+         1130479                NaN                    NaN             N   
+         1223420                NaN                    NaN             N   
+         1971619                NaN                    NaN             N   
+         
+                 RCRA\_3YR\_COMPL\_QTRS\_HISTORY   SDWA\_IDS  \textbackslash{}
+         4394                            NaN  MA3035018   
+         1130479                         NaN  MA6000000   
+         1223420                         NaN  MA3035014   
+         1971619                         NaN  GA2750000   
+         
+                               SDWA\_SYSTEM\_TYPES  SDWA\_INFORMAL\_COUNT  \textbackslash{}
+         4394     Transient non-community system                  NaN   
+         1130479          Community water system                  NaN   
+         1223420  Transient non-community system                  NaN   
+         1971619          Community water system                  3.0   
+         
+                  SDWA\_FORMAL\_ACTION\_COUNT SDWA\_COMPLIANCE\_STATUS SDWA\_SNC\_FLAG  \textbackslash{}
+         4394                          NaN           No Violation             N   
+         1130479                       NaN           No Violation             N   
+         1223420                       NaN           No Violation             N   
+         1971619                       NaN           No Violation             N   
+         
+                 TRI\_IDS  TRI\_RELEASES\_TRANSFERS  TRI\_ON\_SITE\_RELEASES  \textbackslash{}
+         4394        NaN                     NaN                   NaN   
+         1130479     NaN                     NaN                   NaN   
+         1223420     NaN                     NaN                   NaN   
+         1971619     NaN                     NaN                   NaN   
+         
+                  TRI\_OFF\_SITE\_TRANSFERS TRI\_REPORTER\_IN\_PAST FEC\_CASE\_IDS  \textbackslash{}
+         4394                        NaN                  NaN          NaN   
+         1130479                     NaN                  NaN          NaN   
+         1223420                     NaN                  NaN          NaN   
+         1971619                     NaN                  NaN          NaN   
+         
+                  FEC\_NUMBER\_OF\_CASES FEC\_LAST\_CASE\_DATE  FEC\_TOTAL\_PENALTIES GHG\_IDS  \textbackslash{}
+         4394                     NaN                NaN                  NaN     NaN   
+         1130479                  NaN                NaN                  NaN     NaN   
+         1223420                  NaN                NaN                  NaN     NaN   
+         1971619                  NaN                NaN                  NaN     NaN   
+         
+                  GHG\_CO2\_RELEASES                                            DFR\_URL  \textbackslash{}
+         4394                  NaN  http://echo.epa.gov/detailed-facility-report?f{\ldots}   
+         1130479               NaN  http://echo.epa.gov/detailed-facility-report?f{\ldots}   
+         1223420               NaN  http://echo.epa.gov/detailed-facility-report?f{\ldots}   
+         1971619               NaN  http://echo.epa.gov/detailed-facility-report?f{\ldots}   
+         
+                 FAC\_SIC\_CODES FAC\_NAICS\_CODES FAC\_DATE\_LAST\_INSPECTION\_EPA  \textbackslash{}
+         4394              NaN             NaN                          NaN   
+         1130479           NaN             NaN                          NaN   
+         1223420           NaN             NaN                          NaN   
+         1971619           NaN             NaN                          NaN   
+         
+                 FAC\_DATE\_LAST\_INSPECTION\_STATE FAC\_DATE\_LAST\_FORMAL\_ACT\_EPA  \textbackslash{}
+         4394                               NaN                          NaN   
+         1130479                            NaN                   06/29/1993   
+         1223420                            NaN                          NaN   
+         1971619                            NaN                          NaN   
+         
+                 FAC\_DATE\_LAST\_FORMAL\_ACT\_ST FAC\_DATE\_LAST\_INFORMAL\_ACT\_EPA  \textbackslash{}
+         4394                            NaN                            NaN   
+         1130479                  07/12/2001                            NaN   
+         1223420                  12/01/2008                            NaN   
+         1971619                         NaN                            NaN   
+         
+                 FAC\_DATE\_LAST\_INFORMAL\_ACT\_ST FAC\_FEDERAL\_AGENCY TRI\_REPORTER  \textbackslash{}
+         4394                              NaN                NaN          NaN   
+         1130479                           NaN                NaN          NaN   
+         1223420                           NaN                NaN          NaN   
+         1971619                    12/27/2017                NaN          NaN   
+         
+                 FAC\_IMP\_WATER\_FLG EJSCREEN\_FLAG\_US  
+         4394                  NaN                N  
+         1130479               NaN                N  
+         1223420               NaN                N  
+         1971619               NaN                N  
+\end{Verbatim}
+            
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}54}]:} \PY{n}{df}\PY{p}{[}\PY{n}{df}\PY{o}{.}\PY{n}{PWSID} \PY{o}{==} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{MA6000000}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}
+\end{Verbatim}
+
+
+\begin{Verbatim}[commandchars=\\\{\}]
+{\color{outcolor}Out[{\color{outcolor}54}]:}         EPA\_REGION  POPULATION\_SERVED\_COUNT PRIMACY\_TYPE PRIMARY\_SOURCE\_CODE  \textbackslash{}
+         134419          01                2550000.0        State                  SW   
+         555663          01                2550000.0        State                  SW   
+         976907          01                2550000.0        State                  SW   
+         1398151         01                2550000.0        State                  SW   
+         1819395         01                2550000.0        State                  SW   
+         
+                 PWS\_ACTIVITY\_CODE      PWSID PWS\_TYPE\_CODE SERVICE\_CONNECTIONS\_COUNT  \textbackslash{}
+         134419                  A  MA6000000           CWS                         1   
+         555663                  A  MA6000000           CWS                         1   
+         976907                  A  MA6000000           CWS                         1   
+         1398151                 A  MA6000000           CWS                         1   
+         1819395                 A  MA6000000           CWS                         1   
+         
+                 STATE\_CODE ZIP\_CODE    YEAR  HEALTH\_BASED\_VIOLATION\_THIS\_YEAR  \textbackslash{}
+         134419          MA    02129  2018.0                               0.0   
+         555663          MA    02129  2017.0                               0.0   
+         976907          MA    02129  2016.0                               0.0   
+         1398151         MA    02129  2015.0                               0.0   
+         1819395         MA    02129  2014.0                               0.0   
+         
+                  NUM\_HEALTH\_BASED\_VIOLATIONS\_PREVIOUS\_YEAR  \textbackslash{}
+         134419                                         0.0   
+         555663                                         0.0   
+         976907                                         0.0   
+         1398151                                        0.0   
+         1819395                                        0.0   
+         
+                  NUM\_NON\_HEALTH\_BASED\_VIOLATIONS\_PREVIOUS\_YEAR  \textbackslash{}
+         134419                                             0.0   
+         555663                                             0.0   
+         976907                                             0.0   
+         1398151                                            0.0   
+         1819395                                            0.0   
+         
+                  NUM\_HEALTH\_BASED\_VIOLATIONS\_2\_YEARS\_AGO  \textbackslash{}
+         134419                                       0.0   
+         555663                                       0.0   
+         976907                                       0.0   
+         1398151                                      0.0   
+         1819395                                      0.0   
+         
+                  NUM\_NON\_HEALTH\_BASED\_VIOLATIONS\_2\_YEARS\_AGO  \textbackslash{}
+         134419                                           0.0   
+         555663                                           0.0   
+         976907                                           0.0   
+         1398151                                          0.0   
+         1819395                                          0.0   
+         
+                  NUM\_HEALTH\_BASED\_VIOLATIONS\_3\_YEARS\_AGO  \textbackslash{}
+         134419                                       0.0   
+         555663                                       0.0   
+         976907                                       0.0   
+         1398151                                      0.0   
+         1819395                                      0.0   
+         
+                  NUM\_NON\_HEALTH\_BASED\_VIOLATIONS\_3\_YEARS\_AGO  \textbackslash{}
+         134419                                           0.0   
+         555663                                           0.0   
+         976907                                           0.0   
+         1398151                                          0.0   
+         1819395                                          0.0   
+         
+                  NUM\_HEALTH\_BASED\_VIOLATIONS\_4\_YEARS\_AGO  \textbackslash{}
+         134419                                       0.0   
+         555663                                       0.0   
+         976907                                       0.0   
+         1398151                                      0.0   
+         1819395                                      0.0   
+         
+                  NUM\_NON\_HEALTH\_BASED\_VIOLATIONS\_4\_YEARS\_AGO  \textbackslash{}
+         134419                                           0.0   
+         555663                                           0.0   
+         976907                                           0.0   
+         1398151                                          0.0   
+         1819395                                          0.0   
+         
+                  NUM\_HEALTH\_BASED\_VIOLATIONS\_5\_YEARS\_AGO  \textbackslash{}
+         134419                                       0.0   
+         555663                                       0.0   
+         976907                                       0.0   
+         1398151                                      0.0   
+         1819395                                      0.0   
+         
+                  NUM\_NON\_HEALTH\_BASED\_VIOLATIONS\_5\_YEARS\_AGO  \textbackslash{}
+         134419                                           0.0   
+         555663                                           0.0   
+         976907                                           0.0   
+         1398151                                          0.0   
+         1819395                                          0.0   
+         
+                  NUM\_ENFORCEMENTS\_PREVIOUS\_YEAR  NUM\_ENFORCEMENTS\_2\_YEARS\_AGO  \textbackslash{}
+         134419                              0.0                           0.0   
+         555663                              0.0                           0.0   
+         976907                              0.0                           0.0   
+         1398151                             0.0                           0.0   
+         1819395                             0.0                           0.0   
+         
+                  NUM\_ENFORCEMENTS\_3\_YEARS\_AGO  NUM\_ENFORCEMENTS\_4\_YEARS\_AGO  \textbackslash{}
+         134419                            0.0                           0.0   
+         555663                            0.0                           0.0   
+         976907                            0.0                           0.0   
+         1398151                           0.0                           0.0   
+         1819395                           0.0                           0.0   
+         
+                  NUM\_ENFORCEMENTS\_5\_YEARS\_AGO  
+         134419                            0.0  
+         555663                            0.0  
+         976907                            0.0  
+         1398151                           0.0  
+         1819395                           0.0  
+\end{Verbatim}
+            
+
+    % Add a bibliography block to the postdoc
+    
+    
+    
+    \end{document}
