@@ -13,6 +13,7 @@ library(data.table)
 library(dplyr) # some masking of data.table: between, first, last
 library(ggplot2)
 library(zipcode) # for getting lat/lon coordinates where zipcode is available
+library(lubridate)
 ```
 
 <br>
@@ -158,6 +159,8 @@ summary(viol_all$cpbd)
     ##         Max. 
     ## "2064-07-31"
 
+*Note: max compliance period begin date way beyond present! Just a couple: PR0004565, LA1017050*
+
 <br>
 
 #### Add some new columns to help create yearly timeline (later):
@@ -179,7 +182,7 @@ summary(viol_all$ydiff)
 
 <br>
 
-#### \#*COMPLIANCE\_STATUS\_CODE seems to be most important for understanding violation timeline*
+#### \#*COMPLIANCE\_STATUS\_CODE is important for understanding violation timeline*
 
 ``` r
 unique(viol_all$COMPLIANCE_STATUS_CODE)
@@ -212,7 +215,7 @@ table(viol_all$COMPLIANCE_STATUS_CODE, viol_all$PWS_ACTIVITY_CODE)
 
 #### Filtering out COMPLIANCE\_STATUS\_CODE = "R" (returned to compliance), PWS\_ACTIVITY\_CODE = "Active", rtcd (returned to compliance date) within period of interest, and tallying by IS\_HEALTH\_BASED\_IND
 
--   *(compliance period begin date also filtered for same period, as for O and K below, seems logical but could just use RTC date)*
+-   *compliance period begin date could also be filtered for same period, as for O and K below, but just using RTC date = a lot more PWSIDs kept. Looking at tmp, it seems compliance period begin/end dates not necessarily tied to RTC date*
 
 <br>
 
@@ -220,9 +223,10 @@ table(viol_all$COMPLIANCE_STATUS_CODE, viol_all$PWS_ACTIVITY_CODE)
 -   RTC\_y08y16\_HB = "returned to compliance within 2008-2016 period, health based violation"
 
 ``` r
+# , between(cpbd, as.Date("2008-01-01"), as.Date("2016-12-31")) # taken out of filter
+
 viol_RTC <- viol_all %>% filter(COMPLIANCE_STATUS_CODE == "R", PWS_ACTIVITY_CODE == "A",
-                    between(rtcd, as.Date("2008-01-01"), as.Date("2016-12-31")), 
-                    between(cpbd, as.Date("2008-01-01"), as.Date("2016-12-31"))) %>% 
+                    between(rtcd, as.Date("2008-01-01"), as.Date("2016-12-31"))) %>% 
   group_by(PWSID, PWS_TYPE_CODE, PWS_ACTIVITY_CODE, IS_HEALTH_BASED_IND) %>% 
   count(name = "RTC_0816_n") %>% 
   tidyr::spread(key = IS_HEALTH_BASED_IND, value = RTC_0816_n, fill = 0) %>% 
@@ -231,7 +235,7 @@ viol_RTC <- viol_all %>% filter(COMPLIANCE_STATUS_CODE == "R", PWS_ACTIVITY_CODE
 nrow(viol_RTC)
 ```
 
-    ## [1] 83526
+    ## [1] 87378
 
 ``` r
 head(viol_RTC)
@@ -244,13 +248,108 @@ head(viol_RTC)
     ## 1 010109005 CWS           A                              1             0
     ## 2 010307001 CWS           A                             19             2
     ## 3 010502002 NTNCWS        A                             13             4
-    ## 4 010502003 NTNCWS        A                              3             0
-    ## 5 020000001 CWS           A                              4             0
-    ## 6 020000004 CWS           A                              8             0
+    ## 4 010502003 NTNCWS        A                              4             0
+    ## 5 020000001 CWS           A                              8             0
+    ## 6 020000004 CWS           A                             12             0
 
 <br>
 
-#### Filtering out COMPLIANCE\_STATUS\_CODE = "O" (open violation), PWS\_ACTIVITY\_CODE = "Active", cpbd (compliance period begin date) within period of interest, and tallying by IS\_HEALTH\_BASED\_IND
+``` r
+# explore of cpbd before/after period for these
+tmp <- viol_all %>% filter(COMPLIANCE_STATUS_CODE == "R", PWS_ACTIVITY_CODE == "A",
+                    between(rtcd, as.Date("2008-01-01"), as.Date("2016-12-31")),
+                    cpbd < as.Date("2008-01-01") | cpbd > as.Date("2016-12-31"))
+
+length(unique(tmp$PWSID))
+```
+
+    ## [1] 26616
+
+``` r
+
+tmp %>% select(cpbd:rtcd, PWSID:VIOLATION_ID, 
+               PWS_TYPE_CODE:CONTAMINANT_CODE) %>% 
+  arrange(cpbd) %>% head(n = 10)
+```
+
+    ##          cpbd       cped       rtcd     PWSID VIOLATION_ID PWS_TYPE_CODE
+    ## 1  1978-01-01 1980-12-31 2011-10-19 TX0700020    790009357           CWS
+    ## 2  1978-10-06 1981-10-05 2016-08-04 OK2003705          181           CWS
+    ## 3  1978-12-04 1981-10-03 2016-07-26 OK2000206          181           CWS
+    ## 4  1978-12-04 1981-10-03 2016-07-26 OK2000211          281           CWS
+    ## 5  1978-12-04 1980-10-03 2016-07-26 OK2000608         4580           CWS
+    ## 6  1978-12-04 1981-10-03 2016-07-26 OK2000610          281           CWS
+    ## 7  1978-12-04 1981-10-03 2016-08-04 OK2001608          181           CWS
+    ## 8  1978-12-04 1980-10-03 2016-08-04 OK2001612         4180           CWS
+    ## 9  1978-12-04 1980-10-03 2016-08-04 OK2007103         3980           CWS
+    ## 10 1978-12-08 1981-10-07 2016-08-04 OK2002207          181           CWS
+    ##    VIOLATION_CODE VIOLATION_CATEGORY_CODE IS_HEALTH_BASED_IND
+    ## 1              02                     MCL                   Y
+    ## 2              02                     MCL                   Y
+    ## 3              02                     MCL                   Y
+    ## 4              02                     MCL                   Y
+    ## 5              02                     MCL                   Y
+    ## 6              02                     MCL                   Y
+    ## 7              02                     MCL                   Y
+    ## 8              02                     MCL                   Y
+    ## 9              02                     MCL                   Y
+    ## 10             02                     MCL                   Y
+    ##    CONTAMINANT_CODE
+    ## 1              1025
+    ## 2              1040
+    ## 3              1040
+    ## 4              1040
+    ## 5              1040
+    ## 6              1040
+    ## 7              1040
+    ## 8              1040
+    ## 9              1040
+    ## 10             1040
+
+``` r
+
+tmp %>% select(cpbd:rtcd, PWSID:VIOLATION_ID, 
+               PWS_TYPE_CODE:CONTAMINANT_CODE) %>% 
+  arrange(cpbd) %>% tail(n = 10)
+```
+
+    ##              cpbd       cped       rtcd     PWSID VIOLATION_ID
+    ## 247229 2017-09-28       <NA> 2016-11-29 KS2012302         1422
+    ## 247230 2017-10-01 2017-12-31 2016-07-10 CA3400433      1600036
+    ## 247231 2017-10-01       <NA> 2010-02-08 UTAH23012      5113105
+    ## 247232 2017-10-08       <NA> 2016-10-17 NC1011045           11
+    ## 247233 2017-10-24       <NA> 2014-01-04 NM3524530       159869
+    ## 247234 2017-11-02       <NA> 2016-07-01 NC0286627      4366710
+    ## 247235 2017-11-02       <NA> 2016-11-15 NC0326548            7
+    ## 247236 2017-12-10       <NA> 2016-06-17 MO4031631          401
+    ## 247237 2018-01-01 2018-03-31 2016-04-04 NY4942015            3
+    ## 247238 2018-09-01       <NA> 2016-09-19 MA2226003            7
+    ##        PWS_TYPE_CODE VIOLATION_CODE VIOLATION_CATEGORY_CODE
+    ## 247229           CWS             35                      MR
+    ## 247230           CWS             02                     MCL
+    ## 247231         TNCWS             5A                   Other
+    ## 247232           CWS             75                   Other
+    ## 247233           CWS             45                      TT
+    ## 247234         TNCWS             75                   Other
+    ## 247235         TNCWS             75                   Other
+    ## 247236           CWS             75                   Other
+    ## 247237        NTNCWS             3A                     MON
+    ## 247238         TNCWS             4F                     RPT
+    ##        IS_HEALTH_BASED_IND CONTAMINANT_CODE
+    ## 247229                   N             2950
+    ## 247230                   Y             1005
+    ## 247231                   N             8000
+    ## 247232                   N             7500
+    ## 247233                   Y             0700
+    ## 247234                   N             7500
+    ## 247235                   N             7500
+    ## 247236                   N             7500
+    ## 247237                   N             8000
+    ## 247238                   N             8000
+
+<br>
+
+#### Filtering out COMPLIANCE\_STATUS\_CODE = "O" (open violation), PWS\_ACTIVITY\_CODE = "Active", cpbd (compliance period begin date; these have no end date or rtc date) within period of interest, and tallying by IS\_HEALTH\_BASED\_IND
 
 -   O\_y08y16\_nHB = "Open violation within 2008-2016 period, non-health based violation"
 -   O\_y08y16\_nHB = "Open violation within 2008-2016 period, health based violation"
@@ -285,7 +384,7 @@ head(viol_O)
 
 <br>
 
-#### Filtering out COMPLIANCE\_STATUS\_CODE = "K" (known: not really sure what this is yet), PWS\_ACTIVITY\_CODE = "Active", cpbd (compliance period begin date) within period of interest, and tallying by IS\_HEALTH\_BASED\_IND
+#### Filtering out COMPLIANCE\_STATUS\_CODE = "K" (known: not really sure what this is yet), PWS\_ACTIVITY\_CODE = "Active", cpbd (compliance period begin date; these have end dates - some later than period, but not sure how/if to use, and no rtc date) within period of interest, and tallying by IS\_HEALTH\_BASED\_IND
 
 -   K\_y08y16\_nHB = "Known within 2008-2016 period, non-health based violation"
 -   K\_y08y16\_nHB = "Known within 2008-2016 period, health based violation"
@@ -487,17 +586,19 @@ merge1 %>% select(PWSID, RTC_y08y16_HB:K_y08y16_nHB) %>%
 
 #### some stats, graphs:
 
+-   some high numbers: e.g., WA5340950 has max \# RTC\_y08y16\_nHB @ 2,376! (verified as same count of rows in violations.csv)
+
 ``` r
 merge1 %>% select(PWSID, RTC_y08y16_HB:K_y08y16_nHB) %>% summary()
 ```
 
-    ##     PWSID           RTC_y08y16_HB      RTC_y08y16_nHB   
-    ##  Length:146351      Min.   :  0.0000   Min.   :  0.000  
-    ##  Class :character   1st Qu.:  0.0000   1st Qu.:  0.000  
-    ##  Mode  :character   Median :  0.0000   Median :  1.000  
-    ##                     Mean   :  0.6511   Mean   :  5.592  
-    ##                     3rd Qu.:  0.0000   3rd Qu.:  3.000  
-    ##                     Max.   :274.0000   Max.   :926.000  
+    ##     PWSID           RTC_y08y16_HB      RTC_y08y16_nHB    
+    ##  Length:146351      Min.   :  0.0000   Min.   :   0.000  
+    ##  Class :character   1st Qu.:  0.0000   1st Qu.:   0.000  
+    ##  Mode  :character   Median :  0.0000   Median :   1.000  
+    ##                     Mean   :  0.8648   Mean   :   7.067  
+    ##                     3rd Qu.:  1.0000   3rd Qu.:   4.000  
+    ##                     Max.   :307.0000   Max.   :2376.000  
     ##   O_y08y16_HB        O_y08y16_nHB       K_y08y16_HB      
     ##  Min.   : 0.00000   Min.   :  0.0000   Min.   :  0.0000  
     ##  1st Qu.: 0.00000   1st Qu.:  0.0000   1st Qu.:  0.0000  
@@ -523,7 +624,7 @@ merge1 %>% select(PWSID, RTC_y08y16_HB:K_y08y16_nHB) %>%
   coord_cartesian(xlim = c(0, 100))
 ```
 
-![](GetCrosstabViols_gh_files/figure-markdown_github/unnamed-chunk-21-1.png)
+![](GetCrosstabViols_gh_files/figure-markdown_github/unnamed-chunk-22-1.png)
 
 <br>
 
@@ -552,16 +653,16 @@ merge1_binary %>% filter(PWS_TYPE_CODE == "CWS", STATE_CODE %in% c(state.abb, "D
     ## # Groups:   STATE_CODE [52]
     ##    STATE_CODE RTC_y08y16_HB_0 RTC_y08y16_HB_1 Total Prop_RTC_y08y16_HB_1
     ##    <chr>                <int>           <int> <int>                <dbl>
-    ##  1 DC                       1               2     3                 0.67
-    ##  2 AR                     304             387   691                 0.56
-    ##  3 KY                     192             199   391                 0.51
-    ##  4 NM                     310             313   623                 0.5 
-    ##  5 SD                     261             249   510                 0.49
-    ##  6 NH                     355             329   684                 0.48
-    ##  7 OK                     483             451   934                 0.48
-    ##  8 MA                     300             263   563                 0.47
-    ##  9 PR                     215             188   403                 0.47
-    ## 10 AK                     219             182   401                 0.45
+    ##  1 OK                     167             767   934                 0.82
+    ##  2 AR                     219             472   691                 0.68
+    ##  3 DC                       1               2     3                 0.67
+    ##  4 MO                     563             863  1426                 0.61
+    ##  5 NM                     275             348   623                 0.56
+    ##  6 VT                     177             222   399                 0.56
+    ##  7 MT                     359             426   785                 0.54
+    ##  8 KY                     192             199   391                 0.51
+    ##  9 AK                     199             202   401                 0.5 
+    ## 10 SD                     253             257   510                 0.5 
     ## # ... with 42 more rows
 
 <br>
@@ -584,7 +685,7 @@ exp(coef(logmod1))
 plot(effects::allEffects(logmod1))
 ```
 
-![](GetCrosstabViols_gh_files/figure-markdown_github/unnamed-chunk-24-1.png)
+![](GetCrosstabViols_gh_files/figure-markdown_github/unnamed-chunk-25-1.png)
 
     ## 
     ## Call:
@@ -593,27 +694,106 @@ plot(effects::allEffects(logmod1))
     ## 
     ## Deviance Residuals: 
     ##     Min       1Q   Median       3Q      Max  
-    ## -0.7918  -0.7290  -0.6595  -0.6595   1.8069  
+    ## -0.8566  -0.7802  -0.6913   1.5366   1.7599  
     ## 
     ## Coefficients:
-    ##                     Estimate Std. Error z value Pr(>|z|)    
-    ## (Intercept)         -0.99929    0.01014 -98.586   <2e-16 ***
-    ## PWS_TYPE_CODENTNCWS -0.19034    0.02060  -9.242   <2e-16 ***
-    ## PWS_TYPE_CODETNCWS  -0.41575    0.01355 -30.693   <2e-16 ***
+    ##                      Estimate Std. Error z value Pr(>|z|)    
+    ## (Intercept)         -0.813661   0.009745  -83.50   <2e-16 ***
+    ## PWS_TYPE_CODENTNCWS -0.219770   0.019800  -11.10   <2e-16 ***
+    ## PWS_TYPE_CODETNCWS  -0.496097   0.013070  -37.96   <2e-16 ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
     ## (Dispersion parameter for binomial family taken to be 1)
     ## 
-    ##     Null deviance: 155305  on 145649  degrees of freedom
-    ## Residual deviance: 154362  on 145647  degrees of freedom
-    ## AIC: 154368
+    ##     Null deviance: 164007  on 145649  degrees of freedom
+    ## Residual deviance: 162559  on 145647  degrees of freedom
+    ## AIC: 162565
     ## 
     ## Number of Fisher Scoring iterations: 4
     ## 
     ## odds ratios, baseline is CWS: 
     ## 
     ##         (Intercept) PWS_TYPE_CODENTNCWS  PWS_TYPE_CODETNCWS 
-    ##           0.3681402           0.8266817           0.6598445
+    ##           0.4432325           0.8027033           0.6089028
+
+#### Exploring time series (compliance period begin date: monthly)
+
+``` r
+
+viol_all_A_by_Month <- viol_all %>% filter(PWS_ACTIVITY_CODE == "A") %>% 
+  mutate(cpbd_mo = ymd(paste(cpbd_year, month(cpbd), "1", sep = "-"))) %>%
+  group_by(PWS_TYPE_CODE, cpbd_mo) %>% 
+  summarise(cpbd_count = n())  
+
+
+viol_all_A_by_Month %>% 
+  ggplot(aes(x = cpbd_mo, y = cpbd_count, color = PWS_TYPE_CODE)) + 
+  geom_line() + 
+  scale_y_log10() +
+  theme(legend.position = "bottom")
+```
+
+![](GetCrosstabViols_gh_files/figure-markdown_github/unnamed-chunk-26-1.png)
+
+``` r
+  
+  
+viol_all_A_by_Month %>% 
+  filter(between(cpbd_mo, as.Date("2008-01-01"), as.Date("2017-12-31"))) %>% 
+  ggplot(aes(x = cpbd_mo, y = cpbd_count, color = PWS_TYPE_CODE)) + 
+  geom_line() + 
+  scale_y_log10() + geom_smooth() +
+  theme(legend.position = "bottom")
+```
+
+    ## `geom_smooth()` using method = 'loess' and formula 'y ~ x'
+
+![](GetCrosstabViols_gh_files/figure-markdown_github/unnamed-chunk-26-2.png)
+
+``` r
+viol_all_A_Hb_by_Month <- viol_all %>% filter(PWS_ACTIVITY_CODE == "A", IS_HEALTH_BASED_IND == "Y") %>% 
+  mutate(cpbd_mo = ymd(paste(cpbd_year, month(cpbd), "1", sep = "-"))) %>%
+  group_by(PWS_TYPE_CODE, cpbd_mo) %>% 
+  summarise(cpbd_count = n())
+
+
+viol_all_A_Hb_by_Month %>% 
+  filter(between(cpbd_mo, as.Date("2008-01-01"), as.Date("2018-12-31"))) %>% 
+  ggplot(aes(x = cpbd_mo, y = cpbd_count, color = PWS_TYPE_CODE)) + 
+  geom_line() + 
+  scale_y_log10() + geom_smooth() +
+  theme(legend.position = "bottom")
+```
+
+    ## `geom_smooth()` using method = 'loess' and formula 'y ~ x'
+
+![](GetCrosstabViols_gh_files/figure-markdown_github/unnamed-chunk-27-1.png)
+
+``` r
+
+viol_all_A_Hb_by_Month %>% 
+  filter(between(cpbd_mo, as.Date("2017-01-01"), as.Date("2018-12-31"))) %>% 
+  ggplot(aes(x = cpbd_mo, y = cpbd_count, color = PWS_TYPE_CODE)) + 
+  geom_line() + geom_point() +
+  scale_x_date(breaks = c(as.Date("2016-12-01"), as.Date("2017-03-01"), 
+                          as.Date("2017-06-01"), as.Date("2017-09-01"),
+                          as.Date("2017-12-01"), as.Date("2018-03-01"), 
+                          as.Date("2018-06-01"), as.Date("2018-09-01"),
+                          as.Date("2018-12-01")), 
+               date_minor_breaks = "month",
+               date_labels = "%Y-%m") +
+  xlab("Compliance period begin date month") +
+  ylab("Count of health-based violations") + 
+  ggtitle("2017-Present count of health-based violations by month in SDWIS", 
+          subtitle = "data: compliance period begin dates from most recent Violations.csv download") +
+  theme(legend.position = "bottom", 
+        panel.background = element_rect(fill = NA),
+        panel.border = element_rect(fill = NA, color = "black"),
+        axis.text.x = element_text(angle = 45, vjust = 1.0, hjust = 1.0), 
+        axis.ticks = element_line(size = 2))
+```
+
+![](GetCrosstabViols_gh_files/figure-markdown_github/unnamed-chunk-28-1.png)
 
 <br><br><br><br>

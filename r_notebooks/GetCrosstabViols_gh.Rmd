@@ -19,6 +19,7 @@ library(data.table)
 library(dplyr) # some masking of data.table: between, first, last
 library(ggplot2)
 library(zipcode) # for getting lat/lon coordinates where zipcode is available
+library(lubridate)
 
 ```
 
@@ -113,6 +114,8 @@ class(viol_all$cpbd)
 summary(viol_all$cpbd)
 ```
 
+*Note: max compliance period begin date way beyond present! Just a couple: PR0004565, LA1017050*
+
 <br>
 
 #### Add some new columns to help create yearly timeline (later):
@@ -129,7 +132,7 @@ summary(viol_all$ydiff)
 
 <br>
 
-#### #*COMPLIANCE_STATUS_CODE seems to be most important for understanding violation timeline*
+#### #*COMPLIANCE_STATUS_CODE is important for understanding violation timeline*
 
 ```{r}
 unique(viol_all$COMPLIANCE_STATUS_CODE)
@@ -154,7 +157,7 @@ table(viol_all$COMPLIANCE_STATUS_CODE, viol_all$PWS_ACTIVITY_CODE)
 
 #### Filtering out COMPLIANCE_STATUS_CODE = "R" (returned to compliance), PWS_ACTIVITY_CODE = "Active", rtcd (returned to compliance date) within period of interest, and tallying by IS_HEALTH_BASED_IND
 
-+ *(compliance period begin date also filtered for same period, as for O and K below, seems logical but could just use RTC date)*
++ *compliance period begin date could also be filtered for same period, as for O and K below, but just using RTC date = a lot more PWSIDs kept. Looking at tmp, it seems compliance period begin/end dates not necessarily tied to RTC date*
 
 <br>
 
@@ -163,9 +166,10 @@ table(viol_all$COMPLIANCE_STATUS_CODE, viol_all$PWS_ACTIVITY_CODE)
 
 
 ```{r}
+# , between(cpbd, as.Date("2008-01-01"), as.Date("2016-12-31")) # taken out of filter
+
 viol_RTC <- viol_all %>% filter(COMPLIANCE_STATUS_CODE == "R", PWS_ACTIVITY_CODE == "A",
-                    between(rtcd, as.Date("2008-01-01"), as.Date("2016-12-31")), 
-                    between(cpbd, as.Date("2008-01-01"), as.Date("2016-12-31"))) %>% 
+                    between(rtcd, as.Date("2008-01-01"), as.Date("2016-12-31"))) %>% 
   group_by(PWSID, PWS_TYPE_CODE, PWS_ACTIVITY_CODE, IS_HEALTH_BASED_IND) %>% 
   count(name = "RTC_0816_n") %>% 
   tidyr::spread(key = IS_HEALTH_BASED_IND, value = RTC_0816_n, fill = 0) %>% 
@@ -176,10 +180,29 @@ head(viol_RTC)
 
 ```
 
+<br>
+
+```{r}
+# explore of cpbd before/after period for these
+tmp <- viol_all %>% filter(COMPLIANCE_STATUS_CODE == "R", PWS_ACTIVITY_CODE == "A",
+                    between(rtcd, as.Date("2008-01-01"), as.Date("2016-12-31")),
+                    cpbd < as.Date("2008-01-01") | cpbd > as.Date("2016-12-31"))
+
+length(unique(tmp$PWSID))
+
+tmp %>% select(cpbd:rtcd, PWSID:VIOLATION_ID, 
+               PWS_TYPE_CODE:CONTAMINANT_CODE) %>% 
+  arrange(cpbd) %>% head(n = 10)
+
+tmp %>% select(cpbd:rtcd, PWSID:VIOLATION_ID, 
+               PWS_TYPE_CODE:CONTAMINANT_CODE) %>% 
+  arrange(cpbd) %>% tail(n = 10)
+```
+
 
 <br>
 
-#### Filtering out COMPLIANCE_STATUS_CODE = "O" (open violation), PWS_ACTIVITY_CODE = "Active", cpbd (compliance period begin date) within period of interest, and tallying by IS_HEALTH_BASED_IND
+#### Filtering out COMPLIANCE_STATUS_CODE = "O" (open violation), PWS_ACTIVITY_CODE = "Active", cpbd (compliance period begin date; these have no end date or rtc date) within period of interest, and tallying by IS_HEALTH_BASED_IND
 
 + O_y08y16_nHB = "Open violation within 2008-2016 period, non-health based violation"
 + O_y08y16_nHB = "Open violation within 2008-2016 period, health based violation"
@@ -201,7 +224,7 @@ head(viol_O)
 
 <br>
 
-#### Filtering out COMPLIANCE_STATUS_CODE = "K" (known: not really sure what this is yet), PWS_ACTIVITY_CODE = "Active", cpbd (compliance period begin date) within period of interest, and tallying by IS_HEALTH_BASED_IND
+#### Filtering out COMPLIANCE_STATUS_CODE = "K" (known: not really sure what this is yet), PWS_ACTIVITY_CODE = "Active", cpbd (compliance period begin date; these have end dates - some later than period, but not sure how/if to use, and no rtc date) within period of interest, and tallying by IS_HEALTH_BASED_IND
 
 + K_y08y16_nHB = "Known within 2008-2016 period, non-health based violation"
 + K_y08y16_nHB = "Known within 2008-2016 period, health based violation"
@@ -329,6 +352,9 @@ merge1 %>% select(PWSID, RTC_y08y16_HB:K_y08y16_nHB) %>%
 <br>
 
 #### some stats, graphs:
+
++ some high numbers: e.g., WA5340950 has max #  RTC_y08y16_nHB @ 2,376! (verified as same count of rows in violations.csv)
+
 ```{r fig.height=8, fig.width=8}
 merge1 %>% select(PWSID, RTC_y08y16_HB:K_y08y16_nHB) %>% summary()
 
@@ -383,6 +409,80 @@ exp(coef(logmod1))
 plot(effects::allEffects(logmod1))
 
 ```
+
+
+#### Exploring time series (compliance period begin date: monthly)
+
+```{r fig.width=8, fig.height=6}
+
+viol_all_A_by_Month <- viol_all %>% filter(PWS_ACTIVITY_CODE == "A") %>% 
+  mutate(cpbd_mo = ymd(paste(cpbd_year, month(cpbd), "1", sep = "-"))) %>%
+  group_by(PWS_TYPE_CODE, cpbd_mo) %>% 
+  summarise(cpbd_count = n())  
+
+
+viol_all_A_by_Month %>% 
+  ggplot(aes(x = cpbd_mo, y = cpbd_count, color = PWS_TYPE_CODE)) + 
+  geom_line() + 
+  scale_y_log10() +
+  theme(legend.position = "bottom")
+  
+  
+viol_all_A_by_Month %>% 
+  filter(between(cpbd_mo, as.Date("2008-01-01"), as.Date("2017-12-31"))) %>% 
+  ggplot(aes(x = cpbd_mo, y = cpbd_count, color = PWS_TYPE_CODE)) + 
+  geom_line() + 
+  scale_y_log10() + geom_smooth() +
+  theme(legend.position = "bottom")
+
+```
+
+```{r fig.width=10, fig.height=6}
+viol_all_A_Hb_by_Month <- viol_all %>% filter(PWS_ACTIVITY_CODE == "A", IS_HEALTH_BASED_IND == "Y") %>% 
+  mutate(cpbd_mo = ymd(paste(cpbd_year, month(cpbd), "1", sep = "-"))) %>%
+  group_by(PWS_TYPE_CODE, cpbd_mo) %>% 
+  summarise(cpbd_count = n())
+
+
+viol_all_A_Hb_by_Month %>% 
+  filter(between(cpbd_mo, as.Date("2008-01-01"), as.Date("2018-12-31"))) %>% 
+  ggplot(aes(x = cpbd_mo, y = cpbd_count, color = PWS_TYPE_CODE)) + 
+  geom_line() + 
+  scale_y_log10() + geom_smooth() +
+  theme(legend.position = "bottom")
+```
+
+
+
+```{r fig.width=9, fig.height=6}
+
+viol_all_A_Hb_by_Month %>% 
+  filter(between(cpbd_mo, as.Date("2017-01-01"), as.Date("2018-12-31"))) %>% 
+  ggplot(aes(x = cpbd_mo, y = cpbd_count, color = PWS_TYPE_CODE)) + 
+  geom_line() + geom_point() +
+  scale_x_date(breaks = c(as.Date("2016-12-01"), as.Date("2017-03-01"), 
+                          as.Date("2017-06-01"), as.Date("2017-09-01"),
+                          as.Date("2017-12-01"), as.Date("2018-03-01"), 
+                          as.Date("2018-06-01"), as.Date("2018-09-01"),
+                          as.Date("2018-12-01")), 
+               date_minor_breaks = "month",
+               date_labels = "%Y-%m") +
+  xlab("Compliance period begin date month") +
+  ylab("Count of health-based violations") + 
+  ggtitle("2017-Present count of health-based violations by month in SDWIS", 
+          subtitle = "data: compliance period begin dates from most recent Violations.csv download") +
+  theme(legend.position = "bottom", 
+        panel.background = element_rect(fill = NA),
+        panel.border = element_rect(fill = NA, color = "black"),
+        axis.text.x = element_text(angle = 45, vjust = 1.0, hjust = 1.0), 
+        axis.ticks = element_line(size = 2))
+
+
+
+```
+
+
+
 
 
 <br><br><br><br>
