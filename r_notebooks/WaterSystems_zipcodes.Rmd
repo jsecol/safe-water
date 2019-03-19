@@ -1,0 +1,158 @@
+---
+title: "CFB zipcode work"
+author: "Jim Sheehan"
+date: "March 19, 2019"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## 0. Load packages
+```{r message=FALSE}
+library(data.table)
+library(dplyr) # some masking of data.table: between, first, last
+# library(ggplot2)
+library(zipcode) # for getting lat/lon coordinates where zipcode is available
+# library(lubridate)
+
+```
+
+<br>
+
+## I. Load data
+
+<br>
+
+```{r}
+water_systems <- fread("C:/Users/Jim/Files/CFB/JohnMeroth/SDWIS/WATER_SYSTEM.csv", 
+                  sep = ",")
+```
+
+<br>
+
+#### Small fix of column names (dropping string before "."), and dropping extra empty column:
+```{r}
+water_systems[, V48 := NULL]
+
+varnames_ws <- colnames(water_systems)
+head(varnames_ws)
+
+varnames_ws <- gsub("^.*\\.","",varnames_ws)
+colnames(water_systems) <- varnames_ws
+# fixed variable names
+cat("\n")
+varnames_ws
+
+
+```
+
+<br>
+
+#### Looking for duplicates in primary key:
+```{r}
+water_systems %>% 
+  count(PWSID) %>% 
+  filter(n > 1)
+
+```
+
+<br>
+
+#### Set primary key:
+```{r}
+setkey(water_systems, PWSID)
+key(water_systems)
+```
+
+<br>
+
+#### Zipcode data from zipcode::zipcode
+```{r}
+data(zipcode)
+sum(nchar(zipcode$zip) != 5) # all 5 character length
+
+
+```
+
+<br>
+
+#### Zipcode clean:
+```{r}
+
+# whoa:
+unique(nchar(water_systems$ZIP_CODE))
+nrow(water_systems[nchar(water_systems$ZIP_CODE) != 5 & nchar(water_systems$ZIP_CODE) > 0, ])
+
+
+water_systems$ZIP_CODE5 <- substr(water_systems$ZIP_CODE, start = 1, stop = 5) 
+
+# now using zipcode clean package function (which doesn't fix >5 character zips)
+water_systems$ZIP_CODE5 <- clean.zipcodes(water_systems$ZIP_CODE5)
+
+```
+
+<br>
+
+#### Rename some of the columns for zipcode::zipcode prior to join
+
++ helps distinguish from similar SWDIS variable names, and maybe other lat/lon sources (e.g., zipcode tabulation area centroids for comparison)
+```{r}
+colnames(zipcode)
+colnames(zipcode) <- c("zip", "Rzcpkg_city", "Rzcpkg_state", "Rzcpkg_lat", "Rzcpkg_lon")
+colnames(zipcode)
+
+```
+
+<br>
+
+#### Join
+
+```{r}
+merge1 <- left_join(water_systems, zipcode, by = c("ZIP_CODE5" = "zip"))
+
+sum(is.na(merge1$Rzcpkg_lat))
+```
+
+<br>
+
+#### Filter and count # w/o coordinates, by PWS_TYPE_CODE (row TRUE)
+
+```{r}
+merge1_A <- merge1 %>% filter(PWS_ACTIVITY_CODE == "A")
+
+sum(is.na(merge1_A$Rzcpkg_lat))
+
+table(is.na(merge1_A$Rzcpkg_lat), merge1_A$PWS_TYPE_CODE)
+
+```
+
+<br>
+
+#### Export dataset
+
+```{r}
+merge1_A %>% select(PWSID, Rzcpkg_lat, Rzcpkg_lon) %>% 
+  rename(LAT = Rzcpkg_lat, LON = Rzcpkg_lon) %>% 
+  write.csv("data_export/PWSID_coordinates.csv", row.names = FALSE)
+
+```
+
+
+#### Just making sure
+```{r}
+checkit <- readr::read_csv("data_export/PWSID_coordinates.csv")
+
+head(checkit)
+
+rm(checkit)
+```
+
+
+
+
+
+
+
