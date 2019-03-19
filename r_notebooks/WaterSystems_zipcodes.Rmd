@@ -134,7 +134,7 @@ table(is.na(merge1_A$Rzcpkg_lat), merge1_A$PWS_TYPE_CODE)
 #### Export dataset
 
 ```{r}
-merge1_A %>% select(PWSID, Rzcpkg_lat, Rzcpkg_lon) %>% 
+merge1_A %>% select(PWSID, ZIP_CODE5, Rzcpkg_lat, Rzcpkg_lon) %>% 
   rename(LAT = Rzcpkg_lat, LON = Rzcpkg_lon) %>% 
   write.csv("data_export/PWSID_coordinates.csv", row.names = FALSE)
 
@@ -144,6 +144,8 @@ merge1_A %>% select(PWSID, Rzcpkg_lat, Rzcpkg_lon) %>%
 #### Just making sure
 ```{r}
 checkit <- readr::read_csv("data_export/PWSID_coordinates.csv")
+
+nrow(checkit)
 
 head(checkit)
 

@@ -198,7 +198,7 @@ table(is.na(merge1_A$Rzcpkg_lat), merge1_A$PWS_TYPE_CODE)
 #### Export dataset
 
 ``` r
-merge1_A %>% select(PWSID, Rzcpkg_lat, Rzcpkg_lon) %>% 
+merge1_A %>% select(PWSID, ZIP_CODE5, Rzcpkg_lat, Rzcpkg_lon) %>% 
   rename(LAT = Rzcpkg_lat, LON = Rzcpkg_lon) %>% 
   write.csv("data_export/PWSID_coordinates.csv", row.names = FALSE)
 ```
@@ -212,20 +212,31 @@ checkit <- readr::read_csv("data_export/PWSID_coordinates.csv")
     ## Parsed with column specification:
     ## cols(
     ##   PWSID = col_character(),
+    ##   ZIP_CODE5 = col_character(),
     ##   LAT = col_double(),
     ##   LON = col_double()
     ## )
 
 ``` r
+nrow(checkit)
+```
+
+    ## [1] 146351
+
+``` r
 head(checkit)
 ```
 
-    ## # A tibble: 6 x 3
-    ##   PWSID       LAT   LON
-    ##   <chr>     <dbl> <dbl>
-    ## 1 010106001  41.4 -72.0
-    ## 2 010109005  41.5 -72.1
-    ## 3 010307001  41.3 -70.8
-    ## 4 010502002  41.4 -71.7
-    ## 5 010502003  41.4 -71.7
-    ## 6 020000001  42.2 -78.7
+    ## # A tibble: 6 x 4
+    ##   PWSID     ZIP_CODE5   LAT   LON
+    ##   <chr>     <chr>     <dbl> <dbl>
+    ## 1 010106001 06339      41.4 -72.0
+    ## 2 010109005 06382      41.5 -72.1
+    ## 3 010307001 02535      41.3 -70.8
+    ## 4 010502002 02813      41.4 -71.7
+    ## 5 010502003 02813      41.4 -71.7
+    ## 6 020000001 14779      42.2 -78.7
+
+``` r
+rm(checkit)
+```
