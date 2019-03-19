@@ -176,6 +176,8 @@ sum(is.na(merge1$Rzcpkg_lat))
 
 #### Filter and count \# w/o coordinates, by PWS\_TYPE\_CODE (row TRUE)
 
+-   also \# unique zipcodes
+
 ``` r
 merge1_A <- merge1 %>% filter(PWS_ACTIVITY_CODE == "A")
 
@@ -193,6 +195,12 @@ table(is.na(merge1_A$Rzcpkg_lat), merge1_A$PWS_TYPE_CODE)
     ##   FALSE 49506  17488 78736
     ##   TRUE    205     71   345
 
+``` r
+length(unique(merge1_A$ZIP_CODE5))
+```
+
+    ## [1] 27444
+
 <br>
 
 #### Export dataset
@@ -202,6 +210,8 @@ merge1_A %>% select(PWSID, ZIP_CODE5, Rzcpkg_lat, Rzcpkg_lon) %>%
   rename(LAT = Rzcpkg_lat, LON = Rzcpkg_lon) %>% 
   write.csv("data_export/PWSID_coordinates.csv", row.names = FALSE)
 ```
+
+<br>
 
 #### Just making sure
 

@@ -120,12 +120,16 @@ sum(is.na(merge1$Rzcpkg_lat))
 
 #### Filter and count # w/o coordinates, by PWS_TYPE_CODE (row TRUE)
 
++ also # unique zipcodes
+
 ```{r}
 merge1_A <- merge1 %>% filter(PWS_ACTIVITY_CODE == "A")
 
 sum(is.na(merge1_A$Rzcpkg_lat))
 
 table(is.na(merge1_A$Rzcpkg_lat), merge1_A$PWS_TYPE_CODE)
+
+length(unique(merge1_A$ZIP_CODE5))
 
 ```
 
@@ -140,8 +144,10 @@ merge1_A %>% select(PWSID, ZIP_CODE5, Rzcpkg_lat, Rzcpkg_lon) %>%
 
 ```
 
+<br>
 
 #### Just making sure
+
 ```{r}
 checkit <- readr::read_csv("data_export/PWSID_coordinates.csv")
 
