@@ -204,20 +204,24 @@ tmp %>% select(cpbd:rtcd, PWSID:VIOLATION_ID,
 
 #### Now trying to get yearly presence (including 2017)
 
-```{r}
++ This works, but should be able to use data.table::dcast for speed, maybe after using dplyr to filter and create cast column (may need setDT)
++ Should adapt to create history for particular contaminant(s), even potentially a shiny app to pick and map/export dataset (create temp local directory to hold filter first, perhaps)
++ What to do about COMPLIANCE_STATUS_CODE = K and O?
+
+```{r results='hold'}
 viol_RTC_byYear <- viol_all %>% filter(COMPLIANCE_STATUS_CODE == "R", 
                                        PWS_ACTIVITY_CODE == "A",
                     between(rtcd, as.Date("2008-01-01"), as.Date("2017-12-31"))) %>% 
   mutate(rtcd_year = year(rtcd))
 
   
-  
-viol_RTC_byYear_x <- dcast(viol_RTC_byYear, PWSID + 
-                             PWS_TYPE_CODE + IS_HEALTH_BASED_IND ~ rtcd_year, 
-                    fun.agg = function(x) length(x), 
-                    value.var = "rtcd_year") %>% 
-  tidyr::spread(key = IS_HEALTH_BASED_IND, value = )
-head(viol_RTC_byYear_x)  
+# # old:   
+# viol_RTC_byYear_x <- dcast(viol_RTC_byYear, PWSID + 
+#                              PWS_TYPE_CODE + IS_HEALTH_BASED_IND ~ rtcd_year, 
+#                     fun.agg = function(x) length(x), 
+#                     value.var = "rtcd_year") %>% 
+#   tidyr::spread(key = IS_HEALTH_BASED_IND, value = "rtcd_year")
+# head(viol_RTC_byYear_x)  
   
   
 
@@ -235,12 +239,22 @@ head(viol_RTC_byYear_x)
 
 ```
 
-
+#### For export if needed:
 ```{r}
-write.csv(viol_RTC_byYear_x, "viol_RTC_byYear0817_x.csv", row.names = FALSE)
+# write.csv(viol_RTC_byYear_x, "data_export/viol_RTC_byYear0817_x.csv", row.names = FALSE)
+
 ```
 
 
+
+
+
+
+
+<br>
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 
 ***
@@ -268,7 +282,7 @@ head(viol_O)
 
 ```
 
-# 2008-2015 instead
+
 
 <br>
 
@@ -390,31 +404,15 @@ merge1[, c("RTC_y08y16_HB", "RTC_y08y16_nHB",
 
 <br>
 
-#### For export:
+#### For export if needed:
 ```{r}
-merge1 %>% select(PWSID, RTC_y08y16_HB:K_y08y16_nHB) %>% 
-  write.csv("data_export/ComplianceActivity_y08y16.csv", row.names = FALSE)
+# merge1 %>% select(PWSID, RTC_y08y16_HB:K_y08y16_nHB) %>% 
+#   write.csv("data_export/ComplianceActivity_y08y16.csv", row.names = FALSE)
 
 ```
 
 <br>
 
-#### some stats, graphs:
-
-+ some high numbers: e.g., WA5340950 has max #  RTC_y08y16_nHB @ 2,376! (verified as same count of rows in violations.csv)
-
-```{r fig.height=8, fig.width=8}
-merge1 %>% select(PWSID, RTC_y08y16_HB:K_y08y16_nHB) %>% summary()
-
-merge1 %>% select(PWSID, RTC_y08y16_HB:K_y08y16_nHB) %>%
-  tidyr::gather(Variable, Value, RTC_y08y16_HB:K_y08y16_nHB) %>% 
-  filter(Value > 0) %>% 
-  ggplot(aes(Value)) + geom_histogram(binwidth = 2, color = "orange") + 
-  facet_wrap(~Variable, scales = "free", ncol = 2) + 
-  coord_cartesian(xlim = c(0, 100))
-```
-
-<br>
 
 #### Create binary version:
 ```{r}
@@ -436,103 +434,6 @@ merge1_binary %>% filter(PWS_TYPE_CODE == "CWS", STATE_CODE %in% c(state.abb, "D
   arrange(desc(Prop_RTC_y08y16_HB_1))
 
 ```
-
-
-<br>
-
-#### Some exploratory analysis on potential predictors:
-```{r results='hold'}
-
-logmod1 <- merge1_binary %>% filter(STATE_CODE %in% c(state.abb, "DC", "PR")) %>% 
-  mutate(PWS_TYPE_CODE = factor(PWS_TYPE_CODE)) %>% 
-  glm(RTC_y08y16_HB ~ PWS_TYPE_CODE, 
-               family = binomial(link = "logit"),
-               data = .)
-
-summary(logmod1)
-
-cat("odds ratios, baseline is CWS:", "\n\n")
-exp(coef(logmod1))
-
-plot(effects::allEffects(logmod1))
-
-```
-
-
-#### Exploring time series (compliance period begin date: monthly)
-
-```{r fig.width=8, fig.height=6}
-
-viol_all_A_by_Month <- viol_all %>% filter(PWS_ACTIVITY_CODE == "A") %>% 
-  mutate(cpbd_mo = ymd(paste(cpbd_year, month(cpbd), "1", sep = "-"))) %>%
-  group_by(PWS_TYPE_CODE, cpbd_mo) %>% 
-  summarise(cpbd_count = n())  
-
-
-viol_all_A_by_Month %>% 
-  ggplot(aes(x = cpbd_mo, y = cpbd_count, color = PWS_TYPE_CODE)) + 
-  geom_line() + 
-  scale_y_log10() +
-  theme(legend.position = "bottom")
-  
-  
-viol_all_A_by_Month %>% 
-  filter(between(cpbd_mo, as.Date("2008-01-01"), as.Date("2017-12-31"))) %>% 
-  ggplot(aes(x = cpbd_mo, y = cpbd_count, color = PWS_TYPE_CODE)) + 
-  geom_line() + 
-  scale_y_log10() + geom_smooth() +
-  theme(legend.position = "bottom")
-
-```
-
-
-
-```{r fig.width=10, fig.height=6}
-viol_all_A_Hb_by_Month <- viol_all %>% filter(PWS_ACTIVITY_CODE == "A", IS_HEALTH_BASED_IND == "Y") %>% 
-  mutate(cpbd_mo = ymd(paste(cpbd_year, month(cpbd), "1", sep = "-"))) %>%
-  group_by(PWS_TYPE_CODE, cpbd_mo) %>% 
-  summarise(cpbd_count = n())
-
-
-viol_all_A_Hb_by_Month %>% 
-  filter(between(cpbd_mo, as.Date("2008-01-01"), as.Date("2018-12-31"))) %>% 
-  ggplot(aes(x = cpbd_mo, y = cpbd_count, color = PWS_TYPE_CODE)) + 
-  geom_line() + 
-  scale_y_log10() + geom_smooth() +
-  theme(legend.position = "bottom")
-```
-
-
-
-```{r fig.width=9, fig.height=6}
-
-viol_all_A_Hb_by_Month %>% 
-  filter(between(cpbd_mo, as.Date("2017-01-01"), as.Date("2018-12-31"))) %>% 
-  ggplot(aes(x = cpbd_mo, y = cpbd_count, color = PWS_TYPE_CODE)) + 
-  geom_line() + geom_point() +
-  scale_x_date(breaks = c(as.Date("2016-12-01"), as.Date("2017-03-01"), 
-                          as.Date("2017-06-01"), as.Date("2017-09-01"),
-                          as.Date("2017-12-01"), as.Date("2018-03-01"), 
-                          as.Date("2018-06-01"), as.Date("2018-09-01"),
-                          as.Date("2018-12-01")), 
-               date_minor_breaks = "month",
-               date_labels = "%Y-%m") +
-  xlab("Compliance period begin date month") +
-  ylab("Count of health-based violations") + 
-  ggtitle("2017-Present count of health-based violations by month in SDWIS", 
-          subtitle = "data: compliance period begin dates from most recent Violations.csv download") +
-  theme(legend.position = "bottom", 
-        panel.background = element_rect(fill = NA),
-        panel.border = element_rect(fill = NA, color = "black"),
-        axis.text.x = element_text(angle = 45, vjust = 1.0, hjust = 1.0), 
-        axis.ticks = element_line(size = 2))
-
-
-
-```
-
-
-
 
 
 <br><br><br><br>
