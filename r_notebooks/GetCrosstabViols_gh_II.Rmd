@@ -1,5 +1,5 @@
 ---
-title: "CFB manage violations I"
+title: "CFB manage violations II"
 author: "Jim Sheehan"
 date: "March 18, 2019"
 output: github_document
@@ -202,6 +202,53 @@ tmp %>% select(cpbd:rtcd, PWSID:VIOLATION_ID,
 
 <br>
 
+#### Now trying to get yearly presence (including 2017)
+
+```{r}
+viol_RTC_byYear <- viol_all %>% filter(COMPLIANCE_STATUS_CODE == "R", 
+                                       PWS_ACTIVITY_CODE == "A",
+                    between(rtcd, as.Date("2008-01-01"), as.Date("2017-12-31"))) %>% 
+  mutate(rtcd_year = year(rtcd))
+
+  
+  
+viol_RTC_byYear_x <- dcast(viol_RTC_byYear, PWSID + 
+                             PWS_TYPE_CODE + IS_HEALTH_BASED_IND ~ rtcd_year, 
+                    fun.agg = function(x) length(x), 
+                    value.var = "rtcd_year") %>% 
+  tidyr::spread(key = IS_HEALTH_BASED_IND, value = )
+head(viol_RTC_byYear_x)  
+  
+  
+
+viol_RTC_byYear_x <- viol_RTC_byYear %>% 
+  group_by(PWSID, PWS_TYPE_CODE, IS_HEALTH_BASED_IND, rtcd_year) %>% 
+  count() %>% 
+  mutate(hb_year = paste("RTC_HB", IS_HEALTH_BASED_IND, rtcd_year, sep = "_")) %>% 
+  ungroup() %>% 
+  select(PWSID, PWS_TYPE_CODE, hb_year, n) %>% 
+  tidyr::spread(key = hb_year, value = n, fill = 0)
+
+
+head(viol_RTC_byYear_x)
+
+
+```
+
+
+```{r}
+write.csv(viol_RTC_byYear_x, "viol_RTC_byYear0817_x.csv", row.names = FALSE)
+```
+
+
+
+
+***
+
+
+
+<br>
+
 #### Filtering out COMPLIANCE_STATUS_CODE = "O" (open violation), PWS_ACTIVITY_CODE = "Active", cpbd (compliance period begin date; these have no end date or rtc date) within period of interest, and tallying by IS_HEALTH_BASED_IND
 
 + O_y08y16_nHB = "Open violation within 2008-2016 period, non-health based violation"
@@ -221,7 +268,7 @@ head(viol_O)
 
 ```
 
-#### *2008-2015 instead? Jason had suggestion for having both 2016 and 2017 options for prediction test set*
+# 2008-2015 instead
 
 <br>
 
