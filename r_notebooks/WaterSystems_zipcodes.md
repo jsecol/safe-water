@@ -248,5 +248,61 @@ head(checkit)
     ## 6 020000001 14779      42.2 -78.7
 
 ``` r
+# number NA's, maybe some bad coords?
+summary(checkit$LAT)
+```
+
+    ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+    ##   -7.21   36.73   41.06   39.99   43.40   71.30     621
+
+``` r
+summary(checkit$LON)
+```
+
+    ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+    ## -176.64  -96.23  -87.06  -90.67  -78.78  145.75     621
+
+``` r
 rm(checkit)
 ```
+
+<br>
+
+#### Exploring things a bit
+
+this is nice: <https://eriqande.github.io/rep-res-web/lectures/making-maps-with-R.html>
+
+``` r
+library(ggplot2)
+library(maps)
+
+states <- map_data("state")
+
+lwr48 <- state.abb[!state.abb %in% c("AK", "HI")]
+
+# panel plot instead of together (some overlap if plot 1 on top of other)
+
+merge1_A_CWS_48 <- merge1_A %>% filter(STATE_CODE %in% c(lwr48, "DC"), 
+                                       PWS_TYPE_CODE == "CWS",
+                                       GW_SW_CODE %in% c("GW", "SW"),
+                                       between(Rzcpkg_lon, -130, -60 ), 
+                                       between(Rzcpkg_lat, 25, 50 ))
+
+ggplot(data = states) + 
+  geom_polygon(aes(x = long, y = lat, group = group), fill = "white", color = "gray70") + 
+  geom_point(data = merge1_A_CWS_48, 
+             aes(x = Rzcpkg_lon, y = Rzcpkg_lat, color = GW_SW_CODE), size = 0.8, alpha = 0.75) +
+  coord_fixed(1.3) + 
+  ggtitle("Zip codes with >= 1 Active CWS by surface and ground water as primary source") + 
+  scale_color_manual(values = c("purple", "orange")) + facet_wrap(~GW_SW_CODE, ncol = 1)
+```
+
+![](WaterSystems_zipcodes_files/figure-markdown_github/unnamed-chunk-13-1.png)
+
+``` r
+table(nchar(water_systems[water_systems$STATE_CODE == "TX"]$ZIP_CODE))
+```
+
+    ## 
+    ##    0    5    9   10 
+    ##   15 7033  486 7788
