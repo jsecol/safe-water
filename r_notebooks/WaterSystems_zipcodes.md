@@ -1,20 +1,25 @@
 CFB zipcode work
 ================
 Jim Sheehan
-March 19, 2019
+April 3, 2019
 
 0. Load packages
 ----------------
 
 ``` r
 library(data.table)
+library(readr)
 library(dplyr) # some masking of data.table: between, first, last
-# library(ggplot2)
+library(ggplot2)
+library(maps) # has some basic vector basemaps
 library(zipcode) # for getting lat/lon coordinates where zipcode is available
 # library(lubridate)
+# library(noncensus) holding off for now, try ZCTA directly, can match to US Census data at that resolution
 ```
 
 <br>
+
+-   Plan on changing this to access the Google cloud database
 
 I. Load data
 ------------
@@ -107,7 +112,39 @@ key(water_systems)
 
 <br>
 
+#### Zipcode data from census zip code tabulation areas
+
+-   ideally use these to match to demographics, etc, at a relatively fine scale
+
+``` r
+# data.table seems to be harder for .zip, using readr package
+zcta <- read_table2("../data/2016_Gaz_zcta_national.zip")
+```
+
+    ## Warning: Missing column names filled in: 'X8' [8]
+
+    ## Parsed with column specification:
+    ## cols(
+    ##   GEOID = col_character(),
+    ##   ALAND = col_double(),
+    ##   AWATER = col_double(),
+    ##   ALAND_SQMI = col_double(),
+    ##   AWATER_SQMI = col_double(),
+    ##   INTPTLAT = col_double(),
+    ##   INTPTLONG = col_double(),
+    ##   X8 = col_logical()
+    ## )
+
+``` r
+# empty extra column dropped
+zcta <- zcta[, -8]
+```
+
+<br>
+
 #### Zipcode data from zipcode::zipcode
+
+-   provides some "fill-in"
 
 ``` r
 data(zipcode)
@@ -121,7 +158,7 @@ sum(nchar(zipcode$zip) != 5) # all 5 character length
 #### Zipcode clean:
 
 ``` r
-# whoa:
+# whoa, the zip codes in water_systems are messy:
 unique(nchar(water_systems$ZIP_CODE))
 ```
 
@@ -136,15 +173,47 @@ nrow(water_systems[nchar(water_systems$ZIP_CODE) != 5 & nchar(water_systems$ZIP_
 ``` r
 water_systems$ZIP_CODE5 <- substr(water_systems$ZIP_CODE, start = 1, stop = 5) 
 
+sum(is.na(water_systems$ZIP_CODE5))
+```
+
+    ## [1] 0
+
+``` r
 # now using zipcode clean package function (which doesn't fix >5 character zips)
+# seems to remove mostly junk (zip codes "", with characters instead of #'s, etc.)
 water_systems$ZIP_CODE5 <- clean.zipcodes(water_systems$ZIP_CODE5)
+
+sum(is.na(water_systems$ZIP_CODE5))
+```
+
+    ## [1] 18679
+
+``` r
+water_systems %>% filter(is.na(ZIP_CODE5), ZIP_CODE != "") %>% 
+  .$ZIP_CODE
+```
+
+    ##  [1] "A0A 4B0"        "L5T 2L6"        "GOM2C"          "M5V1M7"        
+    ##  [5] "V2Y361"         "N0L1G5"         "V1W 3A1"        "T7X-5A5"       
+    ##  [9] "E2L 4V1"        "E2L 4V1"        "E2L 4V1"        "E2L 4V1"       
+    ## [13] "E2L 4V1"        "E2L 4V1"        "E2L 4V1"        "E2L 4V1"       
+    ## [17] "E2L 4V1"        "H1P 1X3"        "N6G 2N3"        "L0S 1E5"       
+    ## [21] "L0S 1E5"        "J0B 3E2"        "J0B 3E2"        "H3C 1E2"       
+    ## [25] "K0A1A0"         "XXXXX"          "V4B3K7        " "5496O"
+
+``` r
+# Fixing one "5496O" should be "54960"
+
+water_systems <- water_systems %>% 
+  mutate(ZIP_CODE5 = case_when(ZIP_CODE == "5496O" ~ "54960", 
+                               TRUE ~ ZIP_CODE5))
 ```
 
 <br>
 
 #### Rename some of the columns for zipcode::zipcode prior to join
 
--   helps distinguish from similar SWDIS variable names, and maybe other lat/lon sources (e.g., zipcode tabulation area centroids for comparison)
+-   helps distinguish from similar SWDIS variable names, and other lat/lon sources (e.g., zipcode tabulation area centroids for comparison)
 
 ``` r
 colnames(zipcode)
@@ -164,13 +233,34 @@ colnames(zipcode)
 
 #### Join
 
-``` r
-merge1 <- left_join(water_systems, zipcode, by = c("ZIP_CODE5" = "zip"))
+-   zcta first
 
-sum(is.na(merge1$Rzcpkg_lat))
+``` r
+merge1 <- left_join(water_systems, zcta, by = c("ZIP_CODE5" = "GEOID"))
+
+sum(is.na(merge1$INTPTLAT))
 ```
 
-    ## [1] 24030
+    ## [1] 43831
+
+-   now zipcode for NA's
+
+``` r
+merge1 <- left_join(merge1, zipcode, by = c("ZIP_CODE5" = "zip"))
+
+# create merged lat/lon columns and source column
+
+
+merge1 <- merge1 %>% mutate(LAT = if_else(is.na(INTPTLAT), Rzcpkg_lat, INTPTLAT), 
+                            LON = if_else(is.na(INTPTLONG), Rzcpkg_lon, INTPTLONG),
+                            COORD_SRC = case_when(!is.na(INTPTLAT) ~ "zcta",
+                                                  is.na(INTPTLAT) & !is.na(Rzcpkg_lat) ~ "rzcpkg"))
+
+
+sum(is.na(merge1$LAT))
+```
+
+    ## [1] 24029
 
 <br>
 
@@ -181,19 +271,19 @@ sum(is.na(merge1$Rzcpkg_lat))
 ``` r
 merge1_A <- merge1 %>% filter(PWS_ACTIVITY_CODE == "A")
 
-sum(is.na(merge1_A$Rzcpkg_lat))
+sum(is.na(merge1_A$LAT))
 ```
 
-    ## [1] 621
+    ## [1] 620
 
 ``` r
-table(is.na(merge1_A$Rzcpkg_lat), merge1_A$PWS_TYPE_CODE)
+table(is.na(merge1_A$LAT), merge1_A$PWS_TYPE_CODE)
 ```
 
     ##        
     ##           CWS NTNCWS TNCWS
-    ##   FALSE 49506  17488 78736
-    ##   TRUE    205     71   345
+    ##   FALSE 49506  17488 78737
+    ##   TRUE    205     71   344
 
 ``` r
 length(unique(merge1_A$ZIP_CODE5))
@@ -206,9 +296,8 @@ length(unique(merge1_A$ZIP_CODE5))
 #### Export dataset
 
 ``` r
-merge1_A %>% select(PWSID, ZIP_CODE5, Rzcpkg_lat, Rzcpkg_lon) %>% 
-  rename(LAT = Rzcpkg_lat, LON = Rzcpkg_lon) %>% 
-  write.csv("data_export/PWSID_coordinates.csv", row.names = FALSE)
+merge1_A %>% select(PWSID, ZIP_CODE5, LAT, LON, COORD_SRC) %>% 
+  write.csv(gzfile("data_export/PWSID_coordinates.csv.gz"), row.names = FALSE)
 ```
 
 <br>
@@ -216,7 +305,7 @@ merge1_A %>% select(PWSID, ZIP_CODE5, Rzcpkg_lat, Rzcpkg_lon) %>%
 #### Just making sure
 
 ``` r
-checkit <- readr::read_csv("data_export/PWSID_coordinates.csv")
+checkit <- readr::read_csv("data_export/PWSID_coordinates.csv.gz")
 ```
 
     ## Parsed with column specification:
@@ -224,7 +313,8 @@ checkit <- readr::read_csv("data_export/PWSID_coordinates.csv")
     ##   PWSID = col_character(),
     ##   ZIP_CODE5 = col_character(),
     ##   LAT = col_double(),
-    ##   LON = col_double()
+    ##   LON = col_double(),
+    ##   COORD_SRC = col_character()
     ## )
 
 ``` r
@@ -237,30 +327,39 @@ nrow(checkit)
 head(checkit)
 ```
 
-    ## # A tibble: 6 x 4
-    ##   PWSID     ZIP_CODE5   LAT   LON
-    ##   <chr>     <chr>     <dbl> <dbl>
-    ## 1 010106001 06339      41.4 -72.0
-    ## 2 010109005 06382      41.5 -72.1
-    ## 3 010307001 02535      41.3 -70.8
-    ## 4 010502002 02813      41.4 -71.7
-    ## 5 010502003 02813      41.4 -71.7
-    ## 6 020000001 14779      42.2 -78.7
+    ## # A tibble: 6 x 5
+    ##   PWSID     ZIP_CODE5   LAT   LON COORD_SRC
+    ##   <chr>     <chr>     <dbl> <dbl> <chr>    
+    ## 1 010106001 06339      41.4 -72.0 zcta     
+    ## 2 010109005 06382      41.5 -72.1 zcta     
+    ## 3 010307001 02535      41.3 -70.8 zcta     
+    ## 4 010502002 02813      41.4 -71.7 zcta     
+    ## 5 010502003 02813      41.4 -71.7 zcta     
+    ## 6 020000001 14779      42.1 -78.8 zcta
 
 ``` r
-# number NA's, maybe some bad coords?
+# number of NA's, the PWSIDs that were not matched
 summary(checkit$LAT)
 ```
 
     ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
-    ##   -7.21   36.73   41.06   39.99   43.40   71.30     621
+    ##  -14.32   36.73   41.07   39.98   43.39   71.25     620
 
 ``` r
 summary(checkit$LON)
 ```
 
     ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
-    ## -176.64  -96.23  -87.06  -90.67  -78.78  145.75     621
+    ## -176.63  -96.24  -87.07  -90.67  -78.79  145.75     620
+
+``` r
+# coordinate source when present
+table(checkit$COORD_SRC)
+```
+
+    ## 
+    ## rzcpkg   zcta 
+    ##   7203 138528
 
 ``` r
 rm(checkit)
@@ -273,9 +372,6 @@ rm(checkit)
 this is nice: <https://eriqande.github.io/rep-res-web/lectures/making-maps-with-R.html>
 
 ``` r
-library(ggplot2)
-library(maps)
-
 states <- map_data("state")
 
 lwr48 <- state.abb[!state.abb %in% c("AK", "HI")]
@@ -285,24 +381,35 @@ lwr48 <- state.abb[!state.abb %in% c("AK", "HI")]
 merge1_A_CWS_48 <- merge1_A %>% filter(STATE_CODE %in% c(lwr48, "DC"), 
                                        PWS_TYPE_CODE == "CWS",
                                        GW_SW_CODE %in% c("GW", "SW"),
-                                       between(Rzcpkg_lon, -130, -60 ), 
-                                       between(Rzcpkg_lat, 25, 50 ))
+                                       between(LON, -130, -60 ), 
+                                       between(LAT, 25, 50 ))
 
 ggplot(data = states) + 
   geom_polygon(aes(x = long, y = lat, group = group), fill = "white", color = "gray70") + 
   geom_point(data = merge1_A_CWS_48, 
-             aes(x = Rzcpkg_lon, y = Rzcpkg_lat, color = GW_SW_CODE), size = 0.8, alpha = 0.75) +
+             aes(x = LON, y = LAT, color = GW_SW_CODE), size = 0.8, alpha = 0.75) +
   coord_fixed(1.3) + 
   ggtitle("Zip codes with >= 1 Active CWS by surface and ground water as primary source") + 
   scale_color_manual(values = c("purple", "orange")) + facet_wrap(~GW_SW_CODE, ncol = 1)
 ```
 
-![](WaterSystems_zipcodes_files/figure-markdown_github/unnamed-chunk-13-1.png)
+![](WaterSystems_zipcodes_files/figure-markdown_github/unnamed-chunk-15-1.png)
 
-``` r
-table(nchar(water_systems[water_systems$STATE_CODE == "TX"]$ZIP_CODE))
-```
+<br><br><br><br>
 
-    ## 
-    ##    0    5    9   10 
-    ##   15 7033  486 7788
+END
+===
+
+------------------------------------------------------------------------
+
+*In development*
+
+<br>
+
+#### Counting things within a distance of zip code coordinate
+
+<br>
+
+#### linking to demographic info (at zcta-level)
+
+<https://factfinder.census.gov/faces/tableservices/jsf/pages/productview.xhtml?pid=ACS_17_5YR_DP03&prodType=table>
