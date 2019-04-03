@@ -3,8 +3,12 @@ CFB zipcode work
 Jim Sheehan
 April 3, 2019
 
+<br>
+
 0. Load packages
 ----------------
+
+<br>
 
 ``` r
 library(data.table)
@@ -21,8 +25,8 @@ library(zipcode) # for getting lat/lon coordinates where zipcode is available
 
 -   Plan on changing this to access the Google cloud database
 
-I. Load data
-------------
+I. Load and clean data
+----------------------
 
 <br>
 
@@ -231,7 +235,10 @@ colnames(zipcode)
 
 <br>
 
-#### Join
+II. Join data
+-------------
+
+<br>
 
 -   zcta first
 
@@ -367,7 +374,10 @@ rm(checkit)
 
 <br>
 
-#### Exploring things a bit
+III. Exploring things a bit
+---------------------------
+
+<br>
 
 this is nice: <https://eriqande.github.io/rep-res-web/lectures/making-maps-with-R.html>
 
