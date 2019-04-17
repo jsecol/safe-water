@@ -9,11 +9,11 @@ output: github_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-<br>
-
-## 0. Load packages
-
-<br>
+<br>  
+  
+## 0. Load packages  
+  
+<br>  
 
 ```{r message=FALSE}
 library(data.table)
@@ -203,7 +203,7 @@ length(unique(merge1_A$ZIP_CODE5))
 #### Export dataset
 
 ```{r}
-merge1_A %>% select(PWSID, ZIP_CODE5, LAT, LON, COORD_SRC) %>% 
+merge1_A %>% select(PWSID, PWS_TYPE_CODE, ZIP_CODE5, LAT, LON, COORD_SRC) %>% 
   write.csv(gzfile("data_export/PWSID_coordinates.csv.gz"), row.names = FALSE)
 
 ```
@@ -275,16 +275,135 @@ ggplot(data = states) +
 
 #### Counting things within a distance of zip code coordinate
 
++ create spatial sp object
+
 ```{r}
+library(sp)
+
+Coords_CWS <- merge1_A %>% filter(PWS_TYPE_CODE == "CWS") %>% 
+  dplyr::select(ZIP_CODE5, LAT, LON, STATE_CODE) %>% unique() %>% na.omit()
+
+dups_zips <- which(duplicated(Coords_CWS$ZIP_CODE5))
+dups_zips <- Coords_CWS[dups_zips, ]$ZIP_CODE5
+
+Coords_CWS %>% filter(ZIP_CODE5 %in% dups_zips) %>% 
+  arrange(ZIP_CODE5, STATE_CODE)
+
+# so  probably easier to get state via spatial intersection (or drop these, some are potential errors)
+
+Coords_CWS <- merge1_A %>% filter(PWS_TYPE_CODE == "CWS") %>% 
+  dplyr::select(ZIP_CODE5, LAT, LON) %>% unique() %>% na.omit()
+
+geo_prj <- "+proj=longlat +ellps=WGS84"
+
+CWS_A_sp <- sp::SpatialPointsDataFrame(coords = Coords_CWS[,c("LON", "LAT")], 
+                           data = Coords_CWS, proj4string = CRS(geo_prj))
+
+plot(CWS_A_sp)
+```
+
++ trim to US 48 boundary
+
+*found this for easy way to get US mainland:*
+
+https://grokbase.com/t/r/r-sig-geo/106paa0c7w/how-to-transform-polygons-to-spatialpolygons
+
+```{r}
+
+library(maps)
+library(maptools)
+usa <- map("usa", plot = FALSE, fill = TRUE)
+IDs <- sapply(strsplit(usa$names, ":"), function(x) x[1])
+crs <- CRS("+proj=longlat +ellps=WGS84")
+sp.usa <- map2SpatialPolygons(usa, IDs=usa$names, proj4string = crs)
+
+mainland <- list(slot(sp.usa, "polygons")[[3]])
+sp_mainland <- SpatialPolygons(mainland, proj4string = crs)
+str(sp_mainland)
+plot(sp_mainland)
 
 ```
 
+
+```{r}
+CWS_A_sp_main <- CWS_A_sp[sp_mainland,] # easy way to crop!
+
+plot(CWS_A_sp_main, cex = 0.2, col = "gray50")
+```
+
++ get some environmental data (this can take some time and be quite large, here it is being downloaded to a folder created on a local drive; once done it will pull from there if re-run)
+
+https://gis.stackexchange.com/questions/227585/how-to-use-r-to-extract-data-from-worldclim
+
+```{r}
+# worldclim also has future climate available at 2.5, 5, and 10 minutes of a degree; see ?getData
+
+library(raster)
+
+# can get big, so extracting to pre-defined local directory
+
+r <- getData("worldclim", var = "bio", res = 2.5, path = "C:/temp/bioclim")
+r
+
+```
+
++ clean it up a bit and crop it
+```{r}
+rs <- r[[c(1, 5, 6, 7, 8, 12, 16, 17)]]
+names(rs) <- c("TAM","TMAX", "TMIN", "TAR", 
+               "TWQ", "PAN", "PWTQ", "PDQ")
+
+# get extent and add a bit of a buffer
+mainland_extent <- extent(sp_mainland) + c(-1, 1, -1, 1)
+
+rsc <- crop(rs, mainland_extent)
+
+plot(rsc$TAM)
+```
+
++ get data for the zip codes (note can be more involved, use buffer etc; see ?extract)
+```{r}
+CWS_A_sp_main <- extract(x = rsc$TAM, y = CWS_A_sp_main, sp = TRUE)
+
+head(CWS_A_sp_main)
+nrow(CWS_A_sp_main)
+
+# data uses a scale factor of 10, so to get degrees C:
+summary(CWS_A_sp_main$TAM)/10
+
+```
+
+
+```{r}
+library(viridis)
+
+CWS_A_sp_main@data %>% 
+  ggplot(aes(x = LON, y = LAT, color = TAM/10)) +
+  geom_point(size = 0.8) + 
+  scale_color_viridis() +
+  ggtitle("CWS zip codes: mean annual temperature (C)")
+
+# saving sp object for use elsewhere (e.g., linking this environmental variable to PWSID)
+
+saveRDS(CWS_A_sp_main, "data_export/Zips_CWS_A_sp_main_TAM.rds")
+
+```
+
+
+
+
+
 <br>
+
+***
+
+#### In progress:
+
 
 #### linking to demographic info (at zcta-level)
 https://factfinder.census.gov/faces/tableservices/jsf/pages/productview.xhtml?pid=ACS_17_5YR_DP03&prodType=table
 
-
-
+#### getting county
+https://stackoverflow.com/questions/13316185/r-convert-zipcode-or-lat-long-to-county
 
 

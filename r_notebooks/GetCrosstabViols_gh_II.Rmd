@@ -246,6 +246,162 @@ head(viol_RTC_byYear_x)
 ```
 
 
+#### Now for specific contaminant(s)
+```{r}
+library(stringr)
+
+contam_codes <- readr::read_csv("../data/contam.csv")
+
+viol_RTC_byYear %>% filter(str_detect(CONTAMINANT_CODE, "^3")) %>% 
+  group_by(CONTAMINANT_CODE) %>% 
+  count() %>% 
+  left_join(., contam_codes, by = c("CONTAMINANT_CODE" = "CODE"))
+
+
+```
+ 
+*focusing on COLIFORM (TCR) for now*
+
+```{r}
+
+viol_RTC_byYear_x_c <- viol_RTC_byYear %>% 
+  filter(CONTAMINANT_CODE == "3100") %>% 
+  group_by(PWSID, PWS_TYPE_CODE, IS_HEALTH_BASED_IND, rtcd_year) %>% 
+  count() %>% 
+  mutate(hb_year = paste("RTC_HB", IS_HEALTH_BASED_IND, rtcd_year, sep = "_")) %>% 
+  ungroup() %>% 
+  select(PWSID, PWS_TYPE_CODE, hb_year, n) %>% 
+  tidyr::spread(key = hb_year, value = n, fill = 0)
+
+
+head(viol_RTC_byYear_x_c)
+
+
+```
+
+
+
+```{r}
+
+viol_RTC_byYear_x_c <- viol_RTC_byYear_x_c %>% 
+  mutate(RTC_HB_N_sum = rowSums(.[3:12]),
+         RTC_HB_Y_sum = rowSums(.[13:22]))
+
+
+summary(viol_RTC_byYear_x_c[, 23:24])
+
+cor(viol_RTC_byYear_x_c$RTC_HB_N_sum, viol_RTC_byYear_x_c$RTC_HB_Y_sum)
+
+```
+
+
+```{r}
+
+sum(duplicated(viol_RTC_byYear_x_c$PWSID))
+
+zipcoords <- readr::read_csv("data_export/PWSID_coordinates.csv.gz")
+
+viol_RTC_byYear_x_c <- left_join(viol_RTC_byYear_x_c, zipcoords[, -2], by = "PWSID")
+
+# viol_RTC_byYear_x_c %>% filter(is.na(ZIP_CODE5))
+
+CWS_contam_byzip_dat <- viol_RTC_byYear_x_c %>% 
+  filter(!is.na(ZIP_CODE5), ZIP_CODE5 != "00000", PWS_TYPE_CODE == "CWS") %>% 
+  group_by(ZIP_CODE5) %>% 
+  summarise(PW_n = n(), sum_RTC_NHB = sum(RTC_HB_N_sum), sum_RTC_HB = sum(RTC_HB_Y_sum))
+
+summary(CWS_contam_byzip_dat)
+
+min(CWS_contam_byzip_dat$sum_RTC_NHB + CWS_contam_byzip_dat$sum_RTC_HB) # has to be >= 1
+
+```
+
+
+```{r}
+Zips_CWS_A_sp_main_TAM <- readRDS("data_export/Zips_CWS_A_sp_main_TAM.rds")
+
+zipcoords_dat <- zipcoords %>% filter(PWS_TYPE_CODE == "CWS", !is.na(ZIP_CODE5)) %>% 
+  group_by(ZIP_CODE5) %>% 
+  count() %>% 
+  left_join(., Zips_CWS_A_sp_main_TAM@data, by = "ZIP_CODE5") %>% 
+  rename(Tot_PW_n = n)
+
+summary(zipcoords_dat)
+
+CWS_contam_byzip_dat <- left_join(zipcoords_dat, CWS_contam_byzip_dat, by = "ZIP_CODE5")
+
+CWS_contam_byzip_dat <- left_join(CWS_contam_byzip_dat, zipcode, by = c("ZIP_CODE5" = "zip"))
+
+```
+
+
+
+```{r}
+CWS_contam_byzip_datII <- CWS_contam_byzip_dat %>% ungroup() %>% 
+  filter(!is.na(LAT))
+
+CWS_contam_byzip_datII[, 6:8] <- lapply(CWS_contam_byzip_datII[, 6:8], function(x) ifelse(is.na(x), 0, x))
+
+summary(CWS_contam_byzip_datII)
+
+```
+
+
+
+```{r}
+
+plot(CWS_contam_byzip_datII$sum_RTC_NHB, CWS_contam_byzip_datII$PW_n)
+plot(CWS_contam_byzip_datII$sum_RTC_HB, CWS_contam_byzip_datII$PW_n)
+
+```
+
+*this is not good modeling approach*
+```{r}
+model1 <- lm(sum_RTC_HB ~ TAM + PW_n + Rzcpkg_state, data = CWS_contam_byzip_datII)
+plot(model1)
+
+```
+
+```{r}
+model2 <- glm(sum_RTC_HB ~ TAM + PW_n + Rzcpkg_state, data = CWS_contam_byzip_datII, 
+              family = poisson())
+summary(model2)
+plot(model2)
+```
+
+
+```{r}
+
+CWS_contam_byzip_datII[c(18080, 16560, 3325, 392), ]
+
+model2a <- glm(sum_RTC_HB ~ TAM + PW_n, data = CWS_contam_byzip_datII[-c(18080, 16560, 3325, 392), ], 
+              family = poisson())
+model2a
+plot(model2a)
+```
+
+
+```{r}
+
+hist(CWS_contam_byzip_datII$sum_RTC_NHB)
+hist(CWS_contam_byzip_datII$sum_RTC_HB)
+
+hist(CWS_contam_byzip_datII$Tot_PW_n)
+
+hist(CWS_contam_byzip_datII$PW_n)
+
+hist(CWS_contam_byzip_datII$TAM / 10)
+
+```
+
+#### need to wrangle data more/apply a different model
+
+```{r}
+CWS_contam_byzip_datII %>% mutate()
+```
+
+
+
 
 
 
