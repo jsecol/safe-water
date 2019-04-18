@@ -316,33 +316,41 @@ min(CWS_contam_byzip_dat$sum_RTC_NHB + CWS_contam_byzip_dat$sum_RTC_HB) # has to
 
 ```
 
+#### some exploration of State, etc.
+```{r}
+
+```
+
+
+
+
 
 ```{r}
 Zips_CWS_A_sp_main_TAM <- readRDS("data_export/Zips_CWS_A_sp_main_TAM.rds")
 
-zipcoords_dat <- zipcoords %>% filter(PWS_TYPE_CODE == "CWS", !is.na(ZIP_CODE5)) %>% 
-  group_by(ZIP_CODE5) %>% 
-  count() %>% 
-  left_join(., Zips_CWS_A_sp_main_TAM@data, by = "ZIP_CODE5") %>% 
-  rename(Tot_PW_n = n)
-
-summary(zipcoords_dat)
-
-CWS_contam_byzip_dat <- left_join(zipcoords_dat, CWS_contam_byzip_dat, by = "ZIP_CODE5")
-
-CWS_contam_byzip_dat <- left_join(CWS_contam_byzip_dat, zipcode, by = c("ZIP_CODE5" = "zip"))
+# zipcoords_dat <- zipcoords %>% filter(PWS_TYPE_CODE == "CWS", !is.na(ZIP_CODE5)) %>% 
+#   group_by(ZIP_CODE5) %>% 
+#   count() %>% 
+#   left_join(., Zips_CWS_A_sp_main_TAM@data, by = "ZIP_CODE5") %>% 
+#   rename(Tot_PW_n = n)
+# 
+# summary(zipcoords_dat)
+# 
+# CWS_contam_byzip_dat <- left_join(zipcoords_dat, CWS_contam_byzip_dat, by = "ZIP_CODE5")
+# 
+# CWS_contam_byzip_dat <- left_join(CWS_contam_byzip_dat, zipcode, by = c("ZIP_CODE5" = "zip"))
 
 ```
 
 
 
 ```{r}
-CWS_contam_byzip_datII <- CWS_contam_byzip_dat %>% ungroup() %>% 
-  filter(!is.na(LAT))
-
-CWS_contam_byzip_datII[, 6:8] <- lapply(CWS_contam_byzip_datII[, 6:8], function(x) ifelse(is.na(x), 0, x))
-
-summary(CWS_contam_byzip_datII)
+# CWS_contam_byzip_datII <- CWS_contam_byzip_dat %>% ungroup() %>% 
+#   filter(!is.na(LAT))
+# 
+# CWS_contam_byzip_datII[, 6:8] <- lapply(CWS_contam_byzip_datII[, 6:8], function(x) ifelse(is.na(x), 0, x))
+# 
+# summary(CWS_contam_byzip_datII)
 
 ```
 
