@@ -61,7 +61,7 @@ varnames_ws
 
 <br>
 
-#### Looking for duplicates in primary key:
+#### Looking for/at duplicates in primary key:
 ```{r}
 water_systems %>% 
   count(PWSID) %>% 
@@ -81,7 +81,7 @@ key(water_systems)
 
 #### Zipcode data from census zip code tabulation areas
 
- + ideally use these to match to demographics, etc, at a relatively fine scale
+ + can use these to match to demographics, etc, at a relatively fine scale
  
 ```{r}
 # data.table seems to be harder for .zip, using readr package
@@ -140,7 +140,7 @@ water_systems <- water_systems %>%
 
 #### Rename some of the columns for zipcode::zipcode prior to join
 
-+ helps distinguish from similar SWDIS variable names, and other lat/lon sources (e.g., zipcode tabulation area centroids for comparison)
++ helps distinguish from similar SDWIS variable names, and other lat/lon sources (e.g., zipcode tabulation area centroids for comparison)
 ```{r}
 colnames(zipcode)
 colnames(zipcode) <- c("zip", "Rzcpkg_city", "Rzcpkg_state", "Rzcpkg_lat", "Rzcpkg_lon")
@@ -202,8 +202,9 @@ length(unique(merge1_A$ZIP_CODE5))
 
 #### Export dataset
 
++ adding city and state from zipcode package, may be useful later (also may be different than water_systems)
 ```{r}
-merge1_A %>% select(PWSID, PWS_TYPE_CODE, ZIP_CODE5, LAT, LON, COORD_SRC) %>% 
+merge1_A %>% select(PWSID, PWS_TYPE_CODE, ZIP_CODE5, LAT, LON, COORD_SRC, Rzcpkg_state, Rzcpkg_city) %>% 
   write.csv(gzfile("data_export/PWSID_coordinates.csv.gz"), row.names = FALSE)
 
 ```
@@ -273,7 +274,7 @@ ggplot(data = states) +
 
 <br>
 
-#### Counting things within a distance of zip code coordinate
+#### Counting things at/within a distance of zip code coordinate
 
 + create spatial sp object
 
@@ -291,6 +292,8 @@ Coords_CWS %>% filter(ZIP_CODE5 %in% dups_zips) %>%
 
 # so  probably easier to get state via spatial intersection (or drop these, some are potential errors)
 
+# redo
+
 Coords_CWS <- merge1_A %>% filter(PWS_TYPE_CODE == "CWS") %>% 
   dplyr::select(ZIP_CODE5, LAT, LON) %>% unique() %>% na.omit()
 
@@ -302,7 +305,7 @@ CWS_A_sp <- sp::SpatialPointsDataFrame(coords = Coords_CWS[,c("LON", "LAT")],
 plot(CWS_A_sp)
 ```
 
-+ trim to US 48 boundary
++ in this example, trimming to US 48 boundary
 
 *found this for easy way to get US mainland:*
 
@@ -324,6 +327,7 @@ plot(sp_mainland)
 
 ```
 
+*crop the zip codes:*
 
 ```{r}
 CWS_A_sp_main <- CWS_A_sp[sp_mainland,] # easy way to crop!
@@ -332,7 +336,9 @@ plot(CWS_A_sp_main, cex = 0.2, col = "gray50")
 ```
 
 + get some environmental data (this can take some time and be quite large, here it is being downloaded to a folder created on a local drive; once done it will pull from there if re-run)
-
+  
+*following:*  
+  
 https://gis.stackexchange.com/questions/227585/how-to-use-r-to-extract-data-from-worldclim
 
 ```{r}
@@ -348,6 +354,7 @@ r
 ```
 
 + clean it up a bit and crop it
+
 ```{r}
 rs <- r[[c(1, 5, 6, 7, 8, 12, 16, 17)]]
 names(rs) <- c("TAM","TMAX", "TMIN", "TAR", 
@@ -358,30 +365,33 @@ mainland_extent <- extent(sp_mainland) + c(-1, 1, -1, 1)
 
 rsc <- crop(rs, mainland_extent)
 
+# TAM (mean annual temp in C * 10)
 plot(rsc$TAM)
 ```
 
-+ get data for the zip codes (note can be more involved, use buffer etc; see ?extract)
++ get data for the zip codes (note: can be more involved, such as using a buffer; see ?extract)
+
 ```{r}
 CWS_A_sp_main <- extract(x = rsc$TAM, y = CWS_A_sp_main, sp = TRUE)
 
 head(CWS_A_sp_main)
 nrow(CWS_A_sp_main)
 
-# data uses a scale factor of 10, so to get degrees C:
+# since data uses a scale factor of 10, to get degrees C:
 summary(CWS_A_sp_main$TAM)/10
 
 ```
 
++ Make a map of it
 
 ```{r}
-library(viridis)
+library(viridis) # some nice color schemes via ggplot2 added function scale_color_viridis
 
 CWS_A_sp_main@data %>% 
   ggplot(aes(x = LON, y = LAT, color = TAM/10)) +
   geom_point(size = 0.8) + 
   scale_color_viridis() +
-  ggtitle("CWS zip codes: mean annual temperature (C)")
+  ggtitle("Active, CWS zip codes: mean annual temperature (C)")
 
 # saving sp object for use elsewhere (e.g., linking this environmental variable to PWSID)
 
@@ -389,15 +399,11 @@ saveRDS(CWS_A_sp_main, "data_export/Zips_CWS_A_sp_main_TAM.rds")
 
 ```
 
-
-
-
-
 <br>
 
 ***
 
-#### In progress:
+*In development*
 
 
 #### linking to demographic info (at zcta-level)

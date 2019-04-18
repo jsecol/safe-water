@@ -92,7 +92,7 @@ varnames_ws
 
 <br>
 
-#### Looking for duplicates in primary key:
+#### Looking for/at duplicates in primary key:
 
 ``` r
 water_systems %>% 
@@ -118,7 +118,7 @@ key(water_systems)
 
 #### Zipcode data from census zip code tabulation areas
 
--   ideally use these to match to demographics, etc, at a relatively fine scale
+-   can use these to match to demographics, etc, at a relatively fine scale
 
 ``` r
 # data.table seems to be harder for .zip, using readr package
@@ -217,7 +217,7 @@ water_systems <- water_systems %>%
 
 #### Rename some of the columns for zipcode::zipcode prior to join
 
--   helps distinguish from similar SWDIS variable names, and other lat/lon sources (e.g., zipcode tabulation area centroids for comparison)
+-   helps distinguish from similar SDWIS variable names, and other lat/lon sources (e.g., zipcode tabulation area centroids for comparison)
 
 ``` r
 colnames(zipcode)
@@ -302,8 +302,10 @@ length(unique(merge1_A$ZIP_CODE5))
 
 #### Export dataset
 
+-   adding city and state from zipcode package, may be useful later (also may be different than water\_systems)
+
 ``` r
-merge1_A %>% select(PWSID, ZIP_CODE5, LAT, LON, COORD_SRC) %>% 
+merge1_A %>% select(PWSID, PWS_TYPE_CODE, ZIP_CODE5, LAT, LON, COORD_SRC, Rzcpkg_state, Rzcpkg_city) %>% 
   write.csv(gzfile("data_export/PWSID_coordinates.csv.gz"), row.names = FALSE)
 ```
 
@@ -318,10 +320,13 @@ checkit <- readr::read_csv("data_export/PWSID_coordinates.csv.gz")
     ## Parsed with column specification:
     ## cols(
     ##   PWSID = col_character(),
+    ##   PWS_TYPE_CODE = col_character(),
     ##   ZIP_CODE5 = col_character(),
     ##   LAT = col_double(),
     ##   LON = col_double(),
-    ##   COORD_SRC = col_character()
+    ##   COORD_SRC = col_character(),
+    ##   Rzcpkg_state = col_character(),
+    ##   Rzcpkg_city = col_character()
     ## )
 
 ``` r
@@ -334,15 +339,16 @@ nrow(checkit)
 head(checkit)
 ```
 
-    ## # A tibble: 6 x 5
-    ##   PWSID     ZIP_CODE5   LAT   LON COORD_SRC
-    ##   <chr>     <chr>     <dbl> <dbl> <chr>    
-    ## 1 010106001 06339      41.4 -72.0 zcta     
-    ## 2 010109005 06382      41.5 -72.1 zcta     
-    ## 3 010307001 02535      41.3 -70.8 zcta     
-    ## 4 010502002 02813      41.4 -71.7 zcta     
-    ## 5 010502003 02813      41.4 -71.7 zcta     
-    ## 6 020000001 14779      42.1 -78.8 zcta
+    ## # A tibble: 6 x 8
+    ##   PWSID PWS_TYPE_CODE ZIP_CODE5   LAT   LON COORD_SRC Rzcpkg_state
+    ##   <chr> <chr>         <chr>     <dbl> <dbl> <chr>     <chr>       
+    ## 1 0101~ CWS           06339      41.4 -72.0 zcta      CT          
+    ## 2 0101~ CWS           06382      41.5 -72.1 zcta      CT          
+    ## 3 0103~ CWS           02535      41.3 -70.8 zcta      MA          
+    ## 4 0105~ NTNCWS        02813      41.4 -71.7 zcta      RI          
+    ## 5 0105~ NTNCWS        02813      41.4 -71.7 zcta      RI          
+    ## 6 0200~ CWS           14779      42.1 -78.8 zcta      NY          
+    ## # ... with 1 more variable: Rzcpkg_city <chr>
 
 ``` r
 # number of NA's, the PWSIDs that were not matched
@@ -416,10 +422,254 @@ END
 
 <br>
 
-#### Counting things within a distance of zip code coordinate
+#### Counting things at/within a distance of zip code coordinate
+
+-   create spatial sp object
+
+``` r
+library(sp)
+
+Coords_CWS <- merge1_A %>% filter(PWS_TYPE_CODE == "CWS") %>% 
+  dplyr::select(ZIP_CODE5, LAT, LON, STATE_CODE) %>% unique() %>% na.omit()
+
+dups_zips <- which(duplicated(Coords_CWS$ZIP_CODE5))
+dups_zips <- Coords_CWS[dups_zips, ]$ZIP_CODE5
+
+Coords_CWS %>% filter(ZIP_CODE5 %in% dups_zips) %>% 
+  arrange(ZIP_CODE5, STATE_CODE)
+```
+
+    ##    ZIP_CODE5      LAT        LON STATE_CODE
+    ## 1      06062 41.67364  -72.85973         CT
+    ## 2      06062 41.67364  -72.85973         MA
+    ## 3      10931 41.14879  -74.16252         NJ
+    ## 4      10931 41.14879  -74.16252         NY
+    ## 5      15824 41.25083  -78.84119         NJ
+    ## 6      15824 41.25083  -78.84119         PA
+    ## 7      17087 40.43576  -76.28081         NY
+    ## 8      17087 40.43576  -76.28081         PA
+    ## 9      17522 40.17369  -76.17049         PA
+    ## 10     17522 40.17369  -76.17049         WV
+    ## 11     55415 44.97480  -93.25765         MN
+    ## 12     55415 44.97480  -93.25765         WI
+    ## 13     59602 46.73936 -111.90553         ME
+    ## 14     59602 46.73936 -111.90553         MT
+    ## 15     61745 40.32488  -88.97107         IL
+    ## 16     61745 40.32488  -88.97107         MO
+    ## 17     64668 39.35507  -93.70441         FL
+    ## 18     64668 39.35507  -93.70441         MO
+    ## 19     77351 30.71779  -94.81723         AZ
+    ## 20     77351 30.71779  -94.81723         TX
+    ## 21     86044 36.69319 -110.81027         AZ
+    ## 22     86044 36.69319 -110.81027         NM
+    ## 23     92069 33.17077 -117.15868         CA
+    ## 24     92069 33.17077 -117.15868         MI
+    ## 25     96950 15.18689  145.75440         MO
+    ## 26     96950 15.18689  145.75440         MP
+    ## 27     99563 61.53107 -165.59720         AK
+    ## 28     99563 61.53107 -165.59720         CA
+
+``` r
+# so  probably easier to get state via spatial intersection (or drop these, some are potential errors)
+
+# redo
+
+Coords_CWS <- merge1_A %>% filter(PWS_TYPE_CODE == "CWS") %>% 
+  dplyr::select(ZIP_CODE5, LAT, LON) %>% unique() %>% na.omit()
+
+geo_prj <- "+proj=longlat +ellps=WGS84"
+
+CWS_A_sp <- sp::SpatialPointsDataFrame(coords = Coords_CWS[,c("LON", "LAT")], 
+                           data = Coords_CWS, proj4string = CRS(geo_prj))
+
+plot(CWS_A_sp)
+```
+
+![](WaterSystems_zipcodes_files/figure-markdown_github/unnamed-chunk-16-1.png)
+
+-   in this example, trimming to US 48 boundary
+
+*found this for easy way to get US mainland:*
+
+<https://grokbase.com/t/r/r-sig-geo/106paa0c7w/how-to-transform-polygons-to-spatialpolygons>
+
+``` r
+library(maps)
+library(maptools)
+```
+
+    ## Checking rgeos availability: TRUE
+
+``` r
+usa <- map("usa", plot = FALSE, fill = TRUE)
+IDs <- sapply(strsplit(usa$names, ":"), function(x) x[1])
+crs <- CRS("+proj=longlat +ellps=WGS84")
+sp.usa <- map2SpatialPolygons(usa, IDs=usa$names, proj4string = crs)
+
+mainland <- list(slot(sp.usa, "polygons")[[3]])
+sp_mainland <- SpatialPolygons(mainland, proj4string = crs)
+str(sp_mainland)
+```
+
+    ## Formal class 'SpatialPolygons' [package "sp"] with 4 slots
+    ##   ..@ polygons   :List of 1
+    ##   .. ..$ :Formal class 'Polygons' [package "sp"] with 5 slots
+    ##   .. .. .. ..@ Polygons :List of 1
+    ##   .. .. .. .. ..$ :Formal class 'Polygon' [package "sp"] with 5 slots
+    ##   .. .. .. .. .. .. ..@ labpt  : num [1:2] -99.4 39.4
+    ##   .. .. .. .. .. .. ..@ area   : num 816
+    ##   .. .. .. .. .. .. ..@ hole   : logi FALSE
+    ##   .. .. .. .. .. .. ..@ ringDir: int 1
+    ##   .. .. .. .. .. .. ..@ coords : num [1:6886, 1:2] -101 -101 -101 -101 -102 ...
+    ##   .. .. .. ..@ plotOrder: int 1
+    ##   .. .. .. ..@ labpt    : num [1:2] -99.4 39.4
+    ##   .. .. .. ..@ ID       : chr "main"
+    ##   .. .. .. ..@ area     : num 816
+    ##   ..@ plotOrder  : int 1
+    ##   ..@ bbox       : num [1:2, 1:2] -124.7 25.1 -67 49.4
+    ##   .. ..- attr(*, "dimnames")=List of 2
+    ##   .. .. ..$ : chr [1:2] "x" "y"
+    ##   .. .. ..$ : chr [1:2] "min" "max"
+    ##   ..@ proj4string:Formal class 'CRS' [package "sp"] with 1 slot
+    ##   .. .. ..@ projargs: chr "+proj=longlat +ellps=WGS84"
+
+``` r
+plot(sp_mainland)
+```
+
+![](WaterSystems_zipcodes_files/figure-markdown_github/unnamed-chunk-17-1.png)
+
+*crop the zip codes:*
+
+``` r
+CWS_A_sp_main <- CWS_A_sp[sp_mainland,] # easy way to crop!
+
+plot(CWS_A_sp_main, cex = 0.2, col = "gray50")
+```
+
+![](WaterSystems_zipcodes_files/figure-markdown_github/unnamed-chunk-18-1.png)
+
+-   get some environmental data (this can take some time and be quite large, here it is being downloaded to a folder created on a local drive; once done it will pull from there if re-run)
+
+*following:*
+
+<https://gis.stackexchange.com/questions/227585/how-to-use-r-to-extract-data-from-worldclim>
+
+``` r
+# worldclim also has future climate available at 2.5, 5, and 10 minutes of a degree; see ?getData
+
+library(raster)
+```
+
+    ## 
+    ## Attaching package: 'raster'
+
+    ## The following object is masked from 'package:dplyr':
+    ## 
+    ##     select
+
+    ## The following object is masked from 'package:data.table':
+    ## 
+    ##     shift
+
+``` r
+# can get big, so extracting to pre-defined local directory
+
+r <- getData("worldclim", var = "bio", res = 2.5, path = "C:/temp/bioclim")
+r
+```
+
+    ## class       : RasterStack 
+    ## dimensions  : 3600, 8640, 31104000, 19  (nrow, ncol, ncell, nlayers)
+    ## resolution  : 0.04166667, 0.04166667  (x, y)
+    ## extent      : -180, 180, -60, 90  (xmin, xmax, ymin, ymax)
+    ## coord. ref. : +proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0 
+    ## names       :  bio1,  bio2,  bio3,  bio4,  bio5,  bio6,  bio7,  bio8,  bio9, bio10, bio11, bio12, bio13, bio14, bio15, ... 
+    ## min values  :  -278,     9,     8,    64,   -86,  -559,    53,  -278,  -501,  -127,  -506,     0,     0,     0,     0, ... 
+    ## max values  :   319,   213,    96, 22704,   489,   258,   725,   376,   365,   382,   289, 10577,  2437,   697,   265, ...
+
+-   clean it up a bit and crop it
+
+``` r
+rs <- r[[c(1, 5, 6, 7, 8, 12, 16, 17)]]
+names(rs) <- c("TAM","TMAX", "TMIN", "TAR", 
+               "TWQ", "PAN", "PWTQ", "PDQ")
+
+# get extent and add a bit of a buffer
+mainland_extent <- extent(sp_mainland) + c(-1, 1, -1, 1)
+
+rsc <- crop(rs, mainland_extent)
+
+# TAM (mean annual temp in C * 10)
+plot(rsc$TAM)
+```
+
+![](WaterSystems_zipcodes_files/figure-markdown_github/unnamed-chunk-20-1.png)
+
+-   get data for the zip codes (note: can be more involved, such as using a buffer; see ?extract)
+
+``` r
+CWS_A_sp_main <- extract(x = rsc$TAM, y = CWS_A_sp_main, sp = TRUE)
+
+head(CWS_A_sp_main)
+```
+
+    ##    ZIP_CODE5      LAT       LON TAM
+    ## 1      06339 41.44194 -71.99054  97
+    ## 2      06382 41.46895 -72.12274  97
+    ## 4      14779 42.08123 -78.77799  62
+    ## 6      13655 44.98186 -74.65015  66
+    ## 8      13120 42.93319 -76.17515  81
+    ## 11     36502 31.14773 -87.49482 184
+
+``` r
+nrow(CWS_A_sp_main)
+```
+
+    ## [1] 20273
+
+``` r
+# since data uses a scale factor of 10, to get degrees C:
+summary(CWS_A_sp_main$TAM)/10
+```
+
+    ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+    ##   -3.80    8.50   11.20   11.96   15.60   24.30
+
+-   Make a map of it
+
+``` r
+library(viridis) # some nice color schemes via ggplot2 added function scale_color_viridis
+```
+
+    ## Loading required package: viridisLite
+
+``` r
+CWS_A_sp_main@data %>% 
+  ggplot(aes(x = LON, y = LAT, color = TAM/10)) +
+  geom_point(size = 0.8) + 
+  scale_color_viridis() +
+  ggtitle("Active, CWS zip codes: mean annual temperature (C)")
+```
+
+![](WaterSystems_zipcodes_files/figure-markdown_github/unnamed-chunk-22-1.png)
+
+``` r
+# saving sp object for use elsewhere (e.g., linking this environmental variable to PWSID)
+
+saveRDS(CWS_A_sp_main, "data_export/Zips_CWS_A_sp_main_TAM.rds")
+```
 
 <br>
+
+------------------------------------------------------------------------
+
+*In development*
 
 #### linking to demographic info (at zcta-level)
 
 <https://factfinder.census.gov/faces/tableservices/jsf/pages/productview.xhtml?pid=ACS_17_5YR_DP03&prodType=table>
+
+#### getting county
+
+<https://stackoverflow.com/questions/13316185/r-convert-zipcode-or-lat-long-to-county>
