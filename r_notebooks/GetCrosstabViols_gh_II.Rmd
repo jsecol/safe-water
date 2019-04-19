@@ -357,8 +357,85 @@ viol_RTC_byYear_x_c %>%
 ```
 
 
+```{r}
 
-#### Maybe focus on NE and MO, quite different sample sizes but high, good story there?
+viol_RTC_byYear_x_c %>% 
+  filter(Rzcpkg_state %in% c(state.abb, "PR"), PWS_TYPE_CODE == "CWS") %>% 
+  group_by(Rzcpkg_state) %>% 
+  summarise_at(vars(RTC_HB_Y_2008:RTC_HB_Y_2012), sum) %>% 
+  print.data.frame()
+
+viol_RTC_byYear_x_c %>% 
+  filter(Rzcpkg_state %in% c(state.abb, "PR"), PWS_TYPE_CODE == "CWS") %>% 
+  group_by(Rzcpkg_state) %>% 
+  summarise_at(vars(RTC_HB_Y_2013:RTC_HB_Y_2017), sum) %>% 
+  print.data.frame()
+
+viol_RTC_byYear_x_c %>% 
+  filter(Rzcpkg_state %in% c(state.abb, "PR"), PWS_TYPE_CODE == "CWS") %>% 
+  group_by(Rzcpkg_state) %>% 
+  summarise_at(vars(RTC_HB_Y_2008:RTC_HB_Y_2017), sum) %>% 
+  tidyr::gather(Variable, Value, 2:11) %>% 
+  arrange(Rzcpkg_state, Variable) %>% 
+  ggplot(aes(x = Variable, y = Value, group = Rzcpkg_state)) +
+  geom_line(aes(color = Rzcpkg_state)) +
+  theme(legend.position = "none")
+
+viol_RTC_byYear_x_c %>% 
+  filter(Rzcpkg_state %in% c(state.abb, "PR"), PWS_TYPE_CODE == "CWS") %>% 
+  group_by(Rzcpkg_state) %>% 
+  summarise_at(vars(RTC_HB_Y_2008:RTC_HB_Y_2017), sum) %>% 
+  tidyr::gather(Variable, Value, 2:11) %>% 
+  arrange(Rzcpkg_state, Variable) %>% 
+  ggplot(aes(x = Variable, y = Value+1, group = Rzcpkg_state)) +
+  geom_line(aes(color = Rzcpkg_state)) +
+  scale_y_log10() +
+  theme(legend.position = "none")
+
+```
+
+
+
+#### Actual numbers roadblock
+
+Ex., MO4010718 in MO has numerous HB RTC COLIFORM (TCR) in 2014:
+  
+https://ofmpub.epa.gov/enviro/sdw_report_v3.first_table?pws_id=MO4010718&state=MO&source=Ground%20water%20purchased&population=360&sys_num=0  
+  
+not sure if should standardize somehow/reduce to 1, ideally might want to generate complete timeline relevant to a particular contaminant for each PWSID  
+
+#### Trying 0/1 for now
+
+
+```{r}
+viol_RTC_byYear_x_c <- viol_RTC_byYear_x_c %>% 
+  mutate(RTC_HB_N = ifelse(RTC_HB_N_sum > 0, 1, 0), 
+         RTC_HB_Y = ifelse(RTC_HB_Y_sum > 0, 1, 0))
+```
+
+
+
+```{r fig.height=9, fig.width=6}
+
+Total_CWS_byState <- zipcoords %>% 
+  filter(PWS_TYPE_CODE == "CWS") %>% 
+  group_by(Rzcpkg_state) %>% 
+  summarise(totCWS = n())
+
+
+viol_RTC_byYear_x_c %>% 
+  filter(Rzcpkg_state %in% c(state.abb, "PR"), 
+         PWS_TYPE_CODE == "CWS") %>% 
+  group_by(Rzcpkg_state) %>% 
+  summarise(RTC_HB_Y_sum = sum(RTC_HB_Y)) %>% 
+  left_join(., Total_CWS_byState, by = "Rzcpkg_state") %>% 
+  ggplot(aes(x = reorder(Rzcpkg_state, (RTC_HB_Y_sum / totCWS), sum), 
+             y = (RTC_HB_Y_sum / totCWS)*100)) + 
+  geom_bar(stat = "identity") + 
+  geom_text(aes(y = 0, label = totCWS), size = 3, nudge_y = -2) + 
+  coord_flip(ylim = c(-1, 60))
+
+```
 
 
 
@@ -367,6 +444,12 @@ viol_RTC_byYear_x_c %>%
 
 
 
+
+
+*Maybe interesting to focus on NE and MO, quite different sample sizes but high*
+
+
+***
 
 
 *count of PWSIDs by State that have had RTC_HB_Y over 10 year period for COLIFORM (TCR)*
