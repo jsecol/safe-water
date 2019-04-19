@@ -432,8 +432,11 @@ viol_RTC_byYear_x_c %>%
   ggplot(aes(x = reorder(Rzcpkg_state, (RTC_HB_Y_sum / totCWS), sum), 
              y = (RTC_HB_Y_sum / totCWS)*100)) + 
   geom_bar(stat = "identity") + 
+  ylab("% of total CWS") +
   geom_text(aes(y = 0, label = totCWS), size = 3, nudge_y = -2) + 
-  coord_flip(ylim = c(-1, 60))
+  coord_flip(ylim = c(-1, 60)) + 
+  ggtitle("State/Territory % of Active, CWS's that returned to compliance \n for a health-based COLIFORM (TCR) violation 2008-17", 
+          subtitle = "(Total Active, CWS N per State/Territory by label)")
 
 ```
 
