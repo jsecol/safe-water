@@ -29,6 +29,8 @@ library(lubridate)
 
 <br>
 
++ Plan on changing this to access the Google cloud database
+
 ```{r results='hold'}
 
 # library(readr)
@@ -81,7 +83,7 @@ if(dups_sum == 0) {
 
 <br>
 
-#### Looking for duplicates in primary (composite) key:
+#### Looking for/at duplicates in primary (composite) key:
 ```{r}
 viol_all %>% 
   count(PWSID, VIOLATION_ID) %>% 
@@ -114,7 +116,7 @@ class(viol_all$cpbd)
 summary(viol_all$cpbd)
 ```
 
-*Note: max compliance period begin date way beyond present! Just a couple: PR0004565, LA1017050*
+*Note: max compliance period begin date way beyond present! Just a couple though: PR0004565, LA1017050*
 
 <br>
 
@@ -247,6 +249,9 @@ head(viol_RTC_byYear_x)
 
 
 #### Now for specific contaminant(s)
+
++ looking at their (here those starting with "3") descriptive names, etc. via join and their total count n 
+
 ```{r}
 library(stringr)
 
@@ -279,7 +284,7 @@ head(viol_RTC_byYear_x_c)
 
 ```
 
-
++ adding some summary columns
 
 ```{r}
 
@@ -287,15 +292,15 @@ viol_RTC_byYear_x_c <- viol_RTC_byYear_x_c %>%
   mutate(RTC_HB_N_sum = rowSums(.[3:12]),
          RTC_HB_Y_sum = rowSums(.[13:22]))
 
-
 summary(viol_RTC_byYear_x_c[, 23:24])
 
 cor(viol_RTC_byYear_x_c$RTC_HB_N_sum, viol_RTC_byYear_x_c$RTC_HB_Y_sum)
 
 ```
 
++ join to zip code-associated data
 
-```{r}
+```{r message=FALSE}
 
 sum(duplicated(viol_RTC_byYear_x_c$PWSID))
 
@@ -305,6 +310,92 @@ viol_RTC_byYear_x_c <- left_join(viol_RTC_byYear_x_c, zipcoords[, -2], by = "PWS
 
 # viol_RTC_byYear_x_c %>% filter(is.na(ZIP_CODE5))
 
+
+```
+
+
++ some exploration of State, etc. (this State from zipcode R package, may differ from SDWIS for some PWSIDs but going with for now)
+
+```{r fig.height=9, fig.width=7}
+
+viol_RTC_byYear_x_c %>% 
+  filter(Rzcpkg_state %in% c(state.abb, "PR"), PWS_TYPE_CODE == "CWS") %>% 
+  group_by(Rzcpkg_state) %>% 
+  summarise(meanRTC_HB_Y = mean(RTC_HB_Y_sum), meanRTC_HB_N = mean(RTC_HB_N_sum)) %>% 
+  ungroup() %>% 
+  mutate(Rzcpkg_state = forcats::fct_reorder(Rzcpkg_state, meanRTC_HB_Y)) %>%
+  tidyr::gather(Variable, Value, 2:3) %>% 
+  ggplot(aes(x = Rzcpkg_state, y = Value, fill = Variable)) + 
+  geom_bar(stat = "identity") +
+  coord_flip()
+
+```
+
++ data when there is at least 1 HB RTC
+
+```{r fig.height=9, fig.width=9}
+
+n_RTC_HB_Y <- viol_RTC_byYear_x_c %>% 
+  filter(Rzcpkg_state %in% c(state.abb, "PR"), 
+         PWS_TYPE_CODE == "CWS", RTC_HB_Y_sum > 0) %>% 
+  group_by(Rzcpkg_state) %>% 
+  summarize(x_n = n(), y_mean = mean(RTC_HB_Y_sum)) %>% 
+  arrange(-y_mean)
+
+
+viol_RTC_byYear_x_c %>% 
+  filter(Rzcpkg_state %in% c(state.abb, "PR"), 
+         PWS_TYPE_CODE == "CWS", RTC_HB_Y_sum > 0) %>% 
+  ggplot(aes(x = reorder(Rzcpkg_state, RTC_HB_Y_sum, mean), y = RTC_HB_Y_sum)) + 
+  geom_boxplot() +
+  stat_summary(fun.y=mean, colour="darkred", geom="point", 
+                           shape=18, size=3, show.legend = FALSE) +
+  geom_text(data = n_RTC_HB_Y, aes(x = reorder(Rzcpkg_state, y_mean), 
+                                   y = 0, label = x_n), size = 3, nudge_y = 0) + 
+  coord_flip(ylim = c(1, 45))
+  
+```
+
+
+
+#### Maybe focus on NE and MO, quite different sample sizes but high, good story there?
+
+
+
+
+
+
+
+
+
+
+*count of PWSIDs by State that have had RTC_HB_Y over 10 year period for COLIFORM (TCR)*
+```{r}
+zipcoords %>% 
+  filter(Rzcpkg_state %in% c(state.abb, "PR"), PWS_TYPE_CODE == "CWS") %>% 
+  group_by(Rzcpkg_state) %>% 
+  count() %>% arrange(-n) %>% 
+  print.data.frame()  
+
+
+viol_RTC_byYear_x_c %>% 
+  filter(Rzcpkg_state %in% c(state.abb, "PR"), PWS_TYPE_CODE == "CWS", RTC_HB_Y_sum > 0) %>% 
+  group_by(Rzcpkg_state) %>% 
+  count() %>% arrange(-n) %>% 
+  print.data.frame()
+
+```
+
+
+
+
+
+#### aggregating to zip code
+
+
+```{r}
+
+
 CWS_contam_byzip_dat <- viol_RTC_byYear_x_c %>% 
   filter(!is.na(ZIP_CODE5), ZIP_CODE5 != "00000", PWS_TYPE_CODE == "CWS") %>% 
   group_by(ZIP_CODE5) %>% 
@@ -313,11 +404,6 @@ CWS_contam_byzip_dat <- viol_RTC_byYear_x_c %>%
 summary(CWS_contam_byzip_dat)
 
 min(CWS_contam_byzip_dat$sum_RTC_NHB + CWS_contam_byzip_dat$sum_RTC_HB) # has to be >= 1
-
-```
-
-#### some exploration of State, etc.
-```{r}
 
 ```
 
