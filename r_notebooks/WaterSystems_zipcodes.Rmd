@@ -16,6 +16,8 @@ knitr::opts_chunk$set(echo = TRUE)
 <br>  
 
 ```{r message=FALSE}
+
+library(RMySQL)
 library(data.table)
 library(readr)
 library(dplyr) # some masking of data.table: between, first, last
@@ -30,32 +32,56 @@ library(zipcode) # for getting lat/lon coordinates where zipcode is available
 
 <br>
 
-+ Plan on changing this to access the Google cloud database
-
-## I. Load and clean data
+## I. Connect to the Google cloud database and load data
 
 <br>
 
+
+  + Google Cloud SDK steps (I'm in Windows so "\" not "/")  
+  
+<!-- gcloud auth login -->
+<!-- cd C:\temp\db -->
+<!-- .\cloud_sql_proxy -instances=safe-water-235819:us-east1:safe-water-db=tcp:3306 -->
+  
+
 ```{r}
-water_systems <- fread("C:/Users/Jim/Files/CFB/JohnMeroth/SDWIS/WATER_SYSTEM.csv", 
-                  sep = ",")
+kr_name <- "my_keyring"
+kr_service <- "my_database"
+kr_username <- "my_username"
+kr_password <- "my_password"
+
+db_name <- "safe_water"
+db_host <- "127.0.0.1" # for local access
+db_port <- 3306
+
+mydb <-  dbConnect(MySQL(), 
+                   user = keyring::backend_file$new()$get(service = kr_service,
+                                user = kr_username,
+                                keyring = kr_name), 
+                   password = keyring::backend_file$new()$get(service = kr_service,
+                                user = kr_password,
+                                keyring = kr_name), 
+                   dbname = db_name, host = db_host, port = db_port)
+
+dbListTables(mydb)
+  
+
 ```
 
 <br>
 
-#### Small fix of column names (dropping string before "."), and dropping extra empty column:
+#### Query Active PWS from WATER_SYSTEM
 ```{r}
-water_systems[, V48 := NULL]
 
-varnames_ws <- colnames(water_systems)
-head(varnames_ws)
+db_table <- 'WATER_SYSTEM'
+s <- paste0("SELECT * FROM ", db_table, " WHERE PWS_ACTIVITY_CODE = 'A'")
+rs <- dbSendQuery(mydb, s)
+water_system <-  fetch(rs, n = -1)
 
-varnames_ws <- gsub("^.*\\.","",varnames_ws)
-colnames(water_systems) <- varnames_ws
-# fixed variable names
-cat("\n")
-varnames_ws
+dim(water_system)
+names(water_system)
 
+dbDisconnect(mydb)
 
 ```
 
@@ -63,7 +89,7 @@ varnames_ws
 
 #### Looking for/at duplicates in primary key:
 ```{r}
-water_systems %>% 
+water_system %>% 
   count(PWSID) %>% 
   filter(n > 1)
 
@@ -73,8 +99,10 @@ water_systems %>%
 
 #### Set primary key:
 ```{r}
-setkey(water_systems, PWSID)
-key(water_systems)
+water_system <- as.data.table(water_system) # convert to data.table
+setkey(water_system, PWSID)
+key(water_system)
+
 ```
 
 <br>
@@ -109,27 +137,27 @@ sum(nchar(zipcode$zip) != 5) # all 5 character length
 #### Zipcode clean:
 ```{r}
 
-# whoa, the zip codes in water_systems are messy:
-unique(nchar(water_systems$ZIP_CODE))
-nrow(water_systems[nchar(water_systems$ZIP_CODE) != 5 & nchar(water_systems$ZIP_CODE) > 0, ])
+# whoa, the zip codes in water_system are messy:
+unique(nchar(water_system$ZIP_CODE))
+nrow(water_system[nchar(water_system$ZIP_CODE) != 5 & nchar(water_system$ZIP_CODE) > 0, ])
 
 
-water_systems$ZIP_CODE5 <- substr(water_systems$ZIP_CODE, start = 1, stop = 5) 
+water_system$ZIP_CODE5 <- substr(water_system$ZIP_CODE, start = 1, stop = 5) 
 
-sum(is.na(water_systems$ZIP_CODE5))
+sum(is.na(water_system$ZIP_CODE5))
 
 # now using zipcode clean package function (which doesn't fix >5 character zips)
 # seems to remove mostly junk (zip codes "", with characters instead of #'s, etc.)
-water_systems$ZIP_CODE5 <- clean.zipcodes(water_systems$ZIP_CODE5)
+water_system$ZIP_CODE5 <- clean.zipcodes(water_system$ZIP_CODE5)
 
-sum(is.na(water_systems$ZIP_CODE5))
+sum(is.na(water_system$ZIP_CODE5))
 
-water_systems %>% filter(is.na(ZIP_CODE5), ZIP_CODE != "") %>% 
+water_system %>% filter(is.na(ZIP_CODE5), ZIP_CODE != "") %>% 
   .$ZIP_CODE
 
 # Fixing one "5496O" should be "54960"
 
-water_systems <- water_systems %>% 
+water_system <- water_system %>% 
   mutate(ZIP_CODE5 = case_when(ZIP_CODE == "5496O" ~ "54960", 
                                TRUE ~ ZIP_CODE5))
 
@@ -150,14 +178,80 @@ colnames(zipcode)
 
 <br>
 
-## II. Join data
+#### Trying to ID wrong State, etc. Zip Codes using echo
+
+
+```{r}
+library(RPostgreSQL)
+
+drv <- dbDriver("PostgreSQL")
+
+con <- dbConnect(drv, dbname = "postgres",
+                 host = "localhost", port = 5432,
+                 user = "postgres") # local default user, no password needed apparently
+
+dbListTables(con)
+
+# table is in the echo schema, which list doesmn't show
+
+dbExistsTable(con, c("echo", "echo_exporter")) 
+
+
+```
+
+
+
+```{r}
+df_echo <- dbGetQuery(con, "SELECT * FROM echo.echo_exporter WHERE sdwis_flag = 'Y'")
+# LIMIT 10 
+
+dbDisconnect(con)
+
+head(df_echo[!is.na(df_echo$fac_zip), ], 10)
+
+```
+
+<br>
+
+#### Starting with facs having a fac_zip, presumably is in reasonably correct location
+
+
+
+```{r}
+merge1 <- df_echo %>% filter(!is.na(fac_zip)) %>% 
+  select(sdwa_ids, fac_zip, fac_lat, fac_long, fac_city, fac_county, fac_state,
+         fac_collection_method, fac_accuracy_meters) %>% 
+  mutate(echo_dat = "fac_zip used") %>% 
+  right_join(., water_system, by = c("sdwa_ids" = "PWSID")) %>% 
+  rename(PWSID = sdwa_ids)
+
+merge1$fac_zip <- clean.zipcodes(merge1$fac_zip)
+
+merge1 %>% filter(!is.na(fac_zip), PWS_TYPE_CODE == "CWS") %>% 
+  count() %>% .$n
+
+# maybe not perfect (e.g., NA, County Centroid), but OK overall hopefully
+merge1 %>% filter(!is.na(fac_zip), PWS_TYPE_CODE == "CWS") %>% 
+  group_by(fac_collection_method) %>% 
+  count()
+
+```
+
+
+
+
+
+
+
+
+## II. Join zip code data
 
 <br>
 
 + zcta first
 
 ```{r}
-merge1 <- left_join(water_systems, zcta, by = c("ZIP_CODE5" = "GEOID"))
+merge1 <- left_join(water_system, zcta, by = c("ZIP_CODE5" = "GEOID"))
 
 sum(is.na(merge1$INTPTLAT))
 ```
@@ -202,7 +296,7 @@ length(unique(merge1_A$ZIP_CODE5))
 
 #### Export dataset
 
-+ adding city and state from zipcode package, may be useful later (also may be different than water_systems)
++ adding city and state from zipcode package, may be useful later (also may be different than water_system)
 ```{r}
 merge1_A %>% select(PWSID, PWS_TYPE_CODE, ZIP_CODE5, LAT, LON, COORD_SRC, Rzcpkg_state, Rzcpkg_city) %>% 
   write.csv(gzfile("data_export/PWSID_coordinates.csv.gz"), row.names = FALSE)

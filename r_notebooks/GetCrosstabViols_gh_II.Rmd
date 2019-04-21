@@ -298,7 +298,7 @@ cor(viol_RTC_byYear_x_c$RTC_HB_N_sum, viol_RTC_byYear_x_c$RTC_HB_Y_sum)
 
 ```
 
-+ join to zip code-associated data
++ join to zip code-associated data, and some others back from Violations
 
 ```{r message=FALSE}
 
@@ -308,13 +308,47 @@ zipcoords <- readr::read_csv("data_export/PWSID_coordinates.csv.gz")
 
 viol_RTC_byYear_x_c <- left_join(viol_RTC_byYear_x_c, zipcoords[, -2], by = "PWSID")
 
+viol_all_A_unique <- viol_all %>% filter(PWS_ACTIVITY_CODE == "A") %>% 
+  select(PWSID, POPULATION_SERVED_COUNT, PRIMACY_AGENCY_CODE) %>% 
+  unique()
+
+viol_RTC_byYear_x_c <- left_join(viol_RTC_byYear_x_c, viol_all_A_unique, by = "PWSID")
+
 # viol_RTC_byYear_x_c %>% filter(is.na(ZIP_CODE5))
 
 
 ```
 
 
-+ some exploration of State, etc. (this State from zipcode R package, may differ from SDWIS for some PWSIDs but going with for now)
++ some exploration of State, etc. 
+
+1st how State from zipcode R package may differ from SDWIS for some PWSIDs
+
+
+```{r}
+
+viol_RTC_byYear_x_c %>% filter(PWS_TYPE_CODE == "CWS", Rzcpkg_state != PRIMACY_AGENCY_CODE)
+
+viol_RTC_byYear_x_c %>% filter(PWS_TYPE_CODE == "CWS", Rzcpkg_state != PRIMACY_AGENCY_CODE) %>% 
+  select(Rzcpkg_state, PRIMACY_AGENCY_CODE) %>% distinct()
+
+
+```
+
+
+
+*roadblock: zip code can be deceptive, here a PWSID in FL (FL3490293) with an AZ address:*  
+  
+https://ofmpub.epa.gov/enviro/sdw_report_v3.first_table?pws_id=FL3490293&state=FL&source=Ground%20water&population=120&sys_num=0  
+
+
+
+
+
+
+
+
+
 
 ```{r fig.height=9, fig.width=7}
 

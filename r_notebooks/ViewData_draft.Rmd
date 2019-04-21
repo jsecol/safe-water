@@ -1,0 +1,191 @@
+---
+title: "ViewData"
+author: "Jim Sheehan"
+date: "April 20, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+<br>
+
+## 0. Load packages
+```{r message=FALSE}
+
+library(RMySQL)
+library(data.table)
+library(dplyr)
+
+```
+
+
+https://stackoverflow.com/questions/50544230/connecting-to-mysql-from-r
+
+https://cloud.google.com/sdk/docs/quickstart-windows
+
+https://docs.google.com/presentation/d/17iO91g03-PkIXLm0Vba5tTsTUobVcS96fuV52u8R7NE/edit#slide=id.g556d5da813_0_53
+
+
+<br>
+
+## I. Get data
+```{r}
+
+kr_name <- "my_keyring"
+kr_service <- "my_database"
+kr_username <- "my_username"
+kr_password <- "my_password"
+
+db_name <- "safe_water"
+db_host <- "127.0.0.1" # for local access
+db_port <- 3306
+
+mydb <-  dbConnect(MySQL(), 
+                   user = keyring::backend_file$new()$get(service = kr_service,
+                                user = kr_username,
+                                keyring = kr_name), 
+                   password = keyring::backend_file$new()$get(service = kr_service,
+                                user = kr_password,
+                                keyring = kr_name), 
+                   dbname = db_name, host = db_host, port = db_port)
+
+dbListTables(mydb)
+
+# note only Active PWSIDs queried:
+
+db_table <- 'WATER_SYSTEM'
+s <- paste0("SELECT * FROM ", db_table, " WHERE PWS_ACTIVITY_CODE = 'A'")
+rs <- dbSendQuery(mydb, s)
+WATER_SYSTEM <-  fetch(rs, n = -1)
+
+db_table <- 'WATER_SYSTEM_FACILITY'
+s <- paste0("SELECT * FROM ", db_table, " WHERE PWS_ACTIVITY_CODE = 'A'")
+rs <- dbSendQuery(mydb, s)
+WATER_SYSTEM_FACILITY <-  fetch(rs, n = -1)
+
+db_table <- 'GEOGRAPHIC_AREA'
+s <- paste0("SELECT * FROM ", db_table, " WHERE PWS_ACTIVITY_CODE = 'A'")
+rs <- dbSendQuery(mydb, s)
+GEOGRAPHIC_AREA <-  fetch(rs, n = -1)
+
+db_table <- 'SERVICE_AREA'
+s <- paste0("SELECT * FROM ", db_table, " WHERE PWS_ACTIVITY_CODE = 'A'")
+rs <- dbSendQuery(mydb, s)
+SERVICE_AREA <-  fetch(rs, n = -1)
+
+db_table <- 'VIOLATION'
+s <- paste0("SELECT * FROM ", db_table, " WHERE PWS_ACTIVITY_CODE = 'A'")
+rs <- dbSendQuery(mydb, s)
+VIOLATION <-  fetch(rs, n = -1)
+
+db_table <- 'CONTAMINANT_CODES'
+s <- paste0("SELECT * FROM ", db_table)
+rs <- dbSendQuery(mydb, s)
+CONTAMINANT_CODES <-  fetch(rs, n = -1)
+
+db_table <- 'CONTAMINANT_GROUP_CODES'
+s <- paste0("SELECT * FROM ", db_table)
+rs <- dbSendQuery(mydb, s)
+CONTAMINANT_GROUP_CODES <-  fetch(rs, n = -1)
+
+# # no PWS_ACTIVITY_CODE, wait until later get at need via PWSID, etc.
+#
+# db_table <- 'ENFORCEMENT_ACTION'
+# s <- paste0("SELECT * FROM ", db_table)
+# rs <- dbSendQuery(mydb, s)
+# ENFORCEMENT_ACTION <-  fetch(rs, n = -1)
+# 
+# db_table <- 'VIOLATION_ENF_ASSOC'
+# s <- paste0("SELECT * FROM ", db_table)
+# rs <- dbSendQuery(mydb, s)
+# VIOLATION_ENF_ASSOC <-  fetch(rs, n = -1)
+# 
+# db_table <- 'TREATMENT'
+# s <- paste0("SELECT * FROM ", db_table)
+# rs <- dbSendQuery(mydb, s)
+# TREATMENT <-  fetch(rs, n = -1)
+# 
+# db_table <- 'LCR_SAMPLE'
+# s <- paste0("SELECT * FROM ", db_table)
+# rs <- dbSendQuery(mydb, s)
+# LCR_SAMPLE <-  fetch(rs, n = -1)
+# 
+# db_table <- 'DG_LCR_SAMPLE_RESULT'
+# s <- paste0("SELECT * FROM ", db_table)
+# rs <- dbSendQuery(mydb, s)
+# DG_LCR_SAMPLE_RESULT <-  fetch(rs, n = -1)
+
+
+dbDisconnect(mydb)
+
+```
+
+
+```{r}
+PWS_ID <- "MO4010718"
+
+WATER_SYSTEM %>% filter(PWSID %in% PWS_ID) %>% print.data.frame()
+
+```
+
+
+```{r}
+WATER_SYSTEM_FACILITY %>% filter(PWSID %in% PWS_ID) %>% print.data.frame()
+```
+
+```{r}
+GEOGRAPHIC_AREA %>% filter(PWSID %in% PWS_ID) %>% print.data.frame()
+```
+
+
+```{r}
+SERVICE_AREA %>% filter(PWSID %in% PWS_ID) %>% print.data.frame()
+```
+
+```{r}
+VIOLATION %>% filter(PWSID %in% PWS_ID) %>% 
+  arrange(COMPL_PER_BEGIN_DATE, VIOLATION_ID) %>% print.data.frame()
+```
+
+
+```{r}
+# # Too big
+# echo_exporter <- fread("C:/Users/Jim/Files/CFB/echo_exporter/ECHO_EXPORTER_clean.csv", 
+#                   colClasses = 'character', sep = "|")
+
+```
+
+
+```{r}
+library(RPostgreSQL)
+
+drv <- dbDriver("PostgreSQL")
+
+con <- dbConnect(drv, dbname = "postgres",
+                 host = "localhost", port = 5432,
+                 user = "postgres") # local default user, no password needed apparently
+
+dbListTables(con)
+
+# table is in the echo schema, which list doesmn't show
+
+dbExistsTable(con, c("echo", "echo_exporter")) 
+
+
+```
+
+
+
+```{r}
+df_echo <- dbGetQuery(con, "SELECT * FROM echo.echo_exporter WHERE sdwis_flag = 'Y'")
+# LIMIT 10 
+
+dbDisconnect(con)
+
+head(df_echo[!is.na(df_echo$fac_zip), ], 10)
+
+```
+
