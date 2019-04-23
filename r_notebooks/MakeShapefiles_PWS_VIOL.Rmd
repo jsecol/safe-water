@@ -1,0 +1,63 @@
+---
+title: "Coord_MakeShapefiles"
+author: "Jim Sheehan"
+date: "April 23, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(readr)
+library(dplyr)
+library(sp)
+```
+
+
+
+```{r}
+
+ws4 <- read_csv("C:/Users/Jim/Files/CFB/JohnMeroth/ws4.csv")
+
+my_matching <- read_csv("data_export/PWSID_coordinates.csv.gz")
+```
+
+
+```{r}
+
+shape1_dat <- left_join(my_matching[,1:10], ws4, 
+                        by = c("PWSID" = "WATER_SYSTEM.PWSID"))
+
+# little check to see nothing gone
+summary(shape1_dat$X1)
+
+```
+
+
+
+```{r}
+geo_prj <- "+proj=longlat +ellps=WGS84"
+
+ws4_sp <- SpatialPointsDataFrame(coords = shape1_dat[,c("LON", "LAT")], 
+                           data = shape1_dat, proj4string = CRS(geo_prj))
+
+sp::plot(ws4_sp)
+
+```
+
+
+
+```{r}
+shape_dir <- "C:/temp/CFB/shapes"
+
+rgdal::writeOGR(obj = ws4_sp, dsn = shape_dir, layer = "ws4_points", driver="ESRI Shapefile", overwrite_layer = TRUE)
+
+```
+
+
+zip code can be deceptive, here a PWSID in FL (FL3490293) with an AZ address:*  
+  
+https://ofmpub.epa.gov/enviro/sdw_report_v3.first_table?pws_id=FL3490293&state=FL&source=Ground%20water&population=120&sys_num=0

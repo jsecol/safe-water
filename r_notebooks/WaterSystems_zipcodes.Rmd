@@ -208,9 +208,22 @@ df_echo <- dbGetQuery(con, "SELECT * FROM echo.echo_exporter WHERE sdwis_flag = 
 
 dbDisconnect(con)
 
+```
+
++ some cleaning
+
+```{r}
+
 head(df_echo[!is.na(df_echo$fac_zip), ], 10)
 
+# some bad
+sort(df_echo$fac_zip)[1:100]
+
+# ignoring some "00000" for now
+df_echo$fac_zip <- clean.zipcodes(df_echo$fac_zip)
+
 ```
+
 
 <br>
 
@@ -225,7 +238,8 @@ merge1 <- df_echo %>% filter(!is.na(fac_zip)) %>%
   right_join(., water_system, by = c("sdwa_ids" = "PWSID")) %>% 
   rename(PWSID = sdwa_ids)
 
-merge1$fac_zip <- clean.zipcodes(merge1$fac_zip)
+merge1 %>% filter(!is.na(fac_zip)) %>% 
+  count() %>% .$n
 
 merge1 %>% filter(!is.na(fac_zip), PWS_TYPE_CODE == "CWS") %>% 
   count() %>% .$n
@@ -237,93 +251,11 @@ merge1 %>% filter(!is.na(fac_zip), PWS_TYPE_CODE == "CWS") %>%
 
 ```
 
-#### most problematic ones, with PRIMACY_AGENCY_CODE not same as ADMIN address State
-```{r}
-merge1 <- merge1 %>% 
-  mutate(geo_filter = case_when(is.na(echo_dat) & PRIMACY_AGENCY_CODE != STATE_CODE & 
-         PRIMACY_AGENCY_CODE %in% c(state.abb, "DC", "PR") ~ "NoMatch", 
-         echo_dat == "fac_zip used" ~ "EchoZip"))
-
-merge1 %>% filter(geo_filter == "NoMatch") %>% count() %>% .$n
-```
-
-```{r}
-
-# "good" ones so far
-
-merge1 %>% filter(geo_filter == "EchoZip") 
-
-```
-
-
-```{r}
-# check just CWS in States
-merge1 %>% filter(geo_filter == "EchoZip", PWS_TYPE_CODE == "CWS",
-                  PRIMACY_AGENCY_CODE %in% c(state.abb))
-
-```
-
-
-```{r}
-merge1 %>% filter(geo_filter == "EchoZip", PWS_TYPE_CODE == "CWS",
-                  PRIMACY_AGENCY_CODE %in% c(state.abb), fac_zip != ZIP_CODE5)
-```
+<br>
 
 #### Seems best to use fac_zip when available
 
-
-
-
-
-
-## II. Join zip code data
-
-<br>
-
-+ zcta first
-
-```{r}
-merge1 <- left_join(merge1, zcta, by = c("fac_zip" = "GEOID"))
-
-sum(is.na(merge1$INTPTLAT))
-```
-
-
-+ now zipcode for NA's 
-
-```{r}
-merge1 <- left_join(merge1, zipcode, by = c("fac_zip" = "zip"))
-
-# create merged lat/lon columns and source column
-
-
-merge1 <- merge1 %>% mutate(LAT = if_else(is.na(INTPTLAT), Rzcpkg_lat, INTPTLAT), 
-                            LON = if_else(is.na(INTPTLONG), Rzcpkg_lon, INTPTLONG),
-                            COORD_SRC = case_when(!is.na(INTPTLAT) ~ "zcta",
-                                                  is.na(INTPTLAT) & !is.na(Rzcpkg_lat) ~ "rzcpkg"))
-
-
-sum(is.na(merge1$LAT))
-
-```
-
-<br>
-
-#### Count # w/o coordinates, by PWS_TYPE_CODE (row TRUE)
-
-+ also # unique zipcodes
-
-```{r}
-
-table(is.na(merge1_A$LAT), merge1_A$PWS_TYPE_CODE)
-
-length(unique(merge1_A$fac_zip))
-
-```
-
-<br>
-
-
++ make some type changes, explore
 
 ```{r}
 merge1 <- merge1 %>% mutate(fac_lat = as.numeric(fac_lat), 
@@ -339,6 +271,7 @@ merge1 %>% filter(fac_accuracy_meters <= 10000) %>%
   count() %>% .$n
 ```
 
+<br>
 
 #### Next level up = city
 
@@ -348,7 +281,9 @@ df_echo %>% filter(is.na(fac_zip), !is.na(fac_city))
 
 ```
 
-#### Adding in merge 2 city-associated values
+
++ Adding in merge2 city-associated values
+
 ```{r} 
 
 merge2 <- df_echo %>% filter(is.na(fac_zip), !is.na(fac_city), sdwa_ids %in% merge1$PWSID) %>% 
@@ -372,6 +307,7 @@ merge1[merge2, echo_dat := i.echo_dat, on =.(PWSID)]
 
 ```
 
+<br>
 
 #### Next level up = County
 
@@ -381,7 +317,8 @@ df_echo %>% filter(is.na(fac_zip), is.na(fac_city), !is.na(fac_county))
 ```
 
 
-#### Adding in merge 3 county-associated values
++ Adding in merge 3 county-associated values 
+
 ```{r} 
 
 merge3 <- df_echo %>% filter(is.na(fac_zip), is.na(fac_city), !is.na(fac_county), 
@@ -406,17 +343,125 @@ merge1[merge3, echo_dat := i.echo_dat, on =.(PWSID)]
 ```
 
 
+#### Next level up = State
+
++ adding all in, but should only use the few with higher accuracy
+
+```{r}
+df_echo %>% filter(is.na(fac_zip), is.na(fac_city), is.na(fac_county), !is.na(fac_state))
+
+df_echo %>% filter(is.na(fac_zip), is.na(fac_city), is.na(fac_county), !is.na(fac_state)) %>% 
+  .$fac_collection_method %>% table()
+
+```
+
++ Adding in merge 4 state-associated values 
+
+```{r} 
+
+merge4 <- df_echo %>% filter(is.na(fac_zip), is.na(fac_city), is.na(fac_county), 
+                             !is.na(fac_state),
+                             sdwa_ids %in% merge1$PWSID) %>% 
+  select(sdwa_ids, fac_lat, fac_long, fac_state, 
+         fac_collection_method, fac_accuracy_meters) %>% 
+  mutate(echo_dat = "fac_state used", 
+         fac_lat = as.numeric(fac_lat), 
+         fac_long = as.numeric(fac_long),
+         fac_accuracy_meters = as.numeric(fac_accuracy_meters)) %>% 
+  rename(PWSID = sdwa_ids)
+
+setDT(merge1)[merge4, fac_lat := i.fac_lat, on =.(PWSID)]
+merge1[merge4, fac_long := i.fac_long, on =.(PWSID)]
+merge1[merge4, fac_state := i.fac_state, on =.(PWSID)]
+merge1[merge4, fac_collection_method := i.fac_collection_method, on =.(PWSID)]
+merge1[merge4, fac_accuracy_meters := i.fac_accuracy_meters, on =.(PWSID)]
+merge1[merge4, echo_dat := i.echo_dat, on =.(PWSID)]
+
+table(merge1$echo_dat)
+```
 
 
 
++ most problematic ones, with PRIMACY_AGENCY_CODE not same as ADMIN address State, and no match to echo
+```{r}
+merge1 <- merge1 %>% 
+  mutate(geo_filter = case_when(is.na(echo_dat) & PRIMACY_AGENCY_CODE != STATE_CODE ~ "NoMatch", 
+         echo_dat == "fac_zip used" ~ "EchoZip",
+         echo_dat == "fac_city used" ~ "EchoCity",
+         echo_dat == "fac_county used" ~ "EchoCounty",
+         echo_dat == "fac_state used" ~ "EchoState"))
+
+table(merge1$geo_filter)
+```
+
+#### "best" ones so far
+```{r}
+
+merge1 %>% filter(!is.na(geo_filter), fac_accuracy_meters <= 10000) 
+
+```
+
+
+```{r}
+# check just CWS in States
+merge1 %>% filter(geo_filter == "EchoZip", PWS_TYPE_CODE == "CWS",
+                  PRIMACY_AGENCY_CODE %in% c(state.abb))
+
+```
+
++ so maybe ZIP_CODE5 not close to fac_zip? need to explore
+```{r}
+merge1 %>% filter(geo_filter == "EchoZip", PWS_TYPE_CODE == "CWS",
+                  PRIMACY_AGENCY_CODE %in% c(state.abb), fac_zip != ZIP_CODE5)
+```
 
 
 
+## II. Join zip code data (to admin ZIP_CODE5, to check issue later)
+
+<br>
+
++ zcta first
+
+```{r}
+merge1 <- left_join(merge1, zcta, by = c("ZIP_CODE5" = "GEOID"))
+
+sum(is.na(merge1$INTPTLAT))
+```
 
 
++ now zipcode for NA's 
+
+```{r}
+merge1 <- left_join(merge1, zipcode, by = c("ZIP_CODE5" = "zip"))
+
+# create merged lat/lon columns and source column
+
+merge1 <- merge1 %>% mutate(LAT = if_else(is.na(INTPTLAT), Rzcpkg_lat, INTPTLAT), 
+                            LON = if_else(is.na(INTPTLONG), Rzcpkg_lon, INTPTLONG),
+                            COORD_SRC = case_when(!is.na(INTPTLAT) ~ "zcta",
+                                                  is.na(INTPTLAT) & !is.na(Rzcpkg_lat) ~ "rzcpkg"))
 
 
+sum(is.na(merge1$LAT))
 
+```
+
+<br>
+
+#### Count # w/o coordinates, by PWS_TYPE_CODE (row TRUE)
+
++ also # unique zipcodes, etc.
+
+```{r}
+length(unique(merge1$ZIP_CODE5))
+table(is.na(merge1$LAT), merge1$PWS_TYPE_CODE)
+
+table(is.na(merge1$fac_lat), merge1$PWS_TYPE_CODE)
+
+length(unique(merge1$fac_zip))
+
+```
 
 
 #### Some checking, NY CWS:
@@ -436,15 +481,6 @@ df_echo %>% filter(fac_state == "NY", fac_active_flag == "Y",
                    sdwa_system_types == "Community water system")
 
 ```
-
-
-
-
-
-
-
-
-
 
 
 #### Export dataset
@@ -483,7 +519,7 @@ rm(checkit)
 
 <br>
 
-## III. Exploring things a bit
+## III. Exploring things a bit (note holes since only fac_lat, fac_long, w/acc <= 10000)
 
 <br>
 
