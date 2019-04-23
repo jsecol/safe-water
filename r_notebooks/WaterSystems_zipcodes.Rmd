@@ -27,7 +27,8 @@ library(zipcode) # for getting lat/lon coordinates where zipcode is available
 # library(lubridate)
 # library(noncensus) holding off for now, try ZCTA directly, can match to US Census data at that resolution
 
-
+#### TEMP
+# load("C:/Users/Jim/GitHub/safe-water/r_notebooks/WaterSystems_zipcodes.RData")
 ```
 
 <br>
@@ -178,7 +179,7 @@ colnames(zipcode)
 
 <br>
 
-#### Trying to ID wrong State, etc. Zip Codes using echo
+#### Trying to ID where wrong State, etc. Zip Codes using echo
 
 
 ```{r}
@@ -216,7 +217,6 @@ head(df_echo[!is.na(df_echo$fac_zip), ], 10)
 #### Starting with facs having a fac_zip, presumably is in reasonably correct location
 
 
-
 ```{r}
 merge1 <- df_echo %>% filter(!is.na(fac_zip)) %>% 
   select(sdwa_ids, fac_zip, fac_lat, fac_long, fac_city, fac_county, fac_state,
@@ -233,11 +233,43 @@ merge1 %>% filter(!is.na(fac_zip), PWS_TYPE_CODE == "CWS") %>%
 # maybe not perfect (e.g., NA, County Centroid), but OK overall hopefully
 merge1 %>% filter(!is.na(fac_zip), PWS_TYPE_CODE == "CWS") %>% 
   group_by(fac_collection_method) %>% 
-  count()
+  count() %>% arrange(-n)
+
+```
+
+#### most problematic ones, with PRIMACY_AGENCY_CODE not same as ADMIN address State
+```{r}
+merge1 <- merge1 %>% 
+  mutate(geo_filter = case_when(is.na(echo_dat) & PRIMACY_AGENCY_CODE != STATE_CODE & 
+         PRIMACY_AGENCY_CODE %in% c(state.abb, "DC", "PR") ~ "NoMatch", 
+         echo_dat == "fac_zip used" ~ "EchoZip"))
+
+merge1 %>% filter(geo_filter == "NoMatch") %>% count() %>% .$n
+```
+
+```{r}
+
+# "good" ones so far
+
+merge1 %>% filter(geo_filter == "EchoZip") 
 
 ```
 
 
+```{r}
+# check just CWS in States
+merge1 %>% filter(geo_filter == "EchoZip", PWS_TYPE_CODE == "CWS",
+                  PRIMACY_AGENCY_CODE %in% c(state.abb))
+
+```
+
+
+```{r}
+merge1 %>% filter(geo_filter == "EchoZip", PWS_TYPE_CODE == "CWS",
+                  PRIMACY_AGENCY_CODE %in% c(state.abb), fac_zip != ZIP_CODE5)
+```
+
+#### Seems best to use fac_zip when available
 
 
 
@@ -251,7 +283,7 @@ merge1 %>% filter(!is.na(fac_zip), PWS_TYPE_CODE == "CWS") %>%
 + zcta first
 
 ```{r}
-merge1 <- left_join(water_system, zcta, by = c("ZIP_CODE5" = "GEOID"))
+merge1 <- left_join(merge1, zcta, by = c("fac_zip" = "GEOID"))
 
 sum(is.na(merge1$INTPTLAT))
 ```
@@ -260,7 +292,7 @@ sum(is.na(merge1$INTPTLAT))
 + now zipcode for NA's 
 
 ```{r}
-merge1 <- left_join(merge1, zipcode, by = c("ZIP_CODE5" = "zip"))
+merge1 <- left_join(merge1, zipcode, by = c("fac_zip" = "zip"))
 
 # create merged lat/lon columns and source column
 
@@ -277,28 +309,150 @@ sum(is.na(merge1$LAT))
 
 <br>
 
-#### Filter and count # w/o coordinates, by PWS_TYPE_CODE (row TRUE)
+#### Count # w/o coordinates, by PWS_TYPE_CODE (row TRUE)
 
 + also # unique zipcodes
 
 ```{r}
-merge1_A <- merge1 %>% filter(PWS_ACTIVITY_CODE == "A")
-
-sum(is.na(merge1_A$LAT))
 
 table(is.na(merge1_A$LAT), merge1_A$PWS_TYPE_CODE)
 
-length(unique(merge1_A$ZIP_CODE5))
+length(unique(merge1_A$fac_zip))
 
 ```
 
 <br>
 
+
+
+```{r}
+merge1 <- merge1 %>% mutate(fac_lat = as.numeric(fac_lat), 
+                            fac_long =  as.numeric(fac_long),
+                            fac_accuracy_meters = as.numeric(fac_accuracy_meters))
+
+# some AK, Island Territories, etc. with fac_lat, long
+merge1 %>% select(fac_lat, fac_long, fac_accuracy_meters) %>% 
+  summary(.)
+
+# summary: at least ~zip code-level accuracy
+merge1 %>% filter(fac_accuracy_meters <= 10000) %>% 
+  count() %>% .$n
+```
+
+
+#### Next level up = city
+
+
+```{r}
+df_echo %>% filter(is.na(fac_zip), !is.na(fac_city))
+
+```
+
+#### Adding in merge 2 city-associated values
+```{r} 
+
+merge2 <- df_echo %>% filter(is.na(fac_zip), !is.na(fac_city), sdwa_ids %in% merge1$PWSID) %>% 
+  select(sdwa_ids, fac_lat, fac_long, fac_city, fac_county, fac_state, 
+         fac_collection_method, fac_accuracy_meters) %>% 
+  mutate(echo_dat = "fac_city used", 
+         fac_lat = as.numeric(fac_lat), 
+         fac_long = as.numeric(fac_long),
+         fac_accuracy_meters = as.numeric(fac_accuracy_meters)) %>% 
+  rename(PWSID = sdwa_ids)
+
+setDT(merge1)[merge2, fac_lat := i.fac_lat, on =.(PWSID)]
+merge1[merge2, fac_long := i.fac_long, on =.(PWSID)]
+merge1[merge2, fac_city := i.fac_city, on =.(PWSID)]
+merge1[merge2, fac_county := i.fac_county, on =.(PWSID)]
+merge1[merge2, fac_state := i.fac_state, on =.(PWSID)]
+merge1[merge2, fac_collection_method := i.fac_collection_method, on =.(PWSID)]
+merge1[merge2, fac_accuracy_meters := i.fac_accuracy_meters, on =.(PWSID)]
+merge1[merge2, echo_dat := i.echo_dat, on =.(PWSID)]
+
+
+```
+
+
+#### Next level up = County
+
+```{r}
+df_echo %>% filter(is.na(fac_zip), is.na(fac_city), !is.na(fac_county))
+
+```
+
+
+#### Adding in merge 3 county-associated values
+```{r} 
+
+merge3 <- df_echo %>% filter(is.na(fac_zip), is.na(fac_city), !is.na(fac_county), 
+                             sdwa_ids %in% merge1$PWSID) %>% 
+  select(sdwa_ids, fac_lat, fac_long, fac_county, fac_state, 
+         fac_collection_method, fac_accuracy_meters) %>% 
+  mutate(echo_dat = "fac_county used", 
+         fac_lat = as.numeric(fac_lat), 
+         fac_long = as.numeric(fac_long),
+         fac_accuracy_meters = as.numeric(fac_accuracy_meters)) %>% 
+  rename(PWSID = sdwa_ids)
+
+setDT(merge1)[merge3, fac_lat := i.fac_lat, on =.(PWSID)]
+merge1[merge3, fac_long := i.fac_long, on =.(PWSID)]
+merge1[merge3, fac_county := i.fac_county, on =.(PWSID)]
+merge1[merge3, fac_state := i.fac_state, on =.(PWSID)]
+merge1[merge3, fac_collection_method := i.fac_collection_method, on =.(PWSID)]
+merge1[merge3, fac_accuracy_meters := i.fac_accuracy_meters, on =.(PWSID)]
+merge1[merge3, echo_dat := i.echo_dat, on =.(PWSID)]
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#### Some checking, NY CWS:
+
+```{r}
+
+merge1 %>% filter(PWS_TYPE_CODE == "CWS", PRIMACY_AGENCY_CODE == "NY")
+
+```
+
+
+
+```{r}
+table(df_echo$sdwa_system_types)
+
+df_echo %>% filter(fac_state == "NY", fac_active_flag == "Y", 
+                   sdwa_system_types == "Community water system")
+
+```
+
+
+
+
+
+
+
+
+
+
+
 #### Export dataset
 
 + adding city and state from zipcode package, may be useful later (also may be different than water_system)
 ```{r}
-merge1_A %>% select(PWSID, PWS_TYPE_CODE, ZIP_CODE5, LAT, LON, COORD_SRC, Rzcpkg_state, Rzcpkg_city) %>% 
+merge1 %>% select(PWSID:PWS_NAME, PWS_TYPE_CODE, 
+                    ZIP_CODE5, LAT, LON, COORD_SRC, Rzcpkg_city:COORD_SRC, geo_filter) %>% 
   write.csv(gzfile("data_export/PWSID_coordinates.csv.gz"), row.names = FALSE)
 
 ```
@@ -315,11 +469,13 @@ nrow(checkit)
 head(checkit)
 
 # number of NA's, the PWSIDs that were not matched
-summary(checkit$LAT)
-summary(checkit$LON)
+summary(checkit$fac_lat)
+summary(checkit$fac_long)
 
 # coordinate source when present
 table(checkit$COORD_SRC)
+
+table(checkit$geo_filter)
 
 rm(checkit)
 
@@ -342,16 +498,17 @@ lwr48 <- state.abb[!state.abb %in% c("AK", "HI")]
 
 # panel plot instead of together (some overlap if plot 1 on top of other)
 
-merge1_A_CWS_48 <- merge1_A %>% filter(STATE_CODE %in% c(lwr48, "DC"), 
-                                       PWS_TYPE_CODE == "CWS",
-                                       GW_SW_CODE %in% c("GW", "SW"),
-                                       between(LON, -130, -60 ), 
-                                       between(LAT, 25, 50 ))
+merge1_CWS_48 <- merge1 %>% filter(STATE_CODE %in% c(lwr48, "DC"), 
+                                   PWS_TYPE_CODE == "CWS",
+                                   GW_SW_CODE %in% c("GW", "SW"),
+                                   between(fac_long, -130, -60 ), 
+                                   between(fac_lat, 25, 50 ),
+                                   fac_accuracy_meters <= 10000)
 
 ggplot(data = states) + 
   geom_polygon(aes(x = long, y = lat, group = group), fill = "white", color = "gray70") + 
-  geom_point(data = merge1_A_CWS_48, 
-             aes(x = LON, y = LAT, color = GW_SW_CODE), size = 0.8, alpha = 0.75) +
+  geom_point(data = merge1_CWS_48, 
+             aes(x = fac_long, y = fac_lat, color = GW_SW_CODE), size = 0.8, alpha = 0.75) +
   coord_fixed(1.3) + 
   ggtitle("Zip codes with >= 1 Active CWS by surface and ground water as primary source") + 
   scale_color_manual(values = c("purple", "orange")) + facet_wrap(~GW_SW_CODE, ncol = 1)
