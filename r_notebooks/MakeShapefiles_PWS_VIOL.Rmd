@@ -22,17 +22,28 @@ library(sp)
 
 ws4 <- read_csv("C:/Users/Jim/Files/CFB/JohnMeroth/ws4.csv")
 
-my_matching <- read_csv("data_export/PWSID_coordinates.csv.gz")
+my_matching_A <- read_csv("data_export/PWSID_coordinates.csv.gz")
+my_matching_A$PWS_ACTIVITY_CODE <- "A"
 ```
 
 
 ```{r}
 
-shape1_dat <- left_join(my_matching[,1:10], ws4, 
+shape1_dat <- left_join(my_matching_A[, c(1:10, 12, 22)], ws4, 
                         by = c("PWSID" = "WATER_SYSTEM.PWSID"))
 
 # little check to see nothing gone
 summary(shape1_dat$X1)
+
+# check on "A"
+table(shape1_dat$PWS_ACTIVITY_CODE)
+
+# check on "CWS", etc.
+table(shape1_dat$PTC_CWS)
+table(shape1_dat$PTC_NTNCWS)
+
+table(shape1_dat$PWS_TYPE_CODE)
+
 
 ```
 
@@ -44,7 +55,7 @@ geo_prj <- "+proj=longlat +ellps=WGS84"
 ws4_sp <- SpatialPointsDataFrame(coords = shape1_dat[,c("LON", "LAT")], 
                            data = shape1_dat, proj4string = CRS(geo_prj))
 
-sp::plot(ws4_sp)
+sp::plot(ws4_sp["PTC_CWS" == 1])
 
 ```
 
@@ -58,6 +69,19 @@ rgdal::writeOGR(obj = ws4_sp, dsn = shape_dir, layer = "ws4_points", driver="ESR
 ```
 
 
-zip code can be deceptive, here a PWSID in FL (FL3490293) with an AZ address:*  
+*zip code can be deceptive, here a PWSID in FL (FL3490293) with an AZ address:*  
   
 https://ofmpub.epa.gov/enviro/sdw_report_v3.first_table?pws_id=FL3490293&state=FL&source=Ground%20water&population=120&sys_num=0
+
+
+```{r}
+
+```
+
+
+
+
+
+
+
+
