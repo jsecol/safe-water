@@ -1,0 +1,153 @@
+---
+title: "ws4_model"
+date: "April 26, 2019"
+output:
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<br>
+
+```{r message=FALSE}
+
+library(readr)
+library(ggplot2)
+library(caret)
+library(effects)
+
+```
+
+
+```{r warning=FALSE, message=FALSE, include=FALSE}
+
+ws4_P <- read_csv("C:/Users/Jim/Files/CFB/JohnMeroth/ws4_P.csv")
+
+```
+
+<br>
+
+## Original model
+
+<br>
+
+```{r}
+
+logit4 <- glm(H_viol_2017 ~ TREATED_SOURCE + PTC_CWS + PTC_NTNCWS + Other + MR, 
+              data=ws4_P, family="binomial")
+summary(logit4)
+
+# odds ratios and CI's
+exp(coef(logit4))
+exp(confint(logit4))
+
+```
+
+<br>
+
+## Some additional ways to look at model
+
+<br>
+
+```{r}
+
+# not required, but I like to convert outcome to a labelled factor variable for clarity in caret functions, and also the predictors for the effects summaries and plots
+
+ws4_P$H_viol_2017  <- factor(ws4_P$H_viol_2017, levels = c(0,1), labels = c("HB_N", "HB_Y"))
+
+ws4_P[, c(4, 8:11)] <- lapply(ws4_P[, c(4, 8:11)], as.factor)
+
+prop.table(table(ws4_P$H_viol_2017))
+
+# get same as original model
+
+logit4 <- glm(H_viol_2017 ~ TREATED_SOURCE + PTC_CWS + PTC_NTNCWS + Other + MR, 
+              data=ws4_P, family="binomial")
+
+summary(logit4)
+
+
+```
+
+<br>
+
+## Effects
+
+<br>
+
+```{r}
+eff_logit4 <- allEffects(logit4)
+
+eff_logit4
+
+# more detail on "CWS"
+as.data.frame(eff_logit4[[2]])
+
+```
+
+```{r}
+# as factors instead of dummy 0,1 variables get error bars
+plot(eff_logit4[2:3])
+```
+
+<br>
+
+## Accuracy assessment train/test data split
+
+<br>
+
+```{r}
+set.seed(147)
+index <- createDataPartition(ws4_P$H_viol_2017, p = 0.8, list = FALSE)
+
+train <- ws4_P[index, ]
+test <- ws4_P[-index, ]
+
+
+fitControl <- trainControl(
+  method = "none", 
+  savePredictions = TRUE
+)
+
+logit4train <- train(H_viol_2017 ~ TREATED_SOURCE + PTC_CWS + PTC_NTNCWS + Other + MR,
+                     data=train, method="glm", family=binomial(), trControl=fitControl)
+
+
+logit4test_pred <- predict(logit4train, test)
+confusionMatrix(logit4test_pred, test$H_viol_2017, positive="HB_Y")
+
+
+```
+
+<br>
+
++ High accuracy because of high % correctly predicted with no HB Violation in 2017, not to say that the predictors aren't meaningful. Could explore using different probability thresholds, e.g., to maximize specificity and sensitivity.
+
+<br>
+
+```{r}
+train$prediction <- predict(logit4train, newdata = train, type = "prob")
+
+print.data.frame(head(train))
+
+```
+
+<br>
+
+something adapted from:   
+http://ethen8181.github.io/machine-learning/unbalanced/unbalanced.html
+
+<br>
+
+```{r}
+ggplot(train, aes(prediction$HB_Y, color = H_viol_2017 ) ) + 
+geom_density( size = 1 ) +
+ggtitle( "Training Set's Predicted Score" )
+```
+
+
+
+
+

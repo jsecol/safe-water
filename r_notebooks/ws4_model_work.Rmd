@@ -1,0 +1,382 @@
+---
+title: "ws4_model"
+author: "Jim Sheehan"
+date: "April 26, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(RMySQL)
+library(data.table)
+library(readr)
+library(dplyr)
+library(forcats)
+library(caret)
+library(effects)
+
+```
+
+
+
+```{r warning=FALSE, message=FALSE}
+
+ws4_P <- read_csv("C:/Users/Jim/Files/CFB/JohnMeroth/ws4_P.csv")
+
+
+sum(ws4_P$PTC_CWS)
+sum(ws4_P$PTC_NTNCWS)
+ws4_P %>% filter(PTC_CWS == 1 | PTC_NTNCWS == 1) %>% 
+  count() %>% .$n
+
+
+```
+
+
+```{r}
+logit4 <- glm(H_viol_2017 ~ TREATED_SOURCE + PTC_CWS + PTC_NTNCWS + Other + MR, 
+              data=ws4_P, family="binomial")
+summary(logit4)
+exp(coef(logit4))
+
+```
+
+<!-- gcloud auth login -->
+<!-- cd C:\temp\db -->
+<!-- .\cloud_sql_proxy -instances=safe-water-235819:us-east1:safe-water-db=tcp:3306 -->
+
+```{r}
+
+kr_name <- "my_keyring"
+kr_service <- "my_database"
+kr_username <- "my_username"
+kr_password <- "my_password"
+
+db_name <- "safe_water"
+db_host <- "127.0.0.1" # for local access
+db_port <- 3306
+
+mydb <-  dbConnect(MySQL(), 
+                   user = keyring::backend_file$new()$get(service = kr_service,
+                                user = kr_username,
+                                keyring = kr_name), 
+                   password = keyring::backend_file$new()$get(service = kr_service,
+                                user = kr_password,
+                                keyring = kr_name), 
+                   dbname = db_name, host = db_host, port = db_port)
+
+dbListTables(mydb)
+  
+
+```
+
+#### Query Active PWS from WATER_SYSTEM, VIOLATIONS
+```{r}
+
+db_table <- 'WATER_SYSTEM'
+s <- paste0("SELECT * FROM ", db_table, " WHERE PWS_ACTIVITY_CODE = 'A'")
+rs <- dbSendQuery(mydb, s)
+water_system <-  fetch(rs, n = -1)
+
+dim(water_system)
+
+
+db_table <- 'VIOLATION'
+s <- paste0("SELECT * FROM ", db_table, " WHERE PWS_ACTIVITY_CODE = 'A'")
+rs <- dbSendQuery(mydb, s)
+violation <-  fetch(rs, n = -1)
+
+dim(violation)
+
+
+db_table <- 'WATER_SYSTEM_FACILITY'
+s <- paste0("SELECT PWSID, FACILITY_ID, FACILITY_ACTIVITY_CODE, IS_SOURCE_TREATED_IND, SELLER_TREATMENT_CODE FROM ", db_table, " WHERE PWS_ACTIVITY_CODE = 'A'")
+rs <- dbSendQuery(mydb, s)
+water_system_facility <-  fetch(rs, n = -1)
+
+dim(water_system_facility)
+
+
+dbDisconnect(mydb)
+
+```
+
+#### get yearly presence (including 2017) for all health based and non-health based violations 
+
++ Only cpbd considered
+
+
+```{r results='hold'}
+viol_HB_byYear <- violation %>% 
+  filter(PWS_ACTIVITY_CODE == "A", between(COMPL_PER_BEGIN_DATE, as.Date("2008-01-01"),
+                                           as.Date("2017-12-31"))) %>% 
+  mutate(cpbd_year = year(COMPL_PER_BEGIN_DATE))
+
+
+viol_HB_byYear_x <- viol_HB_byYear %>% 
+  filter(IS_HEALTH_BASED_IND %in% c("N", "Y")) %>% 
+  group_by(PWSID, PWS_TYPE_CODE, IS_HEALTH_BASED_IND, cpbd_year) %>% 
+  count() %>% 
+  mutate(hb_year = paste("CPBD_HB", IS_HEALTH_BASED_IND, cpbd_year, sep = "_")) %>% 
+  ungroup() %>% 
+  select(PWSID, PWS_TYPE_CODE, hb_year, n) %>% 
+  tidyr::spread(key = hb_year, value = n, fill = 0)
+
+
+head(viol_HB_byYear_x)
+
+
+```
+
+
+```{r}
+
+viol_HB_byYear_x[, 3:22] <- lapply(viol_HB_byYear_x[, 3:22], function(x) ifelse(x > 0, 1, 0))
+
+```
+
+
+```{r}
+
+# but doesn't have TREATED_SOURCE (also Other & MR, not sure yet what they are)
+
+df_viols <- water_system %>% select(PWSID, PWS_TYPE_CODE) %>% 
+  left_join(., viol_HB_byYear_x[, c(1, 21:22)], by = "PWSID")
+
+
+
+
+# ws4_append <- viol_HB_byYear0817_x %>% 
+#   select(PWSID, PWS_TYPE_CODE, CPBD_HB_Y_2016, CPBD_HB_Y_2017) %>% 
+#   right_join(., ws4, by = c("PWSID" = "WATER_SYSTEM.PWSID"))
+
+
+```
+
+
+```{r}
+
+sapply(df_viols, function(x) sum(is.na(x)))
+
+df_viols[, 3:4] <- lapply(df_viols[, 3:4], function(x) ifelse(is.na(x), 0, x))
+
+sapply(df_viols, function(x) sum(is.na(x)))
+
+```
+
+<br>
+
+#### water_system_facility for treatment work
+
+
+```{r}
+treatedfacs_x <- water_system_facility %>% 
+  filter(FACILITY_ACTIVITY_CODE == "A") %>% 
+  group_by(PWSID, IS_SOURCE_TREATED_IND) %>% 
+  count() %>% tidyr::spread(IS_SOURCE_TREATED_IND, n) %>% 
+  rename(NoData = V1, Treated = Y) %>% 
+  mutate(Treated = ifelse(is.na(Treated), 0, Treated))
+  
+head(treatedfacs_x)
+
+df_viols <- left_join(df_viols, treatedfacs_x[, c(1,5)], by = "PWSID")
+
+df_viols <- df_viols %>% 
+  mutate(Treated_flag = ifelse(is.na(Treated), "absent", "present")) %>% 
+  mutate(Treated = case_when(is.na(Treated) ~ 0, Treated > 0 ~ 1, TRUE ~ Treated))
+
+
+```
+
+#### Other and MR work (2016 only)
+
+```{r}
+
+v_cat_code <- violation %>% 
+  filter(IS_HEALTH_BASED_IND == "N") %>% 
+  group_by(PWSID, VIOLATION_CATEGORY_CODE) %>% 
+  count() %>% tidyr::spread(VIOLATION_CATEGORY_CODE, n, fill = 0) %>% 
+  dplyr::select(PWSID, MR, Other)
+
+df_viols <- df_viols %>% dplyr::select(-MR, -Other)
+  
+df_viols <- left_join(df_viols, v_cat_code, by = "PWSID")
+
+df_viols <- df_viols %>% 
+  mutate(MR = case_when(is.na(MR) ~ 0, MR > 0 ~ 1, TRUE ~ MR),
+         Other = case_when(is.na(Other) ~ 0, Other > 0 ~ 1, TRUE ~ Other))
+
+sum(df_viols$MR)
+sum(df_viols$Other)
+
+```
+
+
+
+
+
+
+
+
+#### now prelim model check....
+
+
+```{r}
+mod1_a <- glm(H_viol_2017 ~ TREATED_SOURCE + PTC_CWS + PTC_NTNCWS, 
+              data=ws4_P, family="binomial")
+summary(mod1_a)
+
+# # relevel:
+# df_viols <- df_viols %>% mutate(PWS_TYPE_CODE = factor(PWS_TYPE_CODE,
+#                                                       levels = c("TNCWS", "CWS", "NTNCWS")))
+
+mod1_b <- glm(CPBD_HB_Y_2017 ~ Treated + PWS_TYPE_CODE, 
+              data=df_viols, family="binomial")
+summary(mod1_b)
+
+  
+```
+
+
+
+#### adding in hb 2016
+```{r}
+mod2 <- glm(CPBD_HB_Y_2017 ~ Treated + PWS_TYPE_CODE + CPBD_HB_Y_2016, 
+              data=df_viols, family="binomial")
+summary(mod2)
+
+summary(predict(mod2, type = "response"))
+```
+
+
+
+```{r}
+table(df_viols$PWS_TYPE_CODE)
+sum(ws4_P$PTC_CWS)
+sum(ws4_P$PTC_NTNCWS)
+
+
+sum(df_viols$CPBD_HB_Y_2017)
+sum(ws4_P$H_viol_2017)
+
+# why diff?
+sum(df_viols$Treated)
+sum(ws4_P$TREATED_SOURCE) 
+
+sum(df_viols$Other)
+sum(ws4_P$Other)
+
+sum(df_viols$MR)
+sum(ws4_P$MR)
+
+sum(df_viols$CPBD_HB_Y_2016)
+```
+
+
+*Can't quite figure out MT, Other yet*
+
+
+***
+
+#### Some additional ways to look at model
+
+```{r}
+library(caret)
+library(effects)
+
+```
+
+
+
+```{r}
+
+# not required, but I like to convert outcome to a labelled factor variable for clarity in caret functions, and also the predictors for the effects summaries and plots
+
+ws4_P$H_viol_2017  <- factor(ws4_P$H_viol_2017, levels = c(0,1), labels = c("HB_N", "HB_Y"))
+
+ws4_P[, c(4, 8:11)] <- lapply(ws4_P[, c(4, 8:11)], as.factor)
+
+prop.table(table(ws4_P$H_viol_2017))
+
+logit4 <- glm(H_viol_2017 ~ TREATED_SOURCE + PTC_CWS + PTC_NTNCWS + Other + MR, 
+              data=ws4_P, family="binomial")
+
+summary(logit4)
+
+
+```
+
+#### Effects
+
+```{r}
+eff_logit4 <- allEffects(logit4)
+
+eff_logit4
+
+# more detail on "CWS"
+as.data.frame(eff_logit4[[2]])
+
+```
+
+```{r}
+# as factors instead of a dummy 0,1 variables get error bars
+plot(eff_logit4[2:3])
+```
+
+#### Accuracy assessment train/test data split
+
+
+```{r}
+set.seed(147)
+index <- createDataPartition(ws4_P$H_viol_2017, p = 0.8, list = FALSE)
+
+train <- ws4_P[index, ]
+test <- ws4_P[-index, ]
+
+
+fitControl <- trainControl(
+  method = "none", 
+  savePredictions = TRUE
+)
+
+logit4train <- train(H_viol_2017 ~ TREATED_SOURCE + PTC_CWS + PTC_NTNCWS + Other + MR,
+                     data=train, method="glm", family=binomial(), trControl=fitControl)
+
+
+logit4test_pred <- predict(logit4train, test)
+confusionMatrix(logit4test_pred, test$H_viol_2017, positive="HB_Y")
+
+
+```
+
++ high accuracy because of % correctly predicted with no HB Violation in 2017
+
+```{r}
+train$prediction <- predict(logit4train, newdata = train, type = "prob")
+
+cbind(head(train), head(train$prediction))
+
+```
+
+*something adapted from: http://ethen8181.github.io/machine-learning/unbalanced/unbalanced.html*
+
+```{r}
+ggplot(train, aes(prediction$HB_Y, color = H_viol_2017 ) ) + 
+geom_density( size = 1 ) +
+ggtitle( "Training Set's Predicted Score" )
+```
+
+
+https://stackoverflow.com/questions/23240182/deciding-threshold-for-glm-logistic-regression-model-in-r
+
+https://stats.stackexchange.com/questions/199978/optimizing-probability-thresholds-in-a-glm-model-in-caret
+
+https://www.kaggle.com/sindhuee/r-caret-example
+
+
+
+

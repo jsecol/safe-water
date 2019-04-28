@@ -132,6 +132,45 @@ summary(viol_all$ydiff)
 
 ```
 
+## II. Timelines
+
+#### get yearly presence (including 2017) for all health based and non-health based violations 
+
++ Only cpbd considered
+
+
+```{r results='hold'}
+viol_HB_byYear <- viol_all %>% filter(PWS_ACTIVITY_CODE == "A",
+                    between(cpbd, as.Date("2008-01-01"), as.Date("2017-12-31"))) %>% 
+  mutate(cpbd_year = year(cpbd))
+
+
+viol_HB_byYear_x <- viol_HB_byYear %>% 
+  filter(IS_HEALTH_BASED_IND %in% c("N", "Y")) %>% 
+  group_by(PWSID, PWS_TYPE_CODE, IS_HEALTH_BASED_IND, cpbd_year) %>% 
+  count() %>% 
+  mutate(hb_year = paste("CPBD_HB", IS_HEALTH_BASED_IND, cpbd_year, sep = "_")) %>% 
+  ungroup() %>% 
+  select(PWSID, PWS_TYPE_CODE, hb_year, n) %>% 
+  tidyr::spread(key = hb_year, value = n, fill = 0)
+
+
+head(viol_HB_byYear_x)
+
+
+```
+
+#### For export if needed:
+```{r}
+
+viol_HB_byYear_x %>% 
+  write.csv(gzfile("data_export/viol_HB_byYear0817_x.csv.gz"), row.names = FALSE)
+
+```
+
+
+# IV (in prog)
+
 <br>
 
 #### #*COMPLIANCE_STATUS_CODE is important for understanding violation timeline*
