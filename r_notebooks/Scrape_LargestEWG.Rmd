@@ -15,6 +15,7 @@ library(rvest)
 library(dplyr)
 library(stringr)
 library(RMySQL)
+library(zipcode)
 
 ```
 
@@ -158,7 +159,16 @@ List_Results %>% filter(!PWSID %in% water_system_ewg$PWSID)
 
 ```
 
+#### trying to match city/state (better to try to get geocode by actual city at some point)
 
+```{r}
+data("zipcode")
+
+water_system_ewg %>% 
+  left_join(., zipcode, by = c("City" = "city", "PRIMACY_AGENCY_CODE" = "state")) %>% 
+  group_by(PWSID) %>% slice(1) %>% head()
+
+```
 
 
 
