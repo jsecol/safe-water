@@ -170,5 +170,12 @@ water_system_ewg %>%
 
 ```
 
+#### looks like great resource, coords and list of zip codes!
 
+https://simplemaps.com/data/us-cities
+
++ another way
+https://www.andybeger.com/2013/08/06/finding-coordinates-for-cities-etc-with-r/
+
+https://wiki.state.ma.us/display/massgis/Plotting+Cities+on+a+Map+with+QGIS
 
