@@ -111,12 +111,14 @@ sp::plot(shape2_sp)
 
 <br>
 
-+ save ESRI shapefile using rgdal (here to local directory, can get big)
++ save ESRI shapefiles using rgdal (here to local directory, can get big)
 
 ```{r}
 shape_dir <- "C:/temp/CFB/shapes"
 
-rgdal::writeOGR(obj = shape2_sp, dsn = shape_dir, layer = "EWG_large_PWSID_sp", driver="ESRI Shapefile", overwrite_layer = TRUE)
+rgdal::writeOGR(obj = shape1_sp, dsn = shape_dir, layer = "Active_PWSID_Viol2008_17", driver="ESRI Shapefile", overwrite_layer = TRUE)
+
+rgdal::writeOGR(obj = shape2_sp, dsn = shape_dir, layer = "EWG_large_PWSID", driver="ESRI Shapefile", overwrite_layer = TRUE)
 
 ```
 
