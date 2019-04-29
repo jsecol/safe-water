@@ -47,7 +47,7 @@ PWSID_violation_x[, 3:22] <- lapply(PWSID_violation_x[, 3:22], function(x) ifels
 
 PWSID_violation_x <- PWSID_violation_x %>% 
   rename_at(vars(starts_with("CPBD_")), 
-            funs(str_replace(., "CPBD_", "")))
+            list(~str_replace(., "CPBD_", "")))
 
 ```
 
@@ -69,7 +69,10 @@ sum(is.na(shape1_dat$LAT))
 shape1_dat <- shape1_dat %>% 
   filter(!is.na(shape1_dat$LAT))
 
-
+# still a few with different State than PRIMACY_AGENCY_CODE State
+shape1_dat %>% filter(!is.na(EWG_Name),
+                      PRIMACY_AGENCY_CODE != Rzcpkg_state) %>% 
+  select(PWSID, EWG_Name, EWG_City, PRIMACY_AGENCY_CODE, Rzcpkg_state)
 
 ```
 
@@ -233,6 +236,8 @@ mainland_hb2016_y +
 ```
 
 
++ Also see:
+https://www.r-spatial.org/r/2018/10/25/ggplot2-sf.html
 
 
 

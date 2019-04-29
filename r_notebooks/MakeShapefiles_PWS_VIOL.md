@@ -80,18 +80,8 @@ PWSID_violation_x[, 3:22] <- lapply(PWSID_violation_x[, 3:22], function(x) ifels
 
 PWSID_violation_x <- PWSID_violation_x %>% 
   rename_at(vars(starts_with("CPBD_")), 
-            funs(str_replace(., "CPBD_", "")))
+            list(~str_replace(., "CPBD_", "")))
 ```
-
-    ## Warning: funs() is soft deprecated as of dplyr 0.8.0
-    ## please use list() instead
-    ## 
-    ## # Before:
-    ## funs(name = f(.)
-    ## 
-    ## # After: 
-    ## list(name = ~f(.))
-    ## This warning is displayed once per session.
 
 <br>
 
@@ -114,7 +104,26 @@ sum(is.na(shape1_dat$LAT))
 ``` r
 shape1_dat <- shape1_dat %>% 
   filter(!is.na(shape1_dat$LAT))
+
+# still a few with different State than PRIMACY_AGENCY_CODE State
+shape1_dat %>% filter(!is.na(EWG_Name),
+                      PRIMACY_AGENCY_CODE != Rzcpkg_state) %>% 
+  select(PWSID, EWG_Name, EWG_City, PRIMACY_AGENCY_CODE, Rzcpkg_state)
 ```
+
+    ## # A tibble: 10 x 5
+    ##    PWSID    EWG_Name               EWG_City  PRIMACY_AGENCY_C~ Rzcpkg_state
+    ##    <chr>    <chr>                  <chr>     <chr>             <chr>       
+    ##  1 AL00008~ Harvest-Monrovia Wate~ Harvest   AL                TN          
+    ##  2 AR00003~ Texarkana Water Utili~ Texarkana AR                TX          
+    ##  3 IA70480~ Muscatine Power & Wat~ Muscatine IA                IL          
+    ##  4 NJ03270~ NJ American Water - W~ Delran    NJ                NY          
+    ##  5 OH83041~ Lebanon City           Lebanon   OH                MI          
+    ##  6 TN00005~ Lauderdale County Wat~ Ripley    TN                AR          
+    ##  7 TN00008~ Fort Campbell Water S~ Ft Campb~ TN                KY          
+    ##  8 TX07100~ Fort Bliss Main Post ~ San Dimas TX                CA          
+    ##  9 TX07101~ East Biggs Water Syst~ Fort Bli~ TX                CA          
+    ## 10 WA53925~ Walla Walla Water Div~ Walla Wa~ WA                OR
 
 <br>
 
@@ -157,16 +166,24 @@ sp::plot(shape2_sp)
 
 <br>
 
--   save ESRI shapefile using rgdal (here to local directory, can get big)
+-   save ESRI shapefiles using rgdal (here to local directory, can get big)
 
 ``` r
 shape_dir <- "C:/temp/CFB/shapes"
 
-rgdal::writeOGR(obj = shape2_sp, dsn = shape_dir, layer = "EWG_large_PWSID_sp", driver="ESRI Shapefile", overwrite_layer = TRUE)
+rgdal::writeOGR(obj = shape1_sp, dsn = shape_dir, layer = "Active_PWSID_Viol2008_17", driver="ESRI Shapefile", overwrite_layer = TRUE)
+```
+
+    ## Warning in rgdal::writeOGR(obj = shape1_sp, dsn = shape_dir, layer =
+    ## "Active_PWSID_Viol2008_17", : Field names abbreviated for ESRI Shapefile
+    ## driver
+
+``` r
+rgdal::writeOGR(obj = shape2_sp, dsn = shape_dir, layer = "EWG_large_PWSID", driver="ESRI Shapefile", overwrite_layer = TRUE)
 ```
 
     ## Warning in rgdal::writeOGR(obj = shape2_sp, dsn = shape_dir, layer =
-    ## "EWG_large_PWSID_sp", : Field names abbreviated for ESRI Shapefile driver
+    ## "EWG_large_PWSID", : Field names abbreviated for ESRI Shapefile driver
 
 <br>
 
@@ -290,3 +307,5 @@ mainland_hb2016_y +
 ```
 
 ![](MakeShapefiles_PWS_VIOL_files/figure-markdown_github/unnamed-chunk-13-1.png)
+
+-   Also see: <https://www.r-spatial.org/r/2018/10/25/ggplot2-sf.html>
