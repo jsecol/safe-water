@@ -1,0 +1,164 @@
+---
+title: "Scrape_LargestEWG"
+author: "Jim Sheehan"
+date: "April 28, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r message=FALSE}
+library(rvest)
+library(dplyr)
+library(stringr)
+library(RMySQL)
+
+```
+
+
+
+```{r}
+
+EWG_States <- c("AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", "FL", 
+                "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", 
+                "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", 
+                "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", 
+                "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY") 
+
+```
+
+
+
+```{r}
+
+urls <- NULL
+
+for(i in 1:length(EWG_States)) {
+  url <- paste0("https://www.ewg.org/tapwater/search-results.php?stab=", 
+               EWG_States[i], 
+               "&searchtype=largesys")
+  urls <- rbind(urls, c(State = EWG_States[i], url = url))
+}
+
+urls <- data.frame(urls, stringsAsFactors = FALSE)
+
+
+```
+
+#### Light scrape
+
+```{r}
+
+# List_Results <- list()
+# 
+# for(i in 1:length(urls$State)) {
+#   
+#   cat(". ")
+#   
+#   tryCatch(
+# StateTable <- urls[i,]$url %>%
+#   read_html("search-results-table"), error = function(e){NA})
+# 
+# StateTable_table <- StateTable %>% html_table() %>% 
+#   bind_rows()
+# 
+# StateTable_PWSID <- StateTable %>% html_nodes("a") %>% 
+#   html_attr('href') %>% tibble::data_frame(PWSID = .) %>% 
+#   filter(str_starts(PWSID, pattern = "system.php")) %>% 
+#   mutate(PWSID = str_replace_all(.$PWSID, c("system.php" = "", 
+#                                           "\\?" = "",
+#                                           "pws=" = "")))
+# 
+# List_Results[[i]] <- cbind(StateTable_PWSID, StateTable_table)
+# 
+# Sys.sleep(sample(c(12:20), 1, replace = TRUE))
+# 
+# }
+
+```
+
+#### Combine list to data frame
+```{r}
+
+List_Results <- do.call(rbind, List_Results)
+
+List_Results <- List_Results %>% 
+  rename(EWG_Name = `Utility name`,
+         EWG_City = City,
+         EWG_PeopleServed = `People served`) %>% 
+  mutate(EWG_PeopleServed = as.numeric(str_replace_all(.$EWG_PeopleServed,
+                                                       c("Population served: " = "", 
+                                                         "\\," = ""))))
+  
+List_Results %>% 
+  write.csv(gzfile("data_export/EWG_large_PWSID.csv.gz"), row.names = FALSE)
+
+```
+
+
+
+<!-- gcloud auth login -->
+<!-- cd C:\temp\db -->
+<!-- .\cloud_sql_proxy -instances=safe-water-235819:us-east1:safe-water-db=tcp:3306 -->
+
+
+```{r}
+# get just AL >= 10000 to compare
+
+kr_name <- "my_keyring"
+kr_service <- "my_database"
+kr_username <- "my_username"
+kr_password <- "my_password"
+
+db_name <- "safe_water"
+db_host <- "127.0.0.1" # for local access
+db_port <- 3306
+
+mydb <-  dbConnect(MySQL(), 
+                   user = keyring::backend_file$new()$get(service = kr_service,
+                                user = kr_username,
+                                keyring = kr_name), 
+                   password = keyring::backend_file$new()$get(service = kr_service,
+                                user = kr_password,
+                                keyring = kr_name), 
+                   dbname = db_name, host = db_host, port = db_port)
+
+```
+
+#### Filter Active:
+
+```{r}
+db_table <- 'WATER_SYSTEM'
+s <- paste0("SELECT * FROM ", db_table, " WHERE PWS_ACTIVITY_CODE = 'A'")
+rs <- dbSendQuery(mydb, s)
+water_system <-  fetch(rs, n = -1)
+
+```
+
+
+
+```{r}
+
+water_system_ewg <- left_join(water_system, List_Results, by = "PWSID") %>% 
+  filter(!is.na(City))
+
+
+```
+
+
+#### a few unmatched
+
++ AR0000463 "I"
+
+```{r}
+List_Results %>% filter(!PWSID %in% water_system_ewg$PWSID)
+
+```
+
+
+
+
+

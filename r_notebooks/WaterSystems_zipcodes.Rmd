@@ -487,7 +487,7 @@ df_echo %>% filter(fac_state == "NY", fac_active_flag == "Y",
 
 + adding city and state from zipcode package, may be useful later (also may be different than water_system)
 ```{r}
-merge1 %>% select(PWSID:PWS_NAME, PWS_TYPE_CODE, 
+merge1 %>% select(PWSID:PWS_NAME, PWS_TYPE_CODE, PRIMACY_AGENCY_CODE,
                     ZIP_CODE5, LAT, LON, COORD_SRC, Rzcpkg_city:COORD_SRC, geo_filter) %>% 
   write.csv(gzfile("data_export/PWSID_coordinates.csv.gz"), row.names = FALSE)
 
