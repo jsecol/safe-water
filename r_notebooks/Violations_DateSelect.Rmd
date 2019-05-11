@@ -1,0 +1,134 @@
+---
+title: "Violations flag/select by dates"
+author: "Jim Sheehan"
+date: "April 30, 2019"
+output:
+  word_document:
+    reference_docx: knit_word_format_here.docx
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<br>
+
+## 0. Load packages
+```{r message=FALSE}
+
+library(RMySQL)
+library(data.table)
+library(dplyr)
+
+```
+
+<br>
+
+## I. Get data
+
+<!-- gcloud auth login -->
+<!-- cd C:\temp\db -->
+<!-- .\cloud_sql_proxy -instances=safe-water-235819:us-east1:safe-water-db=tcp:3306 -->
+
+```{r}
+
+kr_name <- "my_keyring"
+kr_service <- "my_database"
+kr_username <- "my_username"
+kr_password <- "my_password"
+
+db_name <- "safe_water"
+db_host <- "127.0.0.1" # for local access
+db_port <- 3306
+
+mydb <-  dbConnect(MySQL(), 
+                   user = keyring::backend_file$new()$get(service = kr_service,
+                                user = kr_username,
+                                keyring = kr_name), 
+                   password = keyring::backend_file$new()$get(service = kr_service,
+                                user = kr_password,
+                                keyring = kr_name), 
+                   dbname = db_name, host = db_host, port = db_port)
+
+ dbListTables(mydb)
+
+```
+
+<br>  
+
++ query 1 all Active PWS
+
+```{r}
+db_table <- 'VIOLATION'
+s <- paste0("SELECT * FROM ", db_table, " WHERE PWS_ACTIVITY_CODE = 'A'")
+rs <- dbSendQuery(mydb, s)
+VIOLATION <-  fetch(rs, n = -1)
+
+dim(VIOLATION)
+
+dbDisconnect(mydb)
+
+```
+
+<br>  
+
++ query example with a date filter
+
+```{r}
+db_table <- 'VIOLATION'
+s <- paste0("SELECT * FROM ", db_table, " WHERE PWS_ACTIVITY_CODE = 'A' AND 
+            date(COMPL_PER_BEGIN_DATE) between date('2010-01-01') and date('2012-12-31')")
+rs <- dbSendQuery(mydb, s)
+VIOLATION_datesel <-  fetch(rs, n = -1)
+
+dim(VIOLATION_datesel)
+
+dbDisconnect(mydb)
+
+```
+
+<br>
+
+
+## II. Date type conversion (all violations data)
+
+*(Could/should date type conversion be done to the cloud db?)*
+
+```{r}
+VIOLATION <- VIOLATION %>% mutate(COMPL_PER_BEGIN_DATE = as.Date(COMPL_PER_BEGIN_DATE), 
+                                  COMPL_PER_END_DATE = as.Date(COMPL_PER_END_DATE),
+                                  RTC_DATE = as.Date(RTC_DATE))
+```
+
+<br>
+
+## III. Flag rows meeting conditions
+
+```{r}
+VIOLATION <- VIOLATION %>%
+  mutate(CPBD_RTCD = 
+           case_when(COMPL_PER_BEGIN_DATE < as.Date("2008-01-01") & 
+                       between(RTC_DATE, as.Date("2008-01-01"), 
+                               as.Date("2015-12-31")) ~ "CPBD_prior"),
+         RTCD_CPBD = 
+           case_when(RTC_DATE > as.Date("2015-12-31") &
+                       between(COMPL_PER_BEGIN_DATE, as.Date("2008-01-01"), 
+                               as.Date("2015-12-31")) ~ "RTCD_post"))
+
+# take a look
+VIOLATION %>% select(PWSID, COMPL_PER_BEGIN_DATE, RTC_DATE, CPBD_RTCD) %>% 
+  filter(!is.na(CPBD_RTCD)) %>% slice(1:10)
+
+VIOLATION %>% select(PWSID, COMPL_PER_BEGIN_DATE, RTC_DATE, RTCD_CPBD) %>% 
+  filter(!is.na(RTCD_CPBD)) %>% slice(1:10)
+
+```
+
+
+
+
+
+
+
+
+

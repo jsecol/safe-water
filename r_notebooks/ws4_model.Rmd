@@ -2,7 +2,8 @@
 title: "ws4_model"
 date: "April 26, 2019"
 output:
-  word_document: default
+  word_document:
+    reference_docx: knit_word_format_here.docx
 ---
 
 ```{r setup, include=FALSE}
@@ -46,6 +47,51 @@ exp(confint(logit4))
 ```
 
 <br>
+
++ just re-creating the summary output
+```{r}
+# Estimate
+Estimate <- coef(logit4)
+Estimate
+
+```
+
+
+```{r}
+# Std. Error
+Std_Error <- coef(summary(logit4))[, "Std. Error"]
+Std_Error
+
+```
+
+
+```{r}
+# z value
+z_value <- Estimate/Std_Error
+z_value
+
+```
+
+
+```{r}
+# Pr(>|z|)
+P_value <- round(2*pnorm(abs(z_value), lower.tail = F), 6)
+P_value
+
+```
+
++ manual calculation of an odds ratio with 95% CI
+```{r}
+
+cat("2.5%", unname(exp(Estimate[4] - 1.96*Std_Error[4])), "\n\n")
+exp(Estimate[4])
+cat("\n97.5%", unname(exp(Estimate[4] + 1.96*Std_Error[4])))
+
+```
+
+
+
+
 
 ## Some additional ways to look at model
 
@@ -147,6 +193,33 @@ geom_density( size = 1 ) +
 ggtitle( "Training Set's Predicted Score" )
 ```
 
+
+#### General R (and other progams) modeling resource:
+https://stats.idre.ucla.edu/other/dae/
+
+
+#### nice explanation of summary(model)
+http://www.learnbymarketing.com/tutorials/explaining-the-lm-summary-in-r/
+
+<br>
+
+## Do Other MR provide independent info?
+
+```{r}
+table(MR = ws4_P$MR, Other = ws4_P$Other)
+
+```
+
+```{r}
+
+ws4_P$tmp_MR_Other <- ifelse(ws4_P$MR == "1" | ws4_P$Other == "1", "1", "0")
+
+table(MR = ws4_P$MR, Other = ws4_P$Other, ws4_P$tmp_MR_Other)
+
+glm1_1 <- glm(H_viol_2017 ~ TREATED_SOURCE + PTC_CWS + PTC_NTNCWS + tmp_MR_Other, 
+              data=ws4_P, family="binomial")
+summary(glm1_1)
+```
 
 
 

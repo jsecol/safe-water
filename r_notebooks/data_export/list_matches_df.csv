@@ -1,0 +1,258 @@
+"city","city_ascii","state_id","state_name","county_fips","county_name","lat","lng","population","population_proper","density","source","incorporated","timezone","zips","id","EWG_City","PRIMACY_AGENCY_CODE","ins","del","sub"
+"South Vinemont","South Vinemont","AL","Alabama",1043,"Cullman",34.2348,-86.8642,766,766,339,"polygon",TRUE,"America/Chicago","35058 35179",1840017959,"Vinemont","AL",6,0,0
+"Fort Mitchell","Fort Mitchell","AL","Alabama",1113,"Russell",32.3415,-85.0216,NA,NA,46.6,"point",FALSE,"America/Chicago","36856",1840023733,"Ft Mitchell","AL",2,0,0
+"Livingston","Livingston","AL","Alabama",1119,"Sumter",32.5982,-88.1891,3333,3333,180,"polygon",TRUE,"America/Chicago","35470",1840005153,"Livingaton","AL",0,0,1
+"Russellville","Russellville","AR","Arkansas",5115,"Pope",35.2761,-93.1383,34373,29318,400,"polygon",TRUE,"America/Chicago","72802 72801 72811",1840014541,"Russelville","AR",1,0,0
+"McKinleyville","McKinleyville","CA","California",6023,"Humboldt",40.9489,-124.0857,NA,NA,1303.8,"polygon",FALSE,"America/Los_Angeles","95519",1840017485,"Mckinleyville","CA",0,0,0
+"McFarland","McFarland","CA","California",6029,"Kern",35.6781,-119.2414,15234,15093,2184,"polygon",TRUE,"America/Los_Angeles","93250",1840020419,"Mcfarland","CA",0,0,0
+"Cañon City","Canon City","CO","Colorado",8043,"Fremont",38.4429,-105.2204,27368,16539,513,"polygon",TRUE,"America/Denver","81212 81215",1840018855,"Canon City","CO",0,0,0
+"East Haven","East Haven","CT","Connecticut",9009,"New Haven",41.2984,-72.8577,NA,NA,2379.2,"polygon",FALSE,"America/New_York","06513 06512",1840000584,"Avon","CT",6,0,1
+"West Haven","West Haven","CT","Connecticut",9009,"New Haven",41.2739,-72.9671,54843,54843,1970,"polygon",TRUE,"America/New_York","06516 06504",1840004852,"Avon","CT",6,0,1
+"Sharon","Sharon","CT","Connecticut",9005,"Litchfield",41.8785,-73.472,NA,NA,295.7,"polygon",FALSE,"America/New_York","06069",1840026224,"Avon","CT",2,0,1
+"North Haven","North Haven","CT","Connecticut",9009,"New Haven",41.3818,-72.8573,NA,NA,515.1,"polygon",FALSE,"America/New_York","06473",1840003372,"Avon","CT",7,0,1
+"New Haven","New Haven","CT","Connecticut",9009,"New Haven",41.3112,-72.9245,568144,131014,2706,"polygon",TRUE,"America/New_York","06519 06511 06510 06513 06512 06515 06501 06502 06503 06505 06506 06507 06508 06509 06520 06521 06530 06531 06532 06533 06534 06535 06536 06540",1840004850,"Avon","CT",5,0,1
+"Greenfield Hill","Greenfield Hill","CT","Connecticut",9001,"Fairfield",41.1765,-73.2918,NA,NA,148.8,"point",FALSE,"America/New_York","06824",1840027294,"Enfield","CT",8,0,0
+"Ridgefield","Ridgefield","CT","Connecticut",9001,"Fairfield",41.2712,-73.4952,NA,NA,502.4,"polygon",FALSE,"America/New_York","06877 06879",1840003358,"Enfield","CT",3,0,2
+"Mansfield Center","Mansfield Center","CT","Connecticut",9013,"Tolland",41.7618,-72.1944,NA,NA,131,"polygon",FALSE,"America/New_York","06250",1840003273,"Mansfield","CT",7,0,0
+"West Simsbury","West Simsbury","CT","Connecticut",9003,"Hartford",41.8748,-72.8448,NA,NA,148.8,"polygon",FALSE,"America/New_York","06092 06070",1840003270,"Simsbury","CT",5,0,0
+"South Windham","South Windham","CT","Connecticut",9015,"Windham",41.6849,-72.1845,NA,NA,247.4,"polygon",FALSE,"America/New_York","06226 06266",1840003281,"Windham","CT",6,0,0
+"Rehoboth Beach","Rehoboth Beach","DE","Delaware",10005,"Sussex",38.7171,-75.0845,1496,1496,491,"polygon",TRUE,"America/New_York","19971",1840006070,"Rehoboth","DE",6,0,0
+"De Funiak Springs","De Funiak Springs","FL","Florida",12131,"Walton",30.7122,-86.1208,7232,6442,179,"polygon",TRUE,"America/Chicago","32433 32435",1840015011,"Defuniak Springs","FL",1,0,0
+"Bayport","Bayport","FL","Florida",12053,"Hernando",28.547,-82.6456,NA,NA,48.3,"polygon",FALSE,"America/New_York","34607",1840014104,"Mayport","FL",0,0,1
+"Saint Augustine South","Saint Augustine South","FL","Florida",12109,"St. Johns",29.8449,-81.3156,NA,NA,1636.7,"polygon",FALSE,"America/New_York","32086",1840029110,"St. Augustine","FL",8,0,2
+"Saint Augustine","Saint Augustine","FL","Florida",12109,"St. Johns",29.8979,-81.31,75932,14243,583,"polygon",TRUE,"America/New_York","32080 32095 32084",1840015935,"St. Augustine","FL",2,0,2
+"Saint Augustine Shores","Saint Augustine Shores","FL","Florida",12109,"St. Johns",29.8039,-81.3086,NA,NA,1615,"polygon",FALSE,"America/New_York","32086",1840013972,"St. Augustine","FL",9,0,2
+"Saint Augustine Beach","Saint Augustine Beach","FL","Florida",12109,"St. Johns",29.8413,-81.2713,6998,6998,1275,"polygon",TRUE,"America/New_York","32080",1840015936,"St. Augustine","FL",8,0,2
+"Ponte Vedra Beach","Ponte Vedra Beach","FL","Florida",12109,"St. Johns",30.2397,-81.3856,NA,NA,1102.5,"point",FALSE,"America/New_York","32082",1840028957,"Ponte Vedra","FL",6,0,0
+"South Ponte Vedra Beach","South Ponte Vedra Beach","FL","Florida",12109,"St. Johns",30.0225,-81.3237,NA,NA,161.4,"point",FALSE,"America/New_York","32082",1840028960,"Ponte Vedra","FL",12,0,0
+"Saint Cloud","Saint Cloud","FL","Florida",12097,"Osceola",28.2303,-81.2849,51282,51282,1035,"polygon",TRUE,"America/New_York","34769 34771 34772",1840015971,"St Cloud","FL",3,0,0
+"Goodland","Goodland","FL","Florida",12021,"Collier",25.9252,-81.648,NA,NA,858.9,"polygon",FALSE,"America/New_York","34140",1840014229,"Deland","FL",2,0,2
+"Lakeland","Lakeland","FL","Florida",12105,"Polk",28.0557,-81.9543,291281,108054,633,"polygon",TRUE,"America/New_York","33803 33801 33805 33815 33811 33813 33802 33804 33806",1840015108,"Deland","FL",2,0,1
+"Copeland","Copeland","FL","Florida",12021,"Collier",25.9537,-81.3559,NA,NA,0.5,"point",FALSE,"America/New_York","34141",1840023564,"Deland","FL",2,0,1
+"Marineland","Marineland","FL","Florida",12035,"Flagler",29.6648,-81.2138,17,17,24,"polygon",TRUE,"America/New_York","32137",1840017221,"Deland","FL",4,0,1
+"DeLand","DeLand","FL","Florida",12127,"Volusia",29.0226,-81.2875,32506,32506,673,"polygon",TRUE,"America/New_York","32724 32720 32721",1840015071,"Deland","FL",0,0,0
+"West DeLand","West DeLand","FL","Florida",12127,"Volusia",29.0162,-81.3343,NA,NA,1004.1,"polygon",FALSE,"America/New_York","32720",1840029095,"Deland","FL",5,0,0
+"Groveland","Groveland","FL","Florida",12069,"Lake",28.602,-81.8204,13474,13474,324,"polygon",TRUE,"America/New_York","34736 34737",1840014056,"Deland","FL",3,0,1
+"Cleveland","Cleveland","FL","Florida",12015,"Charlotte",26.9529,-81.9924,NA,NA,247.8,"polygon",FALSE,"America/New_York","33982",1840013128,"Deland","FL",3,0,1
+"North DeLand","North DeLand","FL","Florida",12127,"Volusia",29.0483,-81.2965,NA,NA,1062.8,"polygon",FALSE,"America/New_York","32724",1840029059,"Deland","FL",6,0,0
+"Roseland","Roseland","FL","Florida",12061,"Indian River",27.8361,-80.4884,NA,NA,530.8,"polygon",FALSE,"America/New_York","32958 32957",1840014164,"Deland","FL",2,0,1
+"Pineland","Pineland","FL","Florida",12071,"Lee",26.6642,-82.1477,NA,NA,157.9,"polygon",FALSE,"America/New_York","33922",1840014224,"Deland","FL",2,0,1
+"Homeland","Homeland","FL","Florida",12105,"Polk",27.8182,-81.8269,NA,NA,122.8,"polygon",FALSE,"America/New_York","33847 33830",1840025157,"Deland","FL",2,0,1
+"Lakeland Highlands","Lakeland Highlands","FL","Florida",12105,"Polk",27.9572,-81.9496,NA,NA,885.7,"polygon",FALSE,"America/New_York","33813",1840029047,"Deland","FL",12,0,1
+"North Lauderdale","North Lauderdale","FL","Florida",12011,"Broward",26.2113,-80.2209,44198,44198,3722,"polygon",TRUE,"America/New_York","33068",1840015138,"Ft Lauderdale","FL",3,0,1
+"Fort Lauderdale","Fort Lauderdale","FL","Florida",12011,"Broward",26.1412,-80.1464,180072,180072,2009,"polygon",TRUE,"America/New_York","33301 33304 33305 33306 33308 33309 33334 33316 33315 33312 33311 33320 33336 33338 33339 33340 33346 33348 33394",1840014236,"Ft Lauderdale","FL",2,0,0
+"Opa-locka","Opa-locka","FL","Florida",12086,"Miami-Dade",25.8997,-80.2551,16479,16479,1478,"polygon",TRUE,"America/New_York","33054",1840015156,"Opa Locka","FL",0,0,1
+"Saint James City","Saint James City","FL","Florida",12071,"Lee",26.5507,-82.098,NA,NA,703.4,"polygon",FALSE,"America/New_York","33956",1840014211,"St James City","FL",3,0,0
+"Port Wentworth","Port Wentworth","GA","Georgia",13051,"Chatham",32.1942,-81.1984,8534,8534,202,"polygon",TRUE,"America/New_York","31407",1840014915,"Port Wenworth","GA",1,0,0
+"Warner Robins","Warner Robins","GA","Georgia",13153,"Houston",32.598,-83.6528,149617,74854,800,"polygon",TRUE,"America/New_York","31088 31005 31093 31099",1840015800,"Warner Robbins","GA",0,1,0
+"La Grange","La Grange","GA","Georgia",13285,"Troup",33.0276,-85.0383,35918,30472,279,"polygon",TRUE,"America/New_York","30240 30241",1840029147,"Lagrange","GA",1,0,0
+"LaFayette","LaFayette","GA","Georgia",13295,"Walker",34.7089,-85.2814,7444,7198,343,"polygon",TRUE,"America/New_York","30728",1840014656,"Lafayette","GA",0,0,0
+"Waikoloa Village","Waikoloa Village","HI","Hawaii",15001,"Hawaii",19.9285,-155.8185,NA,NA,6.7,"polygon",FALSE,"Pacific/Honolulu","96738",1840029587,"Waikoloa","HI",8,0,0
+"Lihu<U+02BB>e","Lihue","HI","Hawaii",15007,"Kauai",21.9728,-159.3541,NA,NA,1959.8,"polygon",FALSE,"Pacific/Honolulu","96766",1840029519,"Lihue","HI",0,0,0
+"Coeur d'Alene","Coeur d'Alene","ID","Idaho",16055,"Kootenai",47.7039,-116.7933,112935,50665,1230,"polygon",TRUE,"America/Los_Angeles","83815 83814 83816",1840018402,"Coeur D Alene","ID",0,0,1
+"La Grange Park","La Grange Park","IL","Illinois",17031,"Cook",41.8308,-87.8723,13433,13433,2324,"polygon",TRUE,"America/Chicago","60526",1840011256,"Lagrange Park","IL",1,0,0
+"Morton Grove","Morton Grove","IL","Illinois",17031,"Cook",42.0423,-87.789,23142,23142,1756,"polygon",TRUE,"America/Chicago","60053",1840011299,"Norton Grove","IL",0,0,1
+"Mount Prospect","Mount Prospect","IL","Illinois",17031,"Cook",42.0653,-87.937,53930,53930,2012,"polygon",TRUE,"America/Chicago","60056",1840011300,"Mt Prospect","IL",3,0,0
+"DeKalb","DeKalb","IL","Illinois",17037,"DeKalb",41.9312,-88.7483,67500,43193,1038,"polygon",TRUE,"America/Chicago","60115",1840007033,"Dekalb","IL",0,0,0
+"Mount Vernon","Mount Vernon","IL","Illinois",17081,"Jefferson",38.3141,-88.9176,15672,14956,394,"polygon",TRUE,"America/Chicago","62864",1840008654,"Mt Vernon","IL",3,0,0
+"Saint Charles","Saint Charles","IL","Illinois",17089,"Kane",41.9193,-88.311,32714,32714,861,"polygon",TRUE,"America/Chicago","60175 60174",1840009190,"St Charles","IL",3,0,0
+"Lake in the Hills","Lake in the Hills","IL","Illinois",17111,"McHenry",42.1913,-88.3478,28936,28936,1078,"polygon",TRUE,"America/Chicago","60156",1840011129,"Lake In The Hills","IL",0,0,0
+"McHenry","McHenry","IL","Illinois",17111,"McHenry",42.3388,-88.2931,26911,26911,711,"polygon",TRUE,"America/Chicago","60050",1840008085,"Mchenry","IL",0,0,0
+"O'Fallon","O'Fallon","IL","Illinois",17163,"St. Clair",38.5976,-89.9156,29272,29272,738,"polygon",TRUE,"America/Chicago","62269",1840008632,"O'fallon","IL",0,0,0
+"LaPorte","LaPorte","IN","Indiana",18091,"LaPorte",41.6077,-86.7137,21681,21681,717,"polygon",TRUE,"America/Chicago","46350 46352",1840030063,"Laporte","IN",0,0,0
+"McPherson","McPherson","KS","Kansas",20113,"McPherson",38.3714,-97.6606,13128,13201,686,"polygon",TRUE,"America/Chicago","67460",1840001659,"Mcpherson","KS",0,0,0
+"Old Washington","Old Washington","KY","Kentucky",21161,"Mason",38.6159,-83.8085,NA,NA,336.5,"point",FALSE,"America/New_York","41056",1840030788,"Mt Washington","KY",1,0,2
+"Mount Washington","Mount Washington","KY","Kentucky",21029,"Bullitt",38.0429,-85.555,14554,14554,617,"polygon",TRUE,"America/New_York","40047",1840014322,"Mt Washington","KY",3,0,0
+"Spottsville","Spottsville","KY","Kentucky",21101,"Henderson",37.8564,-87.4167,NA,NA,193.6,"polygon",FALSE,"America/Chicago","42458",1840026803,"Knottsville","KY",0,0,2
+"Scottsville","Scottsville","KY","Kentucky",21003,"Allen",36.7493,-86.1966,4473,4447,301,"polygon",TRUE,"America/Chicago","42164",1840015271,"Knottsville","KY",0,0,2
+"Cornettsville","Cornettsville","KY","Kentucky",21193,"Perry",37.134,-83.0768,NA,NA,19.1,"point",FALSE,"America/New_York","41731",1840030415,"Knottsville","KY",2,0,2
+"McDowell","McDowell","KY","Kentucky",21071,"Floyd",37.459,-82.734,NA,NA,114.2,"polygon",FALSE,"America/New_York","41647",1840030513,"Mcdowell","KY",0,0,0
+"Fort Thomas","Fort Thomas","KY","Kentucky",21037,"Campbell",39.0804,-84.4497,16263,16263,1107,"polygon",TRUE,"America/New_York","41075",1840013163,"Ft Thomas","KY",2,0,0
+"Mount Sterling","Mount Sterling","KY","Kentucky",21173,"Montgomery",38.0647,-83.9473,11328,7209,630,"polygon",TRUE,"America/New_York","40353",1840014319,"Mt Sterling","KY",3,0,0
+"Mount Vernon","Mount Vernon","KY","Kentucky",21203,"Rockcastle",37.3578,-84.343,2593,2446,459,"polygon",TRUE,"America/New_York","40456",1840014371,"Mt Vernon","KY",3,0,0
+"DeRidder","DeRidder","LA","Louisiana",22011,"Beauregard",30.8467,-93.2931,13617,10797,451,"polygon",TRUE,"America/Chicago","70634",1840015013,"Deridder","LA",0,0,0
+"Denham Springs","Denham Springs","LA","Louisiana",22063,"Livingston",30.4743,-90.9594,9834,9834,520,"polygon",TRUE,"America/Chicago","70726",1840015027,"Denhams Springs","LA",0,1,0
+"North Amherst","North Amherst","MA","Massachusetts",25015,"Hampshire",42.4073,-72.5227,NA,NA,787,"polygon",FALSE,"America/New_York","01002 01003 01059",1840004580,"Amherst","MA",6,0,0
+"South Amherst","South Amherst","MA","Massachusetts",25015,"Hampshire",42.3389,-72.5195,NA,NA,171.7,"polygon",FALSE,"America/New_York","01002",1840004581,"Amherst","MA",6,0,0
+"Amherst Center","Amherst Center","MA","Massachusetts",25015,"Hampshire",42.3757,-72.5188,NA,NA,2086.4,"polygon",FALSE,"America/New_York","01002 01003 01004",1840003166,"Amherst","MA",7,0,0
+"South Acton","South Acton","MA","Massachusetts",25017,"Middlesex",42.4584,-71.4537,NA,NA,514.6,"point",FALSE,"America/New_York","01720",1840031175,"Acton","MA",6,0,0
+"West Acton","West Acton","MA","Massachusetts",25017,"Middlesex",42.4751,-71.4745,NA,NA,704.3,"point",FALSE,"America/New_York","01720",1840031177,"Acton","MA",5,0,0
+"Housatonic","Housatonic","MA","Massachusetts",25003,"Berkshire",42.2487,-73.3626,NA,NA,593,"polygon",FALSE,"America/New_York","01230 01236",1840003119,"Acton","MA",5,0,2
+"West Medway","West Medway","MA","Massachusetts",25021,"Norfolk",42.1418,-71.4245,NA,NA,767.1,"point",FALSE,"America/New_York","02053",1840031180,"Medway","MA",5,0,0
+"Sturbridge","Sturbridge","MA","Massachusetts",25027,"Worcester",42.1001,-72.0635,NA,NA,164.7,"polygon",FALSE,"America/New_York","01566",1840004534,"Uxbridge","MA",2,0,1
+"Medford","Medford","MA","Massachusetts",25017,"Middlesex",42.4234,-71.1087,57797,57797,2755,"polygon",TRUE,"America/New_York","02155 02153 02156",1840000431,"Bedford","MA",0,0,1
+"New Bedford","New Bedford","MA","Massachusetts",25005,"Bristol",41.6697,-70.9428,149528,95120,1836,"polygon",TRUE,"America/New_York","02740 02744 02745 02746 02741 02742",1840003219,"Bedford","MA",4,0,0
+"North Billerica","North Billerica","MA","Massachusetts",25017,"Middlesex",42.5834,-71.2845,NA,NA,1521.9,"point",FALSE,"America/New_York","01862",1840031181,"Billerica","MA",6,0,0
+"North Chelmsford","North Chelmsford","MA","Massachusetts",25017,"Middlesex",42.639,-71.3828,NA,NA,1704.1,"point",FALSE,"America/New_York","01863",1840031171,"Chelmsford","MA",6,0,0
+"South Chelmsford","South Chelmsford","MA","Massachusetts",25017,"Middlesex",42.5709,-71.3759,NA,NA,376.7,"point",FALSE,"America/New_York","01824",1840031164,"Chelmsford","MA",6,0,0
+"West Concord","West Concord","MA","Massachusetts",25017,"Middlesex",42.4518,-71.4035,NA,NA,2431.7,"polygon",FALSE,"America/New_York","01742",1840003133,"Concord","MA",5,0,0
+"Teaticket","Teaticket","MA","Massachusetts",25001,"Barnstable",41.5624,-70.5858,NA,NA,371.9,"polygon",FALSE,"America/New_York","02536",1840004767,"Natick","MA",3,0,1
+"North Hanover","North Hanover","MA","Massachusetts",25023,"Plymouth",42.1459,-70.8675,NA,NA,704.7,"point",FALSE,"America/New_York","02339",1840031215,"North Andover","MA",1,1,0
+"North Sudbury","North Sudbury","MA","Massachusetts",25017,"Middlesex",42.4093,-71.4045,NA,NA,215.8,"point",FALSE,"America/New_York","01776",1840031172,"Sudbury","MA",6,0,0
+"North Tewksbury","North Tewksbury","MA","Massachusetts",25017,"Middlesex",42.6345,-71.2459,NA,NA,168.1,"point",FALSE,"America/New_York","01876",1840031196,"Tewksbury","MA",6,0,0
+"South Dartmouth","South Dartmouth","MA","Massachusetts",25005,"Bristol",41.5918,-70.9411,NA,NA,1106.2,"point",FALSE,"America/New_York","02748",1840031239,"Dartmouth","MA",6,0,0
+"Gleasondale","Gleasondale","MA","Massachusetts",25017,"Middlesex",42.4062,-71.5267,NA,NA,77.1,"point",FALSE,"America/New_York","01775",1840031161,"Easton","MA",6,1,0
+"West Hanover","West Hanover","MA","Massachusetts",25023,"Plymouth",42.1195,-70.8828,NA,NA,594.2,"point",FALSE,"America/New_York","02339",1840031207,"Hanover","MA",5,0,0
+"Hanover Center","Hanover Center","MA","Massachusetts",25023,"Plymouth",42.1168,-70.8412,NA,NA,207.6,"point",FALSE,"America/New_York","02339",1840031217,"Hanover","MA",7,0,0
+"North Hanover","North Hanover","MA","Massachusetts",25023,"Plymouth",42.1459,-70.8675,NA,NA,704.7,"point",FALSE,"America/New_York","02339",1840031215,"Hanover","MA",6,0,0
+"Harwich Port","Harwich Port","MA","Massachusetts",25001,"Barnstable",41.6723,-70.064,NA,NA,241.8,"polygon",FALSE,"America/New_York","02645 02646",1840003242,"Harwich","MA",5,0,0
+"East Harwich","East Harwich","MA","Massachusetts",25001,"Barnstable",41.7081,-70.0339,NA,NA,223.8,"polygon",FALSE,"America/New_York","02645 02661",1840003238,"Harwich","MA",5,0,0
+"Mashpee Neck","Mashpee Neck","MA","Massachusetts",25001,"Barnstable",41.6118,-70.4667,NA,NA,441.9,"polygon",FALSE,"America/New_York","02649",1840031246,"Mashpee","MA",5,0,0
+"North Pembroke","North Pembroke","MA","Massachusetts",25023,"Plymouth",42.0989,-70.7823,NA,NA,241.9,"polygon",FALSE,"America/New_York","02359 02358",1840004678,"Pembroke","MA",6,0,0
+"North Seekonk","North Seekonk","MA","Massachusetts",25005,"Bristol",41.8882,-71.3297,NA,NA,742.1,"polygon",FALSE,"America/New_York","02771",1840031243,"Seekonk","MA",6,0,0
+"Salisbury","Salisbury","MA","Massachusetts",25009,"Essex",42.8334,-70.8416,NA,NA,600,"polygon",FALSE,"America/New_York","01952",1840004464,"Tisbury","MA",2,0,1
+"West Wareham","West Wareham","MA","Massachusetts",25023,"Plymouth",41.79,-70.755,NA,NA,304.3,"polygon",FALSE,"America/New_York","02576",1840003202,"Wareham","MA",5,0,0
+"Wareham Center","Wareham Center","MA","Massachusetts",25023,"Plymouth",41.7511,-70.7198,NA,NA,80.6,"polygon",FALSE,"America/New_York","02571",1840031229,"Wareham","MA",7,0,0
+"Havre de Grace","Havre de Grace","MD","Maryland",24025,"Harford",39.5481,-76.1145,13576,13576,896,"polygon",TRUE,"America/New_York","21078",1840005667,"Havre De Grace","MD",0,0,0
+"West Forks","West Forks","ME","Maine",23025,"Somerset",45.397,-70.0362,NA,NA,1,"point",FALSE,"America/New_York","04945",1840031552,"York","ME",6,0,1
+"York Harbor","York Harbor","ME","Maine",23031,"York",43.1435,-70.649,NA,NA,641.3,"polygon",FALSE,"America/New_York","03909 03911",1840002677,"York","ME",7,0,0
+"Manton","Manton","MI","Michigan",26165,"Wexford",44.4115,-85.401,1462,1462,361,"polygon",TRUE,"America/Detroit","49663",1840002513,"Canton","MI",0,0,1
+"Stanton","Stanton","MI","Michigan",26117,"Montcalm",43.2928,-85.0789,1428,1428,256,"polygon",TRUE,"America/Detroit","48888",1840002875,"Canton","MI",1,0,1
+"Lakeview","Lakeview","MI","Michigan",26117,"Montcalm",43.4434,-85.2738,1005,1005,262,"polygon",TRUE,"America/Detroit","48850",1840010990,"Erie","MI",4,0,1
+"Wolverine Lake","Wolverine Lake","MI","Michigan",26125,"Oakland",42.555,-83.4883,4641,4641,1420,"polygon",TRUE,"America/Detroit","48390",1840011061,"Erie","MI",10,0,0
+"Harrietta","Harrietta","MI","Michigan",26165,"Wexford",44.3091,-85.7007,145,145,56,"polygon",TRUE,"America/Detroit","49638",1840010941,"Erie","MI",5,0,1
+"Wolverine","Wolverine","MI","Michigan",26031,"Cheboygan",45.2732,-84.6052,235,235,92,"polygon",TRUE,"America/Detroit","49799",1840010919,"Erie","MI",5,0,0
+"Hesperia","Hesperia","MI","Michigan",26127,"Oceana",43.5691,-86.0407,936,936,445,"polygon",TRUE,"America/Detroit","49421",1840010968,"Erie","MI",4,0,1
+"Commerce","Commerce","MI","Michigan",26125,"Oakland",42.5911,-83.4908,NA,NA,1054.2,"point",FALSE,"America/Detroit","48382",1840031584,"Erie","MI",4,0,1
+"Deerfield","Deerfield","MI","Michigan",26091,"Lenawee",41.8901,-83.7789,865,865,352,"polygon",TRUE,"America/Detroit","49238",1840011373,"Erie","MI",5,0,0
+"Traverse City","Traverse City","MI","Michigan",26055,"Grand Traverse",44.7547,-85.6035,49806,15515,718,"polygon",TRUE,"America/Detroit","49686 49684 49696",1840003946,"Erie","MI",9,0,1
+"Sheridan","Sheridan","MI","Michigan",26117,"Montcalm",43.2086,-85.0739,649,649,227,"polygon",TRUE,"America/Detroit","48884",1840010995,"Erie","MI",4,0,1
+"Sault Sainte Marie","Sault Sainte Marie","MI","Michigan",26033,"Chippewa",46.4817,-84.3723,12637,13631,356,"polygon",TRUE,"America/Detroit","49783",1840003938,"Erie","MI",14,0,0
+"Levering","Levering","MI","Michigan",26047,"Emmet",45.6348,-84.7837,NA,NA,182.9,"polygon",FALSE,"America/Detroit","49755",1840025186,"Erie","MI",4,0,1
+"Berrien Springs","Berrien Springs","MI","Michigan",26021,"Berrien",41.9474,-86.3402,7125,1743,728,"polygon",TRUE,"America/Detroit","49103",1840011224,"Erie","MI",11,0,0
+"Frederic","Frederic","MI","Michigan",26039,"Crawford",44.7786,-84.7545,NA,NA,279.5,"point",FALSE,"America/Detroit","49733",1840031603,"Erie","MI",4,0,1
+"Wakefield","Wakefield","MI","Michigan",26053,"Gogebic",46.4767,-89.9336,1699,1699,83,"polygon",TRUE,"America/Menominee","49968",1840001940,"Erie","MI",5,0,1
+"Riverview","Riverview","MI","Michigan",26163,"Wayne",42.1728,-83.1935,12107,12107,1063,"polygon",TRUE,"America/Detroit","48193",1840003961,"Erie","MI",5,0,0
+"Hersey","Hersey","MI","Michigan",26133,"Osceola",43.8513,-85.4419,349,349,122,"polygon",TRUE,"America/Detroit","49639",1840010951,"Erie","MI",2,0,1
+"Mount Pleasant","Mount Pleasant","MI","Michigan",26073,"Isabella",43.5966,-84.7759,37206,25847,1292,"polygon",TRUE,"America/Detroit","48858 48859",1840002663,"Mt. Pleasant","MI",2,0,2
+"Saint Clair Shores","Saint Clair Shores","MI","Michigan",26099,"Macomb",42.4921,-82.8957,59635,59635,1972,"polygon",TRUE,"America/Detroit","48081 48080 48082 48090",1840003093,"St. Clair Shores","MI",2,0,2
+"Saint Louis Park","Saint Louis Park","MN","Minnesota",27053,"Hennepin",44.9488,-93.3649,49029,49029,1782,"polygon",TRUE,"America/Chicago","55426 55416",1840008935,"St. Louis Park","MN",2,0,2
+"White Bear Lake","White Bear Lake","MN","Minnesota",27123,"Ramsey",45.0655,-93.0149,25888,25888,1237,"polygon",TRUE,"America/Chicago","55110",1840010005,"White Bear","MN",5,0,0
+"White Earth","White Earth","MN","Minnesota",27005,"Becker",47.0977,-95.8445,NA,NA,81.7,"polygon",FALSE,"America/Chicago","56591 56589 56569",1840006630,"White Bear","MN",2,1,0
+"White Bear Beach","White Bear Beach","MN","Minnesota",27123,"Ramsey",45.0997,-92.9891,NA,NA,769.7,"point",FALSE,"America/Chicago","55110",1840031919,"White Bear","MN",6,0,0
+"Saint Joseph","Saint Joseph","MO","Missouri",29021,"Buchanan",39.7598,-94.821,80818,76442,670,"polygon",TRUE,"America/Chicago","64503 64501 64506 64507 64504 64505 64502 64508",1840009549,"St Joseph","MO",3,0,0
+"O'Fallon","O'Fallon","MO","Missouri",29183,"St. Charles",38.7851,-90.7176,87597,87597,1141,"polygon",TRUE,"America/Chicago","63367 63366 63368",1840008571,"Ofallon","MO",1,0,0
+"Saint Charles","Saint Charles","MO","Missouri",29183,"St. Charles",38.7958,-90.5159,70329,70329,1127,"polygon",TRUE,"America/Chicago","63301 63303 63302",1840009719,"St Charles","MO",3,0,0
+"Saint Louis","Saint Louis","MO","Missouri",29510,"St. Louis (city)",38.6358,-90.2451,2078283,308626,1923,"polygon",TRUE,"America/Chicago","63110 63111 63112 63113 63115 63116 63118 63120 63107 63106 63104 63103 63102 63101 63109 63108 63155 63139 63137 63143 63147 63150 63156 63157 63158 63160 63163 63164 63166 63169 63177 63178 63179 63180 63182 63188 63197",1840001651,"St Louis","MO",3,0,0
+"Lake Saint Louis","Lake Saint Louis","MO","Missouri",29183,"St. Charles",38.7848,-90.7873,15936,15936,739,"polygon",TRUE,"America/Chicago","63367",1840008572,"St Louis","MO",8,0,0
+"Saint Peters","Saint Peters","MO","Missouri",29183,"St. Charles",38.7825,-90.6061,57178,57178,983,"polygon",TRUE,"America/Chicago","63376",1840009721,"St Peters","MO",3,0,0
+"O'Fallon","O'Fallon","MO","Missouri",29183,"St. Charles",38.7851,-90.7176,87597,87597,1141,"polygon",TRUE,"America/Chicago","63367 63366 63368",1840008571,"O Fallon","MO",0,0,1
+"D'Iberville","D'Iberville","MS","Mississippi",28047,"Harrison",30.4545,-88.8982,11610,11610,633,"polygon",TRUE,"America/Chicago","39532 39540",1840015023,"D'iberville","MS",0,0,0
+"McComb","McComb","MS","Mississippi",28113,"Pike",31.2449,-90.4714,16398,12799,426,"polygon",TRUE,"America/Chicago","39648 39649",1840015877,"Mccomb","MS",0,0,0
+"Mount Holly","Mount Holly","NC","North Carolina",37071,"Gaston",35.3115,-81.01,15635,15635,581,"polygon",TRUE,"America/New_York","28120 28012 28236",1840014590,"Mt Holly","NC",3,0,0
+"Mount Airy","Mount Airy","NC","North Carolina",37171,"Surry",36.5083,-80.6157,19164,10232,337,"polygon",TRUE,"America/New_York","27030",1840014430,"Mt Airy","NC",3,0,0
+"Wilsons Mills","Wilsons Mills","NC","North Carolina",37101,"Johnston",35.5845,-78.3594,2626,2626,225,"polygon",TRUE,"America/New_York","27520 27577 27527",1840032896,"Wilson Mills","NC",1,0,0
+"Fuquay-Varina","Fuquay-Varina","NC","North Carolina",37183,"Wake",35.596,-78.7802,27906,27906,817,"polygon",TRUE,"America/New_York","27526",1840016197,"Fuquay-varina","NC",0,0,0
+"Albemarle","Albemarle","NC","North Carolina",37167,"Stanly",35.3601,-80.1919,16900,15977,363,"polygon",TRUE,"America/New_York","28001 28002",1840013444,"Maple","NC",4,0,1
+"Maple Hill","Maple Hill","NC","North Carolina",37141,"Pender",34.6613,-77.6964,NA,NA,21.6,"point",FALSE,"America/New_York","28454",1840033003,"Maple","NC",5,0,0
+"Kill Devil Hills","Kill Devil Hills","NC","North Carolina",37055,"Dare",36.0167,-75.6699,20334,7117,489,"polygon",TRUE,"America/New_York","27948",1840016154,"Kill Devil Hill","NC",1,0,0
+"La Grange","La Grange","NC","North Carolina",37107,"Lenoir",35.3065,-77.7889,2515,2663,446,"polygon",TRUE,"America/New_York","28551",1840016389,"Lagrange","NC",1,0,0
+"East Merrimack","East Merrimack","NH","New Hampshire",33011,"Hillsborough",42.8672,-71.4838,NA,NA,682.3,"polygon",FALSE,"America/New_York","03054",1840033211,"Merrimack","NH",5,0,0
+"Seabrook Beach","Seabrook Beach","NH","New Hampshire",33015,"Rockingham",42.885,-70.8234,NA,NA,1472.8,"polygon",FALSE,"America/New_York","03874",1840026176,"Seabrook","NH",6,0,0
+"Longport","Longport","NJ","New Jersey",34001,"Atlantic",39.3136,-74.5261,876,876,862,"polygon",TRUE,"America/New_York","08403",1840003792,"Lonport","NJ",1,0,0
+"Margate City","Margate City","NJ","New Jersey",34001,"Atlantic",39.3307,-74.5071,6083,6083,1658,"polygon",TRUE,"America/New_York","08402",1840003793,"Margate","NJ",5,0,0
+"Maple Shade","Maple Shade","NJ","New Jersey",34005,"Burlington",39.9526,-74.9924,NA,NA,2496.1,"point",FALSE,"America/New_York","08052",1840033337,"Mapel Shade","NJ",1,1,0
+"Medford Lakes","Medford Lakes","NJ","New Jersey",34005,"Burlington",39.8582,-74.8056,4013,4013,1359,"polygon",TRUE,"America/New_York","08055",1840003752,"Medford","NJ",6,0,0
+"Moorestown","Moorestown","NJ","New Jersey",34005,"Burlington",39.9671,-74.9427,NA,NA,1314.1,"point",FALSE,"America/New_York","08057",1840033353,"Morrestown","NJ",0,0,1
+"Morristown","Morristown","NJ","New Jersey",34027,"Morris",40.7966,-74.4772,19037,19037,2526,"polygon",TRUE,"America/New_York","07960 07963",1840003577,"Morrestown","NJ",0,0,1
+"Delanco","Delanco","NJ","New Jersey",34005,"Burlington",40.0507,-74.9535,NA,NA,1831.9,"point",FALSE,"America/New_York","08075",1840033261,"Delran","NJ",2,1,0
+"Somerdale","Somerdale","NJ","New Jersey",34007,"Camden",39.8454,-75.0218,5508,5508,1527,"polygon",TRUE,"America/New_York","08083",1840001512,"Erial","NJ",4,0,1
+"Riverdale","Riverdale","NJ","New Jersey",34027,"Morris",40.9921,-74.3125,4247,4247,809,"polygon",TRUE,"America/New_York","07457",1840000950,"Erial","NJ",4,0,1
+"Ocean Grove","Ocean Grove","NJ","New Jersey",34025,"Monmouth",40.2119,-74.0078,NA,NA,2550.2,"polygon",FALSE,"America/New_York","07756",1840005446,"Cedar Grove","NJ",1,1,1
+"Upper Montclair","Upper Montclair","NJ","New Jersey",34013,"Essex",40.8428,-74.2014,NA,NA,2199.6,"polygon",FALSE,"America/New_York","07043",1840024255,"Montclair","NJ",6,0,0
+"East Orange","East Orange","NJ","New Jersey",34013,"Essex",40.7651,-74.2117,65378,65378,6426,"polygon",TRUE,"America/New_York","07018 07017 07019",1840002792,"Orange","NJ",5,0,0
+"Point Pleasant Beach","Point Pleasant Beach","NJ","New Jersey",34029,"Ocean",40.0928,-74.0456,4544,4544,1233,"polygon",TRUE,"America/New_York","08742",1840001486,"Brant Beach","NJ",9,0,2
+"Española","Espanola","NM","New Mexico",35039,"Rio Arriba",36.004,-106.0671,25913,10029,500,"polygon",TRUE,"America/Denver","87567 87532 87533",1840020348,"Espanola","NM",0,0,0
+"Doña Ana","Dona Ana","NM","New Mexico",35013,"Doña Ana",32.394,-106.8177,NA,NA,852.5,"polygon",FALSE,"America/Denver","88032 88007",1840019409,"Dona Ana","NM",0,0,0
+"Vestal Center","Vestal Center","NY","New York",36007,"Broome",42.0329,-76.0149,NA,NA,67,"point",FALSE,"America/New_York","13850",1840033977,"Vestal","NY",7,0,0
+"Thousand Island Park","Thousand Island Park","NY","New York",36045,"Jefferson",44.2888,-76.0259,NA,NA,44.2,"polygon",FALSE,"America/New_York","13692",1840023988,"Grand Island","NY",8,0,2
+"Pamelia Center","Pamelia Center","NY","New York",36045,"Jefferson",44.0409,-75.9016,NA,NA,128.6,"polygon",FALSE,"America/New_York","13601",1840023984,"Elma","NY",10,0,1
+"Westmoreland","Westmoreland","NY","New York",36065,"Oneida",43.1151,-75.4026,NA,NA,164,"polygon",FALSE,"America/New_York","13490",1840024029,"Elma","NY",8,0,1
+"Sherman","Sherman","NY","New York",36013,"Chautauqua",42.159,-79.5946,689,689,304,"polygon",TRUE,"America/New_York","14781",1840004570,"Elma","NY",3,0,1
+"Pelham Manor","Pelham Manor","NY","New York",36119,"Westchester",40.893,-73.8057,5643,5643,1622,"polygon",TRUE,"America/New_York","10803",1840004939,"Elma","NY",8,0,0
+"Lakeland","Lakeland","NY","New York",36067,"Onondaga",43.0909,-76.2426,NA,NA,761.2,"polygon",FALSE,"America/New_York","13209",1840004316,"Elma","NY",5,1,0
+"Hillside Manor","Hillside Manor","NY","New York",36059,"Nassau",40.7504,-73.6729,NA,NA,2961.3,"point",FALSE,"America/New_York","11040",1840033995,"Elma","NY",10,0,1
+"Plandome Manor","Plandome Manor","NY","New York",36059,"Nassau",40.8146,-73.6979,901,901,718,"polygon",TRUE,"America/New_York","11030",1840033935,"Elma","NY",10,0,1
+"Pelham","Pelham","NY","New York",36119,"Westchester",40.9116,-73.8075,7016,7016,3266,"polygon",TRUE,"America/New_York","10803",1840004938,"Elma","NY",2,0,1
+"Belfast","Belfast","NY","New York",36003,"Allegany",42.3399,-78.1184,NA,NA,421.5,"polygon",FALSE,"America/New_York","14711",1840025496,"Elma","NY",3,0,1
+"Elmsford","Elmsford","NY","New York",36119,"Westchester",41.0541,-73.8143,5287,5287,1977,"polygon",TRUE,"America/New_York","10523",1840004953,"Elma","NY",4,0,1
+"Delanson","Delanson","NY","New York",36093,"Schenectady",42.7474,-74.1841,381,381,228,"polygon",TRUE,"America/New_York","12053",1840004449,"Elma","NY",5,1,0
+"Elmira","Elmira","NY","New York",36015,"Chemung",42.0938,-76.8097,64664,27773,1478,"polygon",TRUE,"America/New_York","14901 14905 14904 14902",1840000472,"Elma","NY",2,0,0
+"Germantown","Germantown","NY","New York",36021,"Columbia",42.1369,-73.8862,NA,NA,128,"polygon",FALSE,"America/New_York","12526",1840004627,"Elma","NY",6,0,1
+"Elmont","Elmont","NY","New York",36059,"Nassau",40.7033,-73.7078,NA,NA,4575.1,"polygon",FALSE,"America/New_York","11003",1840005226,"Elma","NY",2,0,1
+"Stella Niagara","Stella Niagara","NY","New York",36063,"Niagara",43.202,-79.0423,NA,NA,117.4,"point",FALSE,"America/Toronto","14174",1840033966,"Elma","NY",10,0,1
+"Tallman","Tallman","NY","New York",36087,"Rockland",41.1112,-74.0999,NA,NA,1001.4,"point",FALSE,"America/New_York","10901",1840033969,"Elma","NY",3,0,1
+"Cleveland","Cleveland","NY","New York",36075,"Oswego",43.2398,-75.8847,721,721,246,"polygon",TRUE,"America/New_York","13042",1840004198,"Elma","NY",5,0,2
+"Elba","Elba","NY","New York",36037,"Genesee",43.0768,-78.1889,647,647,245,"polygon",TRUE,"America/New_York","14058",1840004370,"Elma","NY",0,0,1
+"Elma Center","Elma Center","NY","New York",36029,"Erie",42.8282,-78.6343,NA,NA,156.8,"polygon",FALSE,"America/New_York","14059",1840004372,"Elma","NY",7,0,0
+"Belmont","Belmont","NY","New York",36003,"Allegany",42.2226,-78.0328,920,920,356,"polygon",TRUE,"America/New_York","14813",1840004612,"Elma","NY",3,0,1
+"Elmira Heights","Elmira Heights","NY","New York",36015,"Chemung",42.1267,-76.8255,3893,3893,1311,"polygon",TRUE,"America/New_York","14903",1840004692,"Elma","NY",10,0,0
+"Rensselaer","Rensselaer","NY","New York",36083,"Rensselaer",42.6465,-73.7328,9264,9264,1125,"polygon",TRUE,"America/New_York","12144",1840000394,"Elma","NY",6,0,2
+"Rensselaer Falls","Rensselaer Falls","NY","New York",36089,"St. Lawrence",44.5908,-75.319,311,311,413,"polygon",TRUE,"America/New_York","13680",1840004062,"Elma","NY",12,0,1
+"West Elmira","West Elmira","NY","New York",36015,"Chemung",42.0879,-76.8473,NA,NA,1058.6,"polygon",FALSE,"America/New_York","14905",1840004687,"Elma","NY",7,0,0
+"Clayville","Clayville","NY","New York",36065,"Oneida",42.9747,-75.249,343,343,301,"polygon",TRUE,"America/New_York","13322 13456",1840004222,"Clay","NY",5,0,0
+"Clayton","Clayton","NY","New York",36045,"Jefferson",44.237,-76.0826,1875,1875,451,"polygon",TRUE,"America/New_York","13624",1840004127,"Clay","NY",3,0,0
+"Sinclairville","Sinclairville","NY","New York",36013,"Chautauqua",42.2653,-79.2591,558,558,133,"polygon",TRUE,"America/New_York","14782",1840004572,"Clay","NY",9,0,1
+"Clarence Center","Clarence Center","NY","New York",36029,"Erie",43.0085,-78.6308,NA,NA,761.7,"polygon",FALSE,"America/New_York","14032",1840004376,"Clay","NY",11,0,1
+"Clark Mills","Clark Mills","NY","New York",36065,"Oneida",43.0895,-75.3757,NA,NA,305.6,"polygon",FALSE,"America/New_York","13321 13323 13492",1840004204,"Clay","NY",7,0,1
+"Clarkson","Clarkson","NY","New York",36055,"Monroe",43.2398,-77.9162,NA,NA,496.6,"polygon",FALSE,"America/New_York","14420 14430",1840026164,"Clay","NY",4,0,1
+"Cayuga","Cayuga","NY","New York",36011,"Cayuga",42.9191,-76.7265,523,523,223,"polygon",TRUE,"America/New_York","13034",1840004246,"Clay","NY",3,1,0
+"Cayuga Heights","Cayuga Heights","NY","New York",36109,"Tompkins",42.468,-76.4874,3751,3751,819,"polygon",TRUE,"America/New_York","14850",1840004546,"Clay","NY",11,1,0
+"Clyde","Clyde","NY","New York",36117,"Wayne",43.0839,-76.8707,1990,1990,349,"polygon",TRUE,"America/New_York","14433",1840004298,"Clay","NY",2,1,0
+"Clarence","Clarence","NY","New York",36029,"Erie",42.9739,-78.593,NA,NA,432.2,"polygon",FALSE,"America/New_York","14031",1840026184,"Clay","NY",4,0,1
+"Williston Park","Williston Park","NY","New York",36059,"Nassau",40.7588,-73.6465,7360,7360,4542,"polygon",TRUE,"America/New_York","11596",1840005333,"Clifton Park","NY",2,0,2
+"Saint James","Saint James","NY","New York",36103,"Suffolk",40.8761,-73.1521,NA,NA,1680.9,"polygon",FALSE,"America/New_York","11780",1840005103,"St James","NY",3,0,0
+"Vermilion","Vermilion","OH","Ohio",39043,"Erie",41.4103,-82.3214,10453,10453,379,"polygon",TRUE,"America/New_York","44089",1840010234,"Vermiliion","OH",0,1,0
+"McDermott","McDermott","OH","Ohio",39145,"Scioto",38.8344,-83.0583,NA,NA,289.1,"polygon",FALSE,"America/New_York","45652",1840026702,"Mcdermott","OH",0,0,0
+"McAlester","McAlester","OK","Oklahoma",40121,"Pittsburg",34.9262,-95.7698,19140,18044,430,"polygon",TRUE,"America/Chicago","74501 74502",1840020457,"Mcalester","OK",0,0,0
+"McMinnville","McMinnville","OR","Oregon",41071,"Yamhill",45.211,-123.1918,41583,34347,1253,"polygon",TRUE,"America/Los_Angeles","97128",1840019956,"Mcminnville","OR",0,0,0
+"Saint Helens","Saint Helens","OR","Oregon",41009,"Columbia",45.8572,-122.8163,27278,13701,1112,"polygon",TRUE,"America/Los_Angeles","97051",1840021185,"St Helens","OR",3,0,0
+"Levittown","Levittown","PA","Pennsylvania",42017,"Bucks",40.1537,-74.853,NA,NA,2273.9,"polygon",FALSE,"America/New_York","19054 19055 19056 19057 19058",1840005408,"Levittown,","PA",0,1,0
+"Jamison City","Jamison City","PA","Pennsylvania",42037,"Columbia",41.2984,-76.3689,NA,NA,41.9,"polygon",FALSE,"America/New_York","17814",1840035032,"Jamison","PA",5,0,0
+"Wilkes-Barre","Wilkes-Barre","PA","Pennsylvania",42079,"Luzerne",41.2468,-75.8759,40806,40806,2257,"polygon",TRUE,"America/New_York","18702 18701 18705 18703 18710 18711 18762 18765 18766 18767 18769 18773",1840000777,"Wilkes-barre","PA",0,0,0
+"Wilkes-Barre","Wilkes-Barre","PA","Pennsylvania",42079,"Luzerne",41.2468,-75.8759,40806,40806,2257,"polygon",TRUE,"America/New_York","18702 18701 18705 18703 18710 18711 18762 18765 18766 18767 18769 18773",1840000777,"Wilkes Barre","PA",0,0,1
+"McMurray","McMurray","PA","Pennsylvania",42125,"Washington",40.2815,-80.0874,NA,NA,519.2,"polygon",FALSE,"America/New_York","15367 15317",1840005434,"Mcmurray","PA",0,0,0
+"Saint Marys","Saint Marys","PA","Pennsylvania",42047,"Elk",41.4574,-78.5342,9071,12370,48,"polygon",TRUE,"America/New_York","15857",1840000618,"St Marys","PA",3,0,0
+"Hopkinton","Hopkinton","RI","Rhode Island",44009,"Washington",41.4622,-71.7783,NA,NA,108,"polygon",FALSE,"America/New_York","02833 02804",1840035709,"Hope","RI",5,0,1
+"Hope Valley","Hope Valley","RI","Rhode Island",44009,"Washington",41.5151,-71.72,NA,NA,136,"polygon",FALSE,"America/New_York","02832",1840003364,"Hope","RI",7,0,0
+"Cumberland Hill","Cumberland Hill","RI","Rhode Island",44007,"Providence",41.9736,-71.4605,NA,NA,2286.4,"polygon",FALSE,"America/New_York","02864",1840003291,"Cumberland","RI",5,0,0
+"Mount Pleasant","Mount Pleasant","SC","South Carolina",45019,"Charleston",32.8533,-79.8269,86668,86668,741,"polygon",TRUE,"America/New_York","29466 29464 29465",1840017286,"Mt Pleasant","SC",3,0,0
+"Myrtle Beach","Myrtle Beach","SC","South Carolina",45051,"Horry",33.7096,-78.8843,260487,32795,536,"polygon",TRUE,"America/New_York","29572 29577 29578",1840014717,"N Myrtle Beach","SC",0,2,0
+"North Myrtle Beach","North Myrtle Beach","SC","South Carolina",45051,"Horry",33.8228,-78.7093,16310,16310,294,"polygon",TRUE,"America/New_York","29582 29568 29566 29597",1840014718,"N Myrtle Beach","SC",4,0,0
+"Soddy-Daisy","Soddy-Daisy","TN","Tennessee",47065,"Hamilton",35.2571,-85.174,13693,13693,228,"polygon",TRUE,"America/New_York","37343 37379 37384",1840035990,"Soddy-daisy","TN",0,0,0
+"Tiptonville","Tiptonville","TN","Tennessee",47095,"Lake",36.387,-89.4678,4325,4325,820,"polygon",TRUE,"America/Chicago","38079",1840016072,"Tipton","TN",5,0,0
+"LaFollette","LaFollette","TN","Tennessee",47013,"Campbell",36.372,-84.1252,19220,6807,535,"polygon",TRUE,"America/New_York","37766",1840036150,"La Follette","TN",0,1,0
+"La Vergne","La Vergne","TN","Tennessee",47149,"Rutherford",36.0209,-86.5574,35717,35717,551,"polygon",TRUE,"America/Chicago","37086 37089",1840014496,"Lavergne","TN",1,0,0
+"McMinnville","McMinnville","TN","Tennessee",47177,"Warren",35.6863,-85.7812,15449,13662,476,"polygon",TRUE,"America/Chicago","37110 37111",1840015385,"Mcminnville","TN",0,0,0
+"Madisonville","Madisonville","TN","Tennessee",47123,"Monroe",35.5234,-84.3637,5570,4730,294,"polygon",TRUE,"America/New_York","37354",1840015414,"Madison","TN",5,0,0
+"East Ridge","East Ridge","TN","Tennessee",47065,"Hamilton",34.9973,-85.2285,21118,21118,984,"polygon",TRUE,"America/New_York","37412",1840013452,"Eastridge","TN",1,0,0
+"Tascosa","Tascosa","TX","Texas",48359,"Oldham",35.5112,-102.2513,NA,NA,0.1,"point",FALSE,"America/Chicago","79010",1840033528,"Atascosa","TX",0,1,0
+"Mankins","Mankins","TX","Texas",48009,"Archer",33.7826,-98.797,NA,NA,5.3,"point",FALSE,"America/Chicago","76366",1840036500,"Adkins","TX",1,0,1
+"Hawkins","Hawkins","TX","Texas",48499,"Wood",32.5917,-95.2027,1305,1305,228,"polygon",TRUE,"America/Chicago","75765",1840020684,"Adkins","TX",1,0,1
+"McKinney","McKinney","TX","Texas",48085,"Collin",33.2016,-96.6669,235134,181330,1046,"polygon",TRUE,"America/Chicago","75069 75070 75071 75072",1840020657,"Mckinney","TX",0,0,0
+"McKinney Acres","McKinney Acres","TX","Texas",48003,"Andrews",32.2963,-102.5297,NA,NA,296.9,"polygon",FALSE,"America/Chicago","79714",1840037139,"Mckinney","TX",6,0,0
+"DeSoto","DeSoto","TX","Texas",48113,"Dallas",32.5992,-96.8633,53568,53568,956,"polygon",TRUE,"America/Chicago","75115 75123",1840019441,"Desoto","TX",0,0,0
+"McAllen","McAllen","TX","Texas",48215,"Hidalgo",26.2325,-98.2467,800904,142696,944,"polygon",TRUE,"America/Chicago","78573 78504 78503 78501 78502 78505",1840021024,"Mcallen","TX",0,0,0
+"Porter Heights","Porter Heights","TX","Texas",48339,"Montgomery",30.1501,-95.3217,NA,NA,271.6,"polygon",FALSE,"America/Chicago","77365",1840019584,"Porter","TX",8,0,0
+"La Porte","La Porte","TX","Texas",48201,"Harris",29.669,-95.0483,35371,35371,732,"polygon",TRUE,"America/Chicago","77571 77572",1840020932,"Porter","TX",3,1,0
+"Airport Road Addition","Airport Road Addition","TX","Texas",48047,"Brooks",27.219,-98.0981,NA,NA,16,"polygon",FALSE,"America/Chicago","78355",1840018301,"Porter","TX",15,0,1
+"West Valley City","West Valley City","UT","Utah",49035,"Salt Lake",40.6889,-112.0115,136170,136170,1482,"polygon",TRUE,"America/Denver","84119 84120 84128 84118 84125 84126 84127 84129 84130 84131 84170",1840021389,"West Valley","UT",5,0,0
+"Devils Slide","Devils Slide","UT","Utah",49029,"Morgan",41.0636,-111.5433,NA,NA,0,"point",FALSE,"America/Denver","84018",1840033585,"Slc","UT",9,0,1
+"Scofield","Scofield","UT","Utah",49007,"Carbon",39.7198,-111.1623,22,22,9,"polygon",TRUE,"America/Denver","84526",1840022440,"Slc","UT",5,0,1
+"Halchita","Halchita","UT","Utah",49037,"San Juan",37.1314,-109.9131,NA,NA,110.8,"polygon",FALSE,"America/Denver","84531",1840037245,"Slc","UT",5,0,1
+"Scipio","Scipio","UT","Utah",49027,"Millard",39.2491,-112.1044,329,329,122,"polygon",TRUE,"America/Denver","84656",1840022461,"Slc","UT",4,1,0
+"Escalante","Escalante","UT","Utah",49017,"Garfield",37.7648,-111.6,802,802,93,"polygon",TRUE,"America/Denver","84726",1840020271,"Slc","UT",6,0,1
+"Millcreek","Millcreek","UT","Utah",49035,"Salt Lake",40.6892,-111.8291,60192,60192,1821,"polygon",TRUE,"America/Denver","84117 84124 84109 84106 84107 84141",1840018744,"Slc","UT",6,0,1
+"Halls Crossing","Halls Crossing","UT","Utah",49037,"San Juan",37.4578,-110.6829,NA,NA,0.2,"polygon",FALSE,"America/Denver","84533",1840017595,"Slc","UT",11,0,1
+"Upalco","Upalco","UT","Utah",49013,"Duchesne",40.278,-110.2182,NA,NA,14.6,"point",FALSE,"America/Denver","84007",1840037175,"Slc","UT",3,0,1
+"Marriott-Slaterville","Marriott-Slaterville","UT","Utah",49057,"Weber",41.2624,-112.0366,1778,1778,95,"polygon",TRUE,"America/Denver","84404 84201",1840020133,"Slc","UT",17,0,1
+"Cisco","Cisco","UT","Utah",49019,"Grand",38.97,-109.3207,NA,NA,0,"point",FALSE,"America/Denver","84515",1840033609,"Slc","UT",2,0,2
+"Woods Cross","Woods Cross","UT","Utah",49011,"Davis",40.8731,-111.917,11362,11362,1146,"polygon",TRUE,"America/Denver","84087",1840021355,"Slc","UT",8,0,1
+"Gandy","Gandy","UT","Utah",49027,"Millard",39.4499,-113.983,NA,NA,0,"point",FALSE,"America/Denver","84728",1840033661,"Sandy","UT",0,0,1
+"Sandy City","Sandy City","UT","Utah",49035,"Salt Lake",40.5916,-111.8841,NA,NA,1519.6,"point",TRUE,"America/Denver","84070",1840037246,"Sandy","UT",5,0,0
+"Burlington","Burlington","VT","Vermont",50007,"Chittenden",44.4877,-73.2314,108277,42239,1582,"polygon",TRUE,"America/New_York","05405 05401 05408 05406",1840002310,"S Burlington","VT",0,2,0
+"South Burlington","South Burlington","VT","Vermont",50007,"Chittenden",44.4622,-73.2203,19141,19141,448,"polygon",TRUE,"America/New_York","05403 05407",1840002311,"S Burlington","VT",4,0,0
+"Mount Vernon","Mount Vernon","WA","Washington",53057,"Skagit",48.4202,-122.3116,69528,35051,1099,"polygon",TRUE,"America/Los_Angeles","98274 98273",1840019774,"Mt Vernon","WA",3,0,0
+"North Fond du Lac","North Fond du Lac","WI","Wisconsin",55039,"Fond du Lac",43.8107,-88.4861,5070,5070,922,"polygon",TRUE,"America/Chicago","54937",1840002607,"Fond Du Lac","WI",6,0,0
+"Fond du Lac","Fond du Lac","WI","Wisconsin",55039,"Fond du Lac",43.772,-88.4396,54629,42809,872,"polygon",TRUE,"America/Chicago","54937 54935 54936",1840002603,"Fond Du Lac","WI",0,0,0
+"Menomonee Falls","Menomonee Falls","WI","Wisconsin",55133,"Waukesha",43.1487,-88.1227,37443,37443,439,"polygon",TRUE,"America/Chicago","53051 53052",1840003020,"Menomonie","WI",6,0,1

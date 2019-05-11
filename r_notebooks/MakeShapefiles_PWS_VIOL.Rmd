@@ -31,6 +31,7 @@ library(rnaturalearth)
 PWSID_coordinates <- read_csv("data_export/PWSID_coordinates.csv.gz")
 PWSID_violation_x <- read_csv("data_export/viol_HB_byYear0817_x.csv.gz")
 EWG_large_PWSID <- read_csv("data_export/EWG_large_PWSID.csv.gz")
+US_cities <- read_csv("C:/Users/Jim/Files/CFB/data/uscitiesv1_5.csv")
 
 ```
 
@@ -56,22 +57,27 @@ PWSID_violation_x <- PWSID_violation_x %>%
 + join data 
 ```{r}
 
-shape1_dat <- left_join(PWSID_coordinates, PWSID_violation_x[, -2], by = "PWSID")
+shape1_dat <-
+  left_join(PWSID_coordinates, PWSID_violation_x[,-2], by = "PWSID")
 
 # replace NA with 0 for PWSIDs with no violations
-shape1_dat[23:42] <- lapply(shape1_dat[23:42], function(x) ifelse(is.na(x), 0, x))
+shape1_dat[23:42] <-
+  lapply(shape1_dat[23:42], function(x)
+    ifelse(is.na(x), 0, x))
+
+#### Maybe don't do this now, do for separate EWG (do in own notebook!!)
 
 shape1_dat <- left_join(shape1_dat, EWG_large_PWSID, by = "PWSID")
 
-# some unmatched by zip code 
+# some unmatched by zip code
 sum(is.na(shape1_dat$LAT))
 
-shape1_dat <- shape1_dat %>% 
+shape1_dat <- shape1_dat %>%
   filter(!is.na(shape1_dat$LAT))
 
 # still a few with different State than PRIMACY_AGENCY_CODE State
 shape1_dat %>% filter(!is.na(EWG_Name),
-                      PRIMACY_AGENCY_CODE != Rzcpkg_state) %>% 
+                      PRIMACY_AGENCY_CODE != Rzcpkg_state) %>%
   select(PWSID, EWG_Name, EWG_City, PRIMACY_AGENCY_CODE, Rzcpkg_state)
 
 ```
@@ -82,8 +88,10 @@ shape1_dat %>% filter(!is.na(EWG_Name),
 ```{r}
 geo_prj <- "+proj=longlat +ellps=WGS84"
 
-shape1_sp <- SpatialPointsDataFrame(coords = shape1_dat[,c("LON", "LAT")], 
-                           data = shape1_dat, proj4string = CRS(geo_prj))
+shape1_sp <-
+  SpatialPointsDataFrame(coords = shape1_dat[, c("LON", "LAT")],
+                         data = shape1_dat,
+                         proj4string = CRS(geo_prj))
 
 # plot it (just CWS)
 sp::plot(shape1_sp["PWS_TYPE_CODE" == "CWS"])
@@ -92,12 +100,109 @@ sp::plot(shape1_sp["PWS_TYPE_CODE" == "CWS"])
 
 <br>
 
-+ make one just for large EWG PWSIDs
++ make one just for large EWG PWSIDs (trying to geocode to city instead of using zip code)
 ```{r}
-shape2_dat <- shape1_dat %>% 
+shape2_dat <- shape1_dat %>%
   filter(!is.na(shape1_dat$EWG_Name))
 
+city_match1 <-
+  shape2_dat %>% group_by(PRIMACY_AGENCY_CODE, EWG_City) %>%
+  count(name = "n_match") %>%
+  inner_join(.,
+             US_cities,
+             by = c("PRIMACY_AGENCY_CODE" = "state_id",
+                    "EWG_City" = "city")) %>%
+  select(PRIMACY_AGENCY_CODE, EWG_City, id) %>%
+  rename(UScities_id = id) %>% 
+  mutate(UScities_match = "Auto")
+
+head(city_match1)
 ```
+
++ just ID for now, and implement fuzzy/manual matching
+```{r}
+shape2_dat_tmp <- shape2_dat %>% 
+  left_join(., city_match1, 
+            by = c("PRIMACY_AGENCY_CODE" = "PRIMACY_AGENCY_CODE", 
+                   "EWG_City" = "EWG_City"))
+
+
+state_city_unm <- shape2_dat_tmp %>% 
+  filter(is.na(UScities_id)) %>%
+  select(PRIMACY_AGENCY_CODE, EWG_City)
+
+```
+
+
+http://bigdata-doctor.com/fuzzy-string-matching-survival-skill-tackle-unstructured-information-r/
+
+
+```{r}
+list_matches <- list()
+for (i in 1:nrow(state_city_unm)) {
+  state_city <- state_city_unm[i,]
+  state <- state_city$PRIMACY_AGENCY_CODE
+  US_cities_sub <- US_cities[US_cities$state_id == state,]
+  # not being overly strict here, with max.distance > 0:
+  index <- agrep(
+    state_city$EWG_City,
+    US_cities_sub$city_ascii,
+    max.distance = 0.1,
+    ignore.case = TRUE
+  )
+  US_cities_sub$EWG_City <- state_city$EWG_City
+  US_cities_sub$PRIMACY_AGENCY_CODE <- state_city$PRIMACY_AGENCY_CODE
+  US_cities_match <- US_cities_sub[index,]
+  
+  #### need loop
+  vals_collect <- NULL
+  if (nrow(US_cities_match) > 0) {
+  for (j in 1:nrow(US_cities_match)) {
+    vals <- t(drop(attr(
+      adist(
+        US_cities_match[j,]$EWG_City,
+        US_cities_match[j,]$city_ascii,
+        counts = TRUE,
+        ignore.case = TRUE
+      ),
+      "counts"
+    )))
+    vals_collect <- rbind(vals_collect, vals)
+  }
+    US_cities_match <- cbind(US_cities_match, vals_collect)
+  }
+
+  list_matches[[i]] <- US_cities_match
+}
+
+list_matches_df <- do.call(rbind, list_matches)
+
+list_matches_df <- list_matches_df %>% filter(!is.na(city))
+
+list_matches_df <- list_matches_df %>% distinct()
+
+list_matches_df
+
+# for manual check
+list_matches_df %>% write.csv("data_export/list_matches_df.csv", row.names = FALSE)
+
+
+```
+
+#### Post manual matching
+```{r}
+library(readxl)
+
+list_matches_df_selections <- read_excel("data_export/list_matches_df_selections.xlsx")
+
+
+```
+
+
+
+
+
+
 
 <br>
 
