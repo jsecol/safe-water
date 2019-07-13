@@ -1,0 +1,90 @@
+---
+title: "Check_EWG_SDWIS_ECHO"
+author: "Jim Sheehan"
+date: "July 9, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## 0. Load packages
+
+```{r}
+
+library(readr)
+library(RPostgreSQL)
+library(dplyr)
+
+
+```
+
+
+## II. Load Data
+
+```{r}
+
+EWG_large_PWSID <- read_csv("data_export/EWG_large_PWSID.csv.gz")
+US_cities <- read_csv("C:/Users/Jim/Files/CFB/data/uscitiesv1_5.csv")
+
+
+# for ECHO subset, water_system
+drv <- dbDriver("PostgreSQL")
+
+con <- dbConnect(drv, dbname = "postgres",
+                 host = "localhost", port = 5432,
+                 user = "postgres")
+
+
+df_echo <- dbGetQuery(con, "SELECT * FROM echo.echo_exporter WHERE sdwis_flag = 'Y'")
+
+water_system <- dbGetQuery(con, "SELECT * FROM sdwis.water_system")
+
+```
+
+
+## III. Get data for MA and join echo, then join that to EWG
+
+```{r}
+sdwis_echo_MA <- water_system %>% 
+  filter(primacy_agency_code == "MA", pws_activity_code == "A") %>% 
+  left_join(., df_echo, by = c("pwsid" = "sdwa_ids"))
+
+
+sdwis_echo_EWG_MA <- inner_join(sdwis_echo_MA, EWG_large_PWSID, by = c("pwsid" = "PWSID"))
+
+US_cities_MA <- US_cities %>% filter(state_id == "MA")
+
+sdwis_echo_EWG_MA_USCD <- inner_join(sdwis_echo_EWG_MA_USCD, US_cities, by = c("pwsid" = "PWSID"))
+
+```
+
+
+
+## IV. Export
+
+```{r}
+write.csv(sdwis_echo_MA, "data_export/sdwis_echo_MA.csv", row.names = FALSE)
+
+write.csv(sdwis_echo_EWG_MA, "data_export/sdwis_echo_EWG_MA.csv", row.names = FALSE)
+
+```
+
+
+####
+## III. Get data for VT and join echo, then join that to EWG
+
+```{r}
+sdwis_echo_VT <- water_system %>% 
+  filter(primacy_agency_code == "VT", pws_activity_code == "A") %>% 
+  left_join(., df_echo, by = c("pwsid" = "sdwa_ids"))
+
+
+# sdwis_echo_EWG_MA <- inner_join(sdwis_echo_MA, EWG_large_PWSID, by = c("pwsid" = "PWSID"))
+
+
+
+```
+

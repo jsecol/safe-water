@@ -1,0 +1,294 @@
+---
+title: "Check_EWG_SDWIS_ECHO"
+author: "Jim Sheehan"
+date: "July 9, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## 0. Load packages
+
+```{r}
+
+library(readr)
+library(RPostgreSQL)
+library(dplyr)
+# library(rebus)
+library(stringr)
+
+# library(DBI)
+
+library(zipcode) # for getting lat/lon coordinates where zipcode is available
+
+```
+
+
+## I. Load Data
+
+```{r}
+
+#### My Postgres
+drv <- dbDriver("PostgreSQL")
+
+con <- dbConnect(drv, dbname = "postgres",
+                 host = "localhost", port = 5432,
+                 user = "postgres")
+
+
+dbListTables(con)
+
+echo_sdwis <- 
+  dbGetQuery(con, "SELECT * FROM echo.echo_exporter WHERE sdwis_flag = 'Y'")
+
+water_system <- 
+  dbGetQuery(con, "SELECT * FROM sdwis.water_system WHERE pws_activity_code = 'A'")
+
+# Use area_type_code = 'CT' & area_type_code = 'ZC' in dplyr (others?)
+geographic_area <- 
+  dbGetQuery(con, "SELECT * FROM sdwis.geographic_area WHERE pws_activity_code = 'A'")
+
+#### My .csv
+US_cities <- read_csv("C:/Users/Jim/Files/CFB/data/uscitiesv1_5.csv")
+
+# for easier matching
+US_cities$city_ascii_lwr <- tolower(US_cities$city_ascii)
+
+```
+
+
+
+## II. Reduce echo columns, count sdwa_ids
+
+
+```{r}
+echo_sdwa_ids <- echo_sdwis %>% 
+  select(registry_id:fac_county, fac_lat:fac_accuracy_meters, sdwa_ids) %>% 
+  mutate(fac_accuracy_meters = as.numeric(fac_accuracy_meters))
+
+## test
+# str_count("mmm mmmm mmm", pattern = " ")
+
+echo_sdwa_ids <- echo_sdwa_ids %>% 
+  mutate(sdwa_ids_count = str_count(sdwa_ids, pattern = " "))
+
+```
+
+*view multiples (not that many), deal with later*
+
+```{r}
+echo_sdwa_ids %>% filter(sdwa_ids_count > 0) %>% 
+  select(sdwa_ids)
+
+## may try fuzzy matching, etc.
+# str_detect()
+
+```
+
+
+## III. Join data (active PWS only)
+
+```{r}
+
+# Using all
+watsys_echoloc <- water_system %>% 
+  filter(pws_activity_code == "A") %>% 
+  left_join(., echo_sdwa_ids, by = c("pwsid" = "sdwa_ids"))
+
+# Filtering down to zip code centroid and finer (<= 10000)
+watsys_echoloc_acc01 <- watsys_echoloc %>% 
+  filter(fac_accuracy_meters <= 10000)
+
+```
+
+*get geographic_area filtered to single city-pwsids & single zip-pwsids (deal with multiples later)*
+
+```{r}
+ga_CT_1x <- geographic_area %>% 
+  filter(area_type_code == "CT") %>% 
+  group_by(pwsid) %>% 
+  summarise(n = n()) %>% 
+  filter(n == 1) %>% 
+  .$pwsid
+
+geographic_area_CT_1x <- geographic_area %>% 
+  filter(pwsid %in% ga_CT_1x, area_type_code == "CT") %>% 
+  select(-c(pws_activity_code, pws_type_code, zip_code_served, end_column))
+
+ga_ZC_1x <- geographic_area %>% 
+  filter(area_type_code == "ZC") %>% 
+  group_by(pwsid) %>% 
+  summarise(n = n()) %>% 
+  filter(n == 1) %>% 
+  .$pwsid
+
+geographic_area_ZC_1x <- geographic_area %>% 
+  filter(pwsid %in% ga_ZC_1x, area_type_code == "ZC") %>% 
+  select(-c(pws_activity_code, pws_type_code, city_served, end_column))
+
+```
+
+
+
+```{r}
+
+watsys_ZCCTservedloc <- 
+  watsys_echoloc %>% filter(!pwsid %in% watsys_echoloc_acc01$pwsid) %>% 
+  left_join(., geographic_area_ZC_1x, by = "pwsid")
+
+watsys_ZCCTservedloc <- watsys_ZCCTservedloc %>% 
+  left_join(., geographic_area_CT_1x, by = "pwsid")
+
+nrow(watsys_echoloc_acc01) + nrow(watsys_ZCCTservedloc) == nrow(water_system)
+
+```
+
+
+
+*next using zipcode package for zip codes served*
+
+```{r}
+data(zipcode)
+colnames(zipcode) <- c("zip", "Rzcpkg_city", "Rzcpkg_state", "Rzcpkg_lat", "Rzcpkg_lon")
+
+zipcode$Rzcpkg_city <- tolower(zipcode$Rzcpkg_city)
+
+```
+
+
+```{r}
+
+watsys_ZCCTservedloc <- watsys_ZCCTservedloc %>% 
+  left_join(., zipcode, by = c("zip_code_served" = "zip"))
+
+```
+
+
+*next using city/town data try city_served, but it needs some cleaning!*
+
+1. leading/trailing space
+
+2. to lower case
+
+3. some obviously not city/town name, but join takes care of that
+
+
+```{r}
+
+watsys_ZCCTservedloc <- watsys_ZCCTservedloc %>% 
+  mutate(city_served = tolower(str_trim(city_served)))
+
+```
+
+
+```{r}
+watsys_ZCCTservedloc_I <- watsys_ZCCTservedloc %>% 
+  left_join(., US_cities, by = c("primacy_agency_code" = "state_id", 
+                                 "city_served" = "city_ascii_lwr"))
+```
+
+
+
+*because US_cities seems not so good for some (NH for one), also going back to R zip package (although it causes non-unique b/c of city/town with multiple zips)*
+```{r}
+
+watsys_ZCCTservedloc_II <- watsys_ZCCTservedloc_I %>% 
+  left_join(., zipcode, by = c("primacy_agency_code" = "Rzcpkg_state", 
+                                 "city_served" = "Rzcpkg_city"))
+
+```
+
+
+
+
+```{r}
+watsys_ZCCTservedloc_I <- watsys_ZCCTservedloc_I %>% 
+  mutate(loc_acc = case_when(!is.na(Rzcpkg_lat) ~ "acc_ZC_I", 
+                             is.na(Rzcpkg_lat) & !is.na(lat) ~ "acc_CT_I"))
+
+
+watsys_ZCCTservedloc_II <- watsys_ZCCTservedloc_II %>% 
+  mutate(loc_acc = case_when(!is.na(Rzcpkg_lat.x) ~ "acc_ZC_I", 
+                             is.na(Rzcpkg_lat.x) & !is.na(lat) ~ "acc_CT_I",
+                             is.na(Rzcpkg_lat.x) & is.na(lat) & !is.na(Rzcpkg_lat.y) ~ "acc_CT_II"))
+
+```
+
+
+
+
+
+## IV. Export
+
+```{r}
+
+
+watsys_echoloc_acc01 %>% 
+  select(pwsid, primacy_agency_code, primacy_type, primary_source_code, pws_name,
+         pws_type_code, service_connections_count, population_served_count, 
+         fac_name:fac_accuracy_meters) %>% 
+  write.csv(., "data_export/watsys_echoloc_acc01.csv", row.names = FALSE, na = "")
+
+
+watsys_ZCCTservedloc_I %>% 
+  select(pwsid, primacy_agency_code.x, primacy_type, primary_source_code, pws_name,
+         pws_type_code, service_connections_count, population_served_count, 
+         fac_name:fac_accuracy_meters, area_type_code.x, zip_code_served,
+         area_type_code.y, city_served, Rzcpkg_city:loc_acc) %>% 
+  write.csv(., "data_export/watsys_ZCCTservedloc_I.csv", row.names = FALSE, na = "")
+
+
+watsys_ZCCTservedloc_II %>% 
+  select(pwsid, primacy_agency_code.x, primacy_type, primary_source_code, pws_name,
+         pws_type_code, service_connections_count, population_served_count, 
+         fac_name:fac_accuracy_meters, area_type_code.x, zip_code_served,
+         area_type_code.y, city_served, Rzcpkg_city:loc_acc) %>% 
+  filter(loc_acc == "acc_CT_II") %>% 
+  write.csv(., "data_export/watsys_ZCCTservedloc_II.csv", row.names = FALSE, na = "")
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### maybe:
+<!-- ## V. Unmatched I -->
+
+<!-- ```{r} -->
+<!-- watsys_echoloc_nonzip <- watsys_echoloc %>%  -->
+<!--   filter(!is.na(sdwa_ids_count), fac_accuracy_meters > 10000) -->
+
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+<!-- watsys_echoloc_nonzip_citymatch <- watsys_echoloc_nonzip %>%  -->
+<!--   select(pwsid, primacy_agency_code, fac_city, fac_zip, fac_state) %>%  -->
+<!--   mutate(fac_city = tolower(fac_city)) %>%  -->
+<!--   inner_join(., US_cities, by = c("primacy_agency_code" = "state_id",  -->
+<!--                                  "fac_city" = "city_ascii_lwr")) -->
+<!-- ``` -->
+
+
+
+
