@@ -38,7 +38,10 @@ con <- dbConnect(drv, dbname = "postgres",
                  host = "localhost", port = 5432,
                  user = "postgres")
 
+# to see schema list (although doesn't show which tables are in them)
+dbGetQuery(con, "SELECT nspname FROM pg_catalog.pg_namespace")
 
+# to see list of all tables (no schema though)
 dbListTables(con)
 
 echo_sdwis <- 
@@ -249,13 +252,54 @@ watsys_ZCCTservedloc_II %>%
   filter(loc_acc == "acc_CT_II") %>% 
   write.csv(., "data_export/watsys_ZCCTservedloc_II.csv", row.names = FALSE, na = "")
 
+watsys_ZCCTservedloc_II %>% 
+  select(pwsid, primacy_agency_code.x, primacy_type, primary_source_code, pws_name,
+         pws_type_code, service_connections_count, population_served_count, 
+         fac_name:fac_accuracy_meters, area_type_code.x, zip_code_served,
+         area_type_code.y, city_served, Rzcpkg_city:loc_acc) %>% 
+  write.csv(., "data_export/watsys_ZCCTservedloc_II_all.csv", row.names = FALSE, na = "")
+
 ```
 
 
 
+## More location data
+
+```{r}
+library(sf)
+
+z_NH_centers <- 
+  st_read("C:/Users/Jim/Files/CFB/GIS/locations/NH/GRANIT_20190713073323/pbp_centers.shp")
+
+st_crs(z_NH_centers)
+
+z_NH_centers_ll <- st_transform(NH_centers, crs = 4326)
+
+st_crs(z_NH_centers_ll)
+
+z_NH_centers_ll_data <- cbind(st_drop_geometry(NH_centers_ll), 
+                            st_coordinates(NH_centers_ll))
+
+z_NH_centers_ll_data$NAME <- tolower(z_NH_centers_ll_data$NAME)
+
+write.csv(z_NH_centers_ll_data, 
+          "data_export/z_NH_centers_ll_data.csv", row.names = FALSE, na = "")
+
+```
 
 
 
+```{r}
+
+watsys_ZCCTservedloc_II %>% filter(primacy_agency_code.x == "NH") %>% 
+  left_join(., z_NH_centers_ll_data, by = c("city_served" = "NAME")) %>% 
+  select(pwsid, primacy_agency_code.x, primacy_type, primary_source_code, pws_name,
+         pws_type_code, service_connections_count, population_served_count, 
+         fac_name:fac_accuracy_meters, area_type_code.x, zip_code_served,
+         area_type_code.y, city_served, Rzcpkg_city:Y) %>% 
+  write.csv(., "data_export/watsys_ZCCTservedloc_II_NH_GIS_I.csv", row.names = FALSE, na = "")
+
+```
 
 
 
