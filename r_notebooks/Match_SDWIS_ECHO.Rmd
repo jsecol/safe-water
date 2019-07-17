@@ -223,8 +223,8 @@ watsys_ZCCTservedloc_II <- watsys_ZCCTservedloc_II %>%
 
 
 
-
-## IV. Export
+## SKIP UNLESS NEED NEW
+## IV. Export 
 
 ```{r}
 
@@ -261,8 +261,7 @@ watsys_ZCCTservedloc_II %>%
 
 ```
 
-
-
+## SKIP UNLESS NEED NEW
 ## More location data
 
 ```{r}
@@ -273,17 +272,29 @@ z_NH_centers <-
 
 st_crs(z_NH_centers)
 
-z_NH_centers_ll <- st_transform(NH_centers, crs = 4326)
+z_NH_centers_ll <- st_transform(z_NH_centers, crs = 4326)
 
 st_crs(z_NH_centers_ll)
 
-z_NH_centers_ll_data <- cbind(st_drop_geometry(NH_centers_ll), 
-                            st_coordinates(NH_centers_ll))
+z_NH_centers_ll_data <- cbind(st_drop_geometry(z_NH_centers_ll), 
+                            st_coordinates(z_NH_centers_ll))
 
-z_NH_centers_ll_data$NAME <- tolower(z_NH_centers_ll_data$NAME)
+z_NH_centers_ll_data$NAME_fixed <- tolower(z_NH_centers_ll_data$NAME)
 
-write.csv(z_NH_centers_ll_data, 
-          "data_export/z_NH_centers_ll_data.csv", row.names = FALSE, na = "")
+#### Identified a few naming issues matching city_served to shapefile, so manual fixing:
+
+NH_nameupdates <- z_NH_centers_ll_data$NAME_fixed %>% 
+  str_replace_all(c("hart's location" = "harts location", 
+                  "thompson & meserve" = "thompson and meserves purchase",
+                  "pinkham's grant" = "pinkhams grant", 
+                  "low & burbanks" = "low and burbanks grant"))
+
+z_NH_centers_ll_data$NAME_fixed <- NH_nameupdates
+
+#### Could have used mutate w/case_when(), maybe better
+
+# write.csv(z_NH_centers_ll_data, 
+#           "data_export/z_NH_centers_ll_data.csv", row.names = FALSE, na = "")
 
 ```
 
@@ -291,8 +302,15 @@ write.csv(z_NH_centers_ll_data,
 
 ```{r}
 
-watsys_ZCCTservedloc_II %>% filter(primacy_agency_code.x == "NH") %>% 
-  left_join(., z_NH_centers_ll_data, by = c("city_served" = "NAME")) %>% 
+watsys_ZCCTservedloc_II %>% filter(primacy_agency_code.x == "NH", is.na(loc_acc)) %>% 
+  .$pwsid %>% length()
+
+watsys_ZCCTservedloc_II %>% filter(primacy_agency_code.x == "NH", is.na(loc_acc)) %>% 
+  .$pwsid %>% unique() %>% length()
+
+
+watsys_ZCCTservedloc_II %>% filter(primacy_agency_code.x == "NH", is.na(loc_acc)) %>% 
+  left_join(., z_NH_centers_ll_data, by = c("city_served" = "NAME_fixed")) %>% 
   select(pwsid, primacy_agency_code.x, primacy_type, primary_source_code, pws_name,
          pws_type_code, service_connections_count, population_served_count, 
          fac_name:fac_accuracy_meters, area_type_code.x, zip_code_served,
@@ -303,14 +321,45 @@ watsys_ZCCTservedloc_II %>% filter(primacy_agency_code.x == "NH") %>%
 
 
 
+## Matching
 
 
+```{r}
+
+pwsids_noecho <- watsys_echoloc %>% 
+  filter(is.na(sdwa_ids_count)) %>% 
+  .$pwsid
+
+multi_echo_sdwa_ids <- echo_sdwa_ids %>% 
+  filter(sdwa_ids_count > 0) %>% 
+  .$sdwa_ids
+
+```
 
 
+*one way: matching multiple string sdwa_ids to pwsid*
+```{r}
+n1 <- length(multi_echo_sdwa_ids)
 
+matchlist1 <- list()
+for(i in 1:n1){
+  
+  match <- str_match(multi_echo_sdwa_ids[i], pattern = pwsids_noecho)
+  match <- match[which(!is.na(match[,1])),]
+  matchlist1[[i]] <- match
+  }
 
+# Note this matches to multiple pwsids
+multi_echo_sdwa_ids[4]; matchlist1[[4]]
+# Note this matches to one pwsids
+multi_echo_sdwa_ids[5]; matchlist1[[5]]
+```
 
+*another way using fuzzy matching?*
 
+```{r}
+
+```
 
 
 
