@@ -62,6 +62,10 @@ US_cities <- read_csv("C:/Users/Jim/Files/CFB/data/uscitiesv1_5.csv")
 # for easier matching
 US_cities$city_ascii_lwr <- tolower(US_cities$city_ascii)
 
+# R zipcode package data, rename columns to help keep info separate
+data(zipcode)
+colnames(zipcode) <- c("zip", "Rzcpkg_city", "Rzcpkg_state", "Rzcpkg_lat", "Rzcpkg_lon")
+
 ```
 
 
@@ -211,6 +215,7 @@ watsys_echoloc_I <- bind_rows(watsys_echoloc_1to1_acc01, watsys_echoloc_1toM_acc
 # check for no duplicates
 nrow(watsys_echoloc_I) == length(unique(watsys_echoloc_I$pwsid))
 
+nrow(watsys_echoloc_I)
 ```
 
 
@@ -249,7 +254,7 @@ ga_NewEng_ZC_1x <- geographic_area %>%
   .$pwsid
 
 ga_NewEng_ZC_1x_df <- geographic_area %>% 
-  filter(pwsid %in% ga_ZC_1x, area_type_code == "ZC") %>% 
+  filter(pwsid %in% ga_NewEng_ZC_1x, area_type_code == "ZC") %>% 
   select(-c(pws_activity_code, pws_type_code, city_served, end_column))
 
 # none in New England apparently,
@@ -263,21 +268,117 @@ ga_NewEng_ZC_Mx <- geographic_area %>%
 
 ```
 
+*then join to zipcode dataset*
+
+```{r}
+sum(nchar(zipcode$zip) != 5) # all 5 character length
+sum(nchar(ga_NewEng_ZC_1x_df$zip_code_served) != 5) # all 5 character length
+
+ga_NewEng_ZC_1x_df <- ga_NewEng_ZC_1x_df %>% left_join(., zipcode, 
+                                 by = c("zip_code_served" = "zip"))
+
+sum(is.na(ga_NewEng_ZC_1x_df$Rzcpkg_lat)) # all matched
+
+watsys_noecholoc_NewEng_gaZC <- water_system %>% filter(epa_region == "01") %>% 
+  inner_join(., ga_NewEng_ZC_1x_df, by = "pwsid")
+
+nrow(watsys_noecholoc_NewEng_gaZC) == length(unique(watsys_noecholoc_NewEng_gaZC$pwsid))
+nrow(watsys_noecholoc_NewEng_gaZC)
+
+
+```
+
+
+
+2. 
+# Then do CT to city database, but need to clean up city names a bit!
+watsys_noecholoc_NewEng_gaCT
+
+
+```{r}
+ga_NewEng_CT_1x <- geographic_area %>% 
+  filter(epa_region == "01", area_type_code == "CT") %>% 
+  group_by(pwsid) %>% 
+  summarise(n = n()) %>% 
+  filter(n == 1) %>% 
+  .$pwsid
+
+ga_NewEng_CT_1x_df <- geographic_area %>% 
+  filter(pwsid %in% ga_NewEng_CT_1x, area_type_code == "CT") %>% 
+  select(-c(pws_activity_code, pws_type_code, zip_code_served, end_column))
+
+# exclude any with zipcode served (prob. better)
+
+ga_NewEng_CT_1x_df2 <- anti_join(ga_NewEng_CT_1x_df, ga_NewEng_ZC_1x_df,
+                                 by = "pwsid")
+
+
+# a few in New England apparently,
+# maybe get cities lat long average eventually, also for rest of US
+ga_NewEng_CT_Mx <- geographic_area %>% 
+  filter(epa_region == "01", area_type_code == "CT") %>% 
+  group_by(pwsid) %>% 
+  summarise(n = n()) %>% 
+  filter(n > 1) %>% 
+  .$pwsid
+
+
+```
+
+
+*then clean city served, join to US_cities dataset*
+
+
+```{r}
+
+ga_NewEng_CT_1x_df2 <- ga_NewEng_CT_1x_df2 %>% 
+  mutate(city_served2 = tolower(str_trim(city_served)))
+# try making ascii-compatable eventually
+
+
+ga_NewEng_CT_1x_df2 <- ga_NewEng_CT_1x_df2 %>% inner_join(., US_cities, 
+                                 by = c("primacy_agency_code" = "state_id", 
+                                        "city_served2" = "city_ascii_lwr"))
+
+
+watsys_noecholoc_NewEng_gaCT <- water_system %>% filter(epa_region == "01") %>% 
+  inner_join(., ga_NewEng_CT_1x_df2, by = "pwsid")
+
+
+nrow(watsys_noecholoc_NewEng_gaCT) == length(unique(watsys_noecholoc_NewEng_gaCT$pwsid))
+nrow(watsys_noecholoc_NewEng_gaCT)
+
+```
+
+
+
+
+```{r}
+
+
+
+```
 
 
 
 
 
+Then hopefully NH shapefile to fill in that one at least
+
+
+Finally what's leftover, other strategies
 
 
 
 
 
+1. watsys_echoloc_I
+2. watsys_noecholoc_NewEng_gaZC
+3. watsys_noecholoc_NewEng_gaCT
 
+4. watsys_noecholoc_NewEng_NHgisI
 
-
-
-
+5. watsys_noecholoc_NewEng_nogeo
 
 
 
