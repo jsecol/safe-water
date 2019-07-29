@@ -19,6 +19,7 @@ library(RPostgreSQL)
 library(dplyr)
 # library(rebus)
 library(stringr)
+library(purrr)
 
 # library(DBI)
 
@@ -47,10 +48,11 @@ dbListTables(con)
 echo_sdwis <- 
   dbGetQuery(con, "SELECT * FROM echo.echo_exporter WHERE sdwis_flag = 'Y'")
 
+# active PWS only
 water_system <- 
   dbGetQuery(con, "SELECT * FROM sdwis.water_system WHERE pws_activity_code = 'A'")
 
-# Use area_type_code = 'CT' & area_type_code = 'ZC' in dplyr (others?)
+# active PWS only, use area_type_code = 'CT' & area_type_code = 'ZC' in geocoding
 geographic_area <- 
   dbGetQuery(con, "SELECT * FROM sdwis.geographic_area WHERE pws_activity_code = 'A'")
 
@@ -75,37 +77,232 @@ echo_sdwa_ids <- echo_sdwis %>%
 ## test
 # str_count("mmm mmmm mmm", pattern = " ")
 
+# counting space delimiter, + 1
 echo_sdwa_ids <- echo_sdwa_ids %>% 
-  mutate(sdwa_ids_count = str_count(sdwa_ids, pattern = " "))
+  mutate(sdwa_ids_count = str_count(sdwa_ids, pattern = " ") + 1)
+
+table(echo_sdwa_ids$sdwa_ids_count > 1)
 
 ```
 
-*view multiples (not that many), deal with later*
+*view multiples, appears can do string matching*
 
 ```{r}
-echo_sdwa_ids %>% filter(sdwa_ids_count > 0) %>% 
+echo_sdwa_ids %>% filter(sdwa_ids_count > 1) %>% 
   select(sdwa_ids)
-
-## may try fuzzy matching, etc.
-# str_detect()
 
 ```
 
 
-## III. Join data (active PWS only)
+## III. Join data
+
+*1 to 1 first*
 
 ```{r}
 
 # Using all
-watsys_echoloc <- water_system %>% 
-  filter(pws_activity_code == "A") %>% 
+watsys_echoloc_1to1 <- water_system %>% 
   left_join(., echo_sdwa_ids, by = c("pwsid" = "sdwa_ids"))
 
+# check unique
+length(unique(watsys_echoloc_1to1$pwsid))
+
+# fix for later rbind, add sdwa_ids and rearrange a bit
+
+watsys_echoloc_1to1 <- watsys_echoloc_1to1 %>% 
+  mutate(sdwa_ids = pwsid) %>% 
+  select(pwsid, sdwa_ids, everything()) %>% 
+  mutate(sdwa_ids_type = "single")
+
 # Filtering down to zip code centroid and finer (<= 10000)
-watsys_echoloc_acc01 <- watsys_echoloc %>% 
+watsys_echoloc_1to1_acc01 <- watsys_echoloc_1to1 %>% 
   filter(fac_accuracy_meters <= 10000)
 
+nrow(watsys_echoloc_1to1_acc01)
+
 ```
+
+*string matching for single water system pwsid's within multiple echo sdwa's*
+
+```{r}
+multi_echo_sdwa_ids <- echo_sdwa_ids %>% 
+  filter(sdwa_ids_count > 1) %>% 
+  .$sdwa_ids
+
+length(multi_echo_sdwa_ids)
+
+pwsids_noecho <- watsys_echoloc_1to1 %>% 
+  filter(is.na(sdwa_ids_count)) %>% 
+  .$pwsid
+
+length(pwsids_noecho)
+
+```
+
+
+```{r}
+# loop
+
+n1 <- length(multi_echo_sdwa_ids)
+
+matchlist1 <- list()
+for(i in 1:n1){
+  
+  match <- str_match(multi_echo_sdwa_ids[i], pattern = pwsids_noecho)
+  match <- match[which(!is.na(match[,1])),]
+  matchlist1[[i]] <- match
+  }
+
+names(matchlist1) <- multi_echo_sdwa_ids
+
+# Results Note: this sdwa_idsmatches to multiple pwsids
+multi_echo_sdwa_ids[4]; matchlist1[[4]]
+# Results Note: this sdwa_ids matches to one pwsids
+multi_echo_sdwa_ids[5]; matchlist1[[5]]
+```
+
+## stacking pwsids
+
+```{r}
+# # potential alternate approach
+# library(splitstackshape)
+# cSplit
+
+# remove empty list elements (those w/no matches found)
+matchlist2 <- compact(matchlist1)
+
+n2 <- length(matchlist2)
+
+matchlist3 <- list()
+
+for(i in 1:n2) {
+  items <- cbind(matchlist2[[i]])
+  id <- names(matchlist2[i])
+  items_id <- cbind(items, id)
+  matchlist3[[i]] <- items_id
+
+}
+
+# conversion, tidying up
+matchlist3_df <- data.frame(do.call(rbind, matchlist3))
+names(matchlist3_df) <- c("pwsid", "sdwa_ids")
+matchlist3_df[] <- lapply(matchlist3_df, as.character)
+
+# join this back to water_system (select fields?)
+matchlist3_df <- left_join(matchlist3_df, water_system, by = "pwsid")
+
+# create new inner join to echo_sdwa_ids
+watsys_echoloc_1toM <- inner_join(matchlist3_df, echo_sdwa_ids, by = "sdwa_ids") %>% 
+  mutate(sdwa_ids_type = "multi")
+
+
+watsys_echoloc_1toM_acc01 <- watsys_echoloc_1toM %>% 
+  filter(fac_accuracy_meters <= 10000)
+
+nrow(watsys_echoloc_1toM_acc01)
+
+```
+
+
+```{r}
+
+watsys_echoloc_I <- bind_rows(watsys_echoloc_1to1_acc01, watsys_echoloc_1toM_acc01)
+
+# check for no duplicates
+nrow(watsys_echoloc_I) == length(unique(watsys_echoloc_I$pwsid))
+
+```
+
+
+```{r}
+NewEngStates <- c("CT", "MA", "ME", "NH", "RI", "VT")
+
+# use epa region so can grab tribal (only 1 of 5 so far)
+ 
+watsys_echoloc_I_NewEng <- watsys_echoloc_I %>% 
+  filter(epa_region == "01")
+#  filter(primacy_agency_code %in% NewEngStates)
+
+table(watsys_echoloc_I_NewEng$primacy_agency_code)  
+  
+ 
+```
+
+## now for other coordinate sources
+```{r}
+
+watsys_noecholoc_NewEng <- water_system %>% filter(epa_region == "01") %>% 
+  anti_join(., watsys_echoloc_I_NewEng, by = "pwsid")
+
+table(watsys_noecholoc_NewEng$primacy_agency_code)
+
+```
+
+1. zip code served (best, but not too many)
+
+```{r}
+ga_NewEng_ZC_1x <- geographic_area %>% 
+  filter(epa_region == "01", area_type_code == "ZC") %>% 
+  group_by(pwsid) %>% 
+  summarise(n = n()) %>% 
+  filter(n == 1) %>% 
+  .$pwsid
+
+ga_NewEng_ZC_1x_df <- geographic_area %>% 
+  filter(pwsid %in% ga_ZC_1x, area_type_code == "ZC") %>% 
+  select(-c(pws_activity_code, pws_type_code, city_served, end_column))
+
+# none in New England apparently,
+# maybe merge zips and get a centroid eventually for rest of US
+ga_NewEng_ZC_Mx <- geographic_area %>% 
+  filter(epa_region == "01", area_type_code == "ZC") %>% 
+  group_by(pwsid) %>% 
+  summarise(n = n()) %>% 
+  filter(n > 1) %>% 
+  .$pwsid
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+
+water_system %>% filter(pwsid %in% c("LA1111023", "LA1111024"))
+
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
 
 *get geographic_area filtered to single city-pwsids & single zip-pwsids (deal with multiples later)*
 
@@ -326,34 +523,14 @@ watsys_ZCCTservedloc_II %>% filter(primacy_agency_code.x == "NH", is.na(loc_acc)
 
 ```{r}
 
-pwsids_noecho <- watsys_echoloc %>% 
-  filter(is.na(sdwa_ids_count)) %>% 
-  .$pwsid
 
-multi_echo_sdwa_ids <- echo_sdwa_ids %>% 
-  filter(sdwa_ids_count > 0) %>% 
-  .$sdwa_ids
+
+
 
 ```
 
 
-*one way: matching multiple string sdwa_ids to pwsid*
-```{r}
-n1 <- length(multi_echo_sdwa_ids)
 
-matchlist1 <- list()
-for(i in 1:n1){
-  
-  match <- str_match(multi_echo_sdwa_ids[i], pattern = pwsids_noecho)
-  match <- match[which(!is.na(match[,1])),]
-  matchlist1[[i]] <- match
-  }
-
-# Note this matches to multiple pwsids
-multi_echo_sdwa_ids[4]; matchlist1[[4]]
-# Note this matches to one pwsids
-multi_echo_sdwa_ids[5]; matchlist1[[5]]
-```
 
 *another way using fuzzy matching?*
 
