@@ -159,7 +159,7 @@ for(i in 1:n1){
 
 names(matchlist1) <- multi_echo_sdwa_ids
 
-# Results Note: this sdwa_idsmatches to multiple pwsids
+# Results Note: this sdwa_ids matches to multiple pwsids
 multi_echo_sdwa_ids[4]; matchlist1[[4]]
 # Results Note: this sdwa_ids matches to one pwsids
 multi_echo_sdwa_ids[5]; matchlist1[[5]]
@@ -210,7 +210,11 @@ nrow(watsys_echoloc_1toM_acc01)
 
 ```{r}
 
-watsys_echoloc_I <- bind_rows(watsys_echoloc_1to1_acc01, watsys_echoloc_1toM_acc01)
+watsys_echoloc_I <- bind_rows(watsys_echoloc_1to1_acc01, watsys_echoloc_1toM_acc01) %>% 
+  mutate(fac_lat = as.numeric(fac_lat), fac_long = as.numeric(fac_long))
+
+sum(is.na(watsys_echoloc_I$fac_lat))
+sum(is.na(watsys_echoloc_I$fac_long))
 
 # check for no duplicates
 nrow(watsys_echoloc_I) == length(unique(watsys_echoloc_I$pwsid))
@@ -220,36 +224,38 @@ nrow(watsys_echoloc_I)
 
 
 ```{r}
-NewEngStates <- c("CT", "MA", "ME", "NH", "RI", "VT")
+# no need 
+# NewEngStates <- c("CT", "MA", "ME", "NH", "RI", "VT")
 
 # use epa region so can grab tribal (only 1 of 5 so far)
  
-watsys_echoloc_I_NewEng <- watsys_echoloc_I %>% 
+watsys_echoloc_I_r01 <- watsys_echoloc_I %>% 
   filter(epa_region == "01")
 #  filter(primacy_agency_code %in% NewEngStates)
 
-table(watsys_echoloc_I_NewEng$primacy_agency_code)  
+table(watsys_echoloc_I_r01$primacy_agency_code)  
   
  
 ```
 
 *export*
 ```{r}
-watsys_echoloc_I_NewEng %>% 
-  select(primacy_agency_code, epa_region, pwsid, pws_type_code,
-         fac_lat, fac_long, sdwa_ids, fac_collection_method) %>% 
-  arrange(primacy_agency_code, pwsid) %>% 
-  mutate(source = "ECHO") %>% 
-  select(primacy_agency_code, epa_region, pwsid, pws_type_code,
-         fac_lat, fac_long, source, sdwa_ids, fac_collection_method) %>% 
-  write_csv(., "data_export/watsys_echoloc_I_NewEng.csv")
+# watsys_echoloc_I_NewEng %>% 
+#   select(primacy_agency_code, epa_region, pwsid, pws_type_code,
+#          fac_lat, fac_long, sdwa_ids, fac_collection_method) %>% 
+#   arrange(primacy_agency_code, pwsid) %>% 
+#   mutate(source = "ECHO") %>% 
+#   select(primacy_agency_code, epa_region, pwsid, pws_type_code,
+#          fac_lat, fac_long, source, sdwa_ids, fac_collection_method) %>% 
+#   write_csv(., "data_export/watsys_echoloc_I_NewEng.csv")
 
 ```
 
 
 
 
-## now for other coordinate sources
+## now for other coordinate sources **stop this except maybe for stats**
+
 ```{r}
 
 watsys_noecholoc_NewEng <- water_system %>% filter(epa_region == "01") %>% 
@@ -262,21 +268,21 @@ table(watsys_noecholoc_NewEng$primacy_agency_code)
 1. zip code served (best, but not too many)
 
 ```{r}
-ga_NewEng_ZC_1x <- geographic_area %>% 
+ga_r01_ZC_1x <- geographic_area %>% 
   filter(epa_region == "01", area_type_code == "ZC") %>% 
   group_by(pwsid) %>% 
   summarise(n = n()) %>% 
   filter(n == 1) %>% 
   .$pwsid
 
-ga_NewEng_ZC_1x_df <- geographic_area %>% 
-  filter(pwsid %in% ga_NewEng_ZC_1x, area_type_code == "ZC") %>% 
+ga_r01_ZC_1x_df <- geographic_area %>% 
+  filter(pwsid %in% ga_r01_ZC_1x, area_type_code == "ZC") %>% 
   select(-c(pws_activity_code, pws_type_code, city_served, 
             primacy_agency_code, epa_region, end_column))
 
 # none in New England apparently,
 # maybe merge zips and get a centroid eventually for rest of US
-ga_NewEng_ZC_Mx <- geographic_area %>% 
+ga_r01_ZC_Mx <- geographic_area %>% 
   filter(epa_region == "01", area_type_code == "ZC") %>% 
   group_by(pwsid) %>% 
   summarise(n = n()) %>% 
@@ -295,44 +301,44 @@ ga_NewEng_ZC_Mx <- geographic_area %>%
 
 ```{r}
 sum(nchar(zipcode$zip) != 5) # all 5 character length
-sum(nchar(ga_NewEng_ZC_1x_df$zip_code_served) != 5) # all 5 character length
+sum(nchar(ga_r01_ZC_1x_df$zip_code_served) != 5) # all 5 character length
 
-ga_NewEng_ZC_1x_df <- ga_NewEng_ZC_1x_df %>% left_join(., zipcode, 
+ga_r01_ZC_1x_df <- ga_r01_ZC_1x_df %>% left_join(., zipcode, 
                                  by = c("zip_code_served" = "zip"))
 
-sum(is.na(ga_NewEng_ZC_1x_df$Rzcpkg_lat)) # all matched
+sum(is.na(ga_r01_ZC_1x_df$Rzcpkg_lat)) # all matched
 
-watsys_noecholoc_NewEng_gaZC <- water_system %>% filter(epa_region == "01") %>% 
-  inner_join(., ga_NewEng_ZC_1x_df, by = "pwsid")
+watsys_gaZC_1x_r01 <- water_system %>% filter(epa_region == "01") %>% 
+  inner_join(., ga_r01_ZC_1x_df, by = "pwsid")
 
-nrow(watsys_noecholoc_NewEng_gaZC) == length(unique(watsys_noecholoc_NewEng_gaZC$pwsid))
-nrow(watsys_noecholoc_NewEng_gaZC)
+nrow(watsys_gaZC_1x_r01) == length(unique(watsys_gaZC_1x_r01$pwsid))
+nrow(watsys_gaZC_1x_r01)
 
 
 ```
 
-*exclude ECHO already done, as good or maybe better*
+*(WAIT) exclude ECHO already done, as good or maybe better*
 
 ```{r}
-watsys_noecholoc_NewEng_gaZC2 <- anti_join(watsys_noecholoc_NewEng_gaZC, 
-                                          watsys_echoloc_I_NewEng, 
-                                          by = "pwsid")
+# watsys_noecholoc_NewEng_gaZC <- anti_join(watsys_NewEng_gaZC, 
+#                                           watsys_echoloc_I_NewEng, 
+#                                           by = "pwsid")
 ```
-
 
 
 *export*
 ```{r}
-watsys_noecholoc_NewEng_gaZC2 %>% 
-  select(primacy_agency_code, epa_region, pwsid, pws_type_code,
-         Rzcpkg_lat, Rzcpkg_lon, zip_code_served) %>% 
-  arrange(primacy_agency_code, pwsid) %>% 
-  mutate(source = "R_ZIPCODE") %>% 
-  select(primacy_agency_code, epa_region, pwsid, pws_type_code,
-         Rzcpkg_lat, Rzcpkg_lon, source, zip_code_served) %>% 
-  write_csv(., "data_export/watsys_noecholoc_NewEng_gaZC2.csv")
+# watsys_noecholoc_NewEng_gaZC %>% 
+#   select(primacy_agency_code, epa_region, pwsid, pws_type_code,
+#          Rzcpkg_lat, Rzcpkg_lon, zip_code_served) %>% 
+#   arrange(primacy_agency_code, pwsid) %>% 
+#   mutate(source = "R_ZIPCODE") %>% 
+#   select(primacy_agency_code, epa_region, pwsid, pws_type_code,
+#          Rzcpkg_lat, Rzcpkg_lon, source, zip_code_served) %>% 
+#   write_csv(., "data_export/watsys_noecholoc_NewEng_gaZC.csv")
 
 ```
+
 
 
 2. 
@@ -340,32 +346,32 @@ watsys_noecholoc_NewEng_gaZC2 %>%
 
 
 ```{r}
-ga_NewEng_CT_1x <- geographic_area %>% 
+ga_r01_CT_1x <- geographic_area %>% 
   filter(epa_region == "01", area_type_code == "CT") %>% 
   group_by(pwsid) %>% 
   summarise(n = n()) %>% 
   filter(n == 1) %>% 
   .$pwsid
 
-ga_NewEng_CT_1x_df <- geographic_area %>% 
-  filter(pwsid %in% ga_NewEng_CT_1x, area_type_code == "CT") %>% 
+ga_r01_CT_1x_df <- geographic_area %>% 
+  filter(pwsid %in% ga_r01_CT_1x, area_type_code == "CT") %>% 
   select(-c(pws_activity_code, pws_type_code, zip_code_served, 
             epa_region, end_column))
 
 # may do additional, e.g., ascii-consistent
 
-ga_NewEng_CT_1x_df <- ga_NewEng_CT_1x_df %>% 
+ga_r01_CT_1x_df <- ga_r01_CT_1x_df %>% 
   mutate(city_served2 = tolower(str_trim(city_served)))
 
-# exclude any with zipcode served (prob. better)
+# (WAIT) exclude any with zipcode served (prob. better)
 
-ga_NewEng_CT_1x_df2 <- anti_join(ga_NewEng_CT_1x_df, ga_NewEng_ZC_1x_df,
-                                 by = "pwsid")
+# ga_r01_CT_1x_df2 <- anti_join(ga_r01_CT_1x_df, ga_r01_ZC_1x_df,
+#                                  by = "pwsid")
 
 
 # a few in New England apparently,
 # maybe get cities lat long average eventually, also for rest of US
-ga_NewEng_CT_Mx <- geographic_area %>% 
+ga_r01_CT_Mx <- geographic_area %>% 
   filter(epa_region == "01", area_type_code == "CT") %>% 
   group_by(pwsid) %>% 
   summarise(n = n()) %>% 
@@ -381,27 +387,31 @@ ga_NewEng_CT_Mx <- geographic_area %>%
 
 ```{r}
 
-ga_NewEng_CT_1x_df2 <- ga_NewEng_CT_1x_df2 %>% inner_join(., US_cities, 
+ga_r01_CT_1x_df <- ga_r01_CT_1x_df %>% left_join(., US_cities, 
                                  by = c("primacy_agency_code" = "state_id", 
                                         "city_served2" = "city_ascii_lwr"))
 
 
-watsys_noecholoc_NewEng_gaCT <- water_system %>% filter(epa_region == "01") %>% 
-  inner_join(., ga_NewEng_CT_1x_df2, by = "pwsid")
+sum(is.na(ga_r01_CT_1x_df$lat)) # not all matched
 
 
-nrow(watsys_noecholoc_NewEng_gaCT) == length(unique(watsys_noecholoc_NewEng_gaCT$pwsid))
-nrow(watsys_noecholoc_NewEng_gaCT)
+watsys_gaCT_1x_r01 <- water_system %>% filter(epa_region == "01") %>% 
+  inner_join(., ga_r01_CT_1x_df, by = "pwsid") %>% 
+  filter(!is.na(lat))
+
+
+nrow(watsys_gaCT_1x_r01) == length(unique(watsys_gaCT_1x_r01$pwsid))
+nrow(watsys_gaCT_1x_r01)
 
 
 ```
 
-*exclude ECHO already done, maybe better*
+*(WAIT) exclude ECHO already done, maybe better*
 ```{r}
 
-watsys_noecholoc_NewEng_gaCT2 <- anti_join(watsys_noecholoc_NewEng_gaCT, 
-                                          watsys_echoloc_I_NewEng, 
-                                          by = "pwsid")
+# watsys_noecholoc_NewEng_gaCT2 <- anti_join(watsys_noecholoc_NewEng_gaCT, 
+#                                           watsys_echoloc_I_NewEng, 
+#                                           by = "pwsid")
 
 ```
 
@@ -409,26 +419,83 @@ watsys_noecholoc_NewEng_gaCT2 <- anti_join(watsys_noecholoc_NewEng_gaCT,
 
 *export*
 ```{r}
-watsys_noecholoc_NewEng_gaCT2 %>% 
-  select(primacy_agency_code.x, epa_region, pwsid, pws_type_code, 
-         lat, lng, city_served2) %>% 
-  arrange(primacy_agency_code.x, pwsid) %>% 
-  mutate(source = "US_CITIES", comments = "City/Town Coordinates") %>% 
-  select(primacy_agency_code.x, epa_region, pwsid, pws_type_code,
-         lat, lng, source, city_served2, comments) %>% 
-  write_csv(., "data_export/watsys_noecholoc_NewEng_gaCT2.csv")
+# watsys_noecholoc_NewEng_gaCT2 %>% 
+#   select(primacy_agency_code.x, epa_region, pwsid, pws_type_code, 
+#          lat, lng, city_served2) %>% 
+#   arrange(primacy_agency_code.x, pwsid) %>% 
+#   mutate(source = "US_CITIES", comments = "City/Town Coordinates") %>% 
+#   select(primacy_agency_code.x, epa_region, pwsid, pws_type_code,
+#          lat, lng, source, city_served2, comments) %>% 
+#   write_csv(., "data_export/watsys_noecholoc_NewEng_gaCT2.csv")
 
 ```
 
 
-## N so far
+
+## Hierarchical selection
+
+
+```{r}
+nrow(watsys_echoloc_I_r01)
+nrow(watsys_gaZC_1x_r01)
+nrow(watsys_gaCT_1x_r01)
+
+# use all
+locations_echo <- watsys_echoloc_I_r01 %>% 
+  select(primacy_agency_code, epa_region, pwsid, pws_type_code,
+         fac_lat, fac_long, sdwa_ids, fac_collection_method) %>%
+  arrange(primacy_agency_code, pwsid) %>%
+  mutate(source = "ECHO") %>%
+  select(primacy_agency_code, epa_region, pwsid, pws_type_code,
+         fac_lat, fac_long, source, sdwa_ids, fac_collection_method) %>% 
+  rename(LAT = fac_lat, LON = fac_long, 
+         SOURCE_MATCH = sdwa_ids, COMMENTS = fac_collection_method)
+
+# use unmatched (echo over zip)
+locations_gaZC_1x <- watsys_gaZC_1x_r01 %>% 
+  filter(!pwsid %in% locations_echo$pwsid) %>% 
+  select(primacy_agency_code, epa_region, pwsid, pws_type_code,
+         Rzcpkg_lat, Rzcpkg_lon, zip_code_served) %>%
+  arrange(primacy_agency_code, pwsid) %>%
+  mutate(source = "R_ZIPCODE", COMMENTS = "Zip Code Centroid") %>%
+  select(primacy_agency_code, epa_region, pwsid, pws_type_code,
+         Rzcpkg_lat, Rzcpkg_lon, source, zip_code_served, COMMENTS) %>% 
+  rename(LAT = Rzcpkg_lat, LON = Rzcpkg_lon, 
+         SOURCE_MATCH = zip_code_served)
+
+
+# use unmatched (echo, zip over city/town)
+locations_gaCT_1x <- watsys_gaCT_1x_r01 %>% 
+  filter(!pwsid %in% c(locations_echo$pwsid, locations_gaZC_1x$pwsid)) %>% 
+  select(primacy_agency_code.x, epa_region, pwsid, pws_type_code,
+         lat, lng, city_served2) %>%
+  arrange(primacy_agency_code.x, pwsid) %>%
+  mutate(source = "US_CITIES", COMMENTS = "City/Town Coordinates") %>%
+  select(primacy_agency_code.x, epa_region, pwsid, pws_type_code,
+         lat, lng, source, city_served2, COMMENTS) %>% 
+  rename(primacy_agency_code = primacy_agency_code.x, LAT = lat, LON = lng, 
+         SOURCE_MATCH = city_served2)
+
+nrow(locations_echo)
+nrow(locations_gaZC_1x)
+nrow(locations_gaCT_1x)
+
+```
+
 ```{r}
 
-nrow(watsys_echoloc_I_NewEng)
-nrow(watsys_noecholoc_NewEng_gaZC2)
-nrow(watsys_noecholoc_NewEng_gaCT2)
+locations_combined_I <-
+  bind_rows(locations_echo, locations_gaZC_1x, locations_gaCT_1x)
+
+table(locations_combined_I$source)
+
+length(unique(locations_combined_I$pwsid)) == length(locations_combined_I$pwsid)
+
+
 
 ```
+
+
 
 
 
@@ -526,6 +593,52 @@ Finally what's leftover, other strategies
 2. watsys_noecholoc_NewEng_gaZC2
 3. watsys_noecholoc_NewEng_gaCT2
 4. watsys_noecholoc_NewEng_NHgisI
+
+
+```{r}
+
+set_II <- c(set_I, watsys_noecholoc_NewEng_NHgisI_2$pwsid)
+
+length(set_II) == length(unique(set_II))
+
+```
+
+
+```{r}
+watsys_noecholoc_NewEng_nogeo <- water_system %>% 
+  filter(epa_region == "01", !pwsid %in% set_II)
+
+# print from console to get simple rst text format (reStructuredText simple table)
+knitr::kable(table(watsys_noecholoc_NewEng_nogeo$primacy_agency_code, 
+      watsys_noecholoc_NewEng_nogeo$pws_type_code), format = "rst")
+
+```
+
+
+
+
+```{r}
+
+watsys_noecholoc_NewEng_gaCT2_stillneed1 <- 
+  watsys_noecholoc_NewEng %>% 
+  filter(!pwsid %in% set_II) %>% 
+  inner_join(., ga_NewEng_CT_1x_df, by = "pwsid")
+
+watsys_noecholoc_NewEng_gaCT2_stillneed1 <- 
+  watsys_noecholoc_NewEng %>% 
+  filter(!pwsid %in% set_II)
+
+
+```
+
+
+
+
+
+
+
+
+
 
 5. watsys_noecholoc_NewEng_nogeo
 
