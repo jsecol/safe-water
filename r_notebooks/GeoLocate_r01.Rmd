@@ -250,7 +250,7 @@ table(watsys_noecholoc_r01$primacy_agency_code)
 
 ```
 
-#### 1. zip code served (best, but not too many)
+#### 1. zip code served (next best, but not too many)
 
 ```{r}
 ga_r01_ZC_1x <- geographic_area %>% 
@@ -524,8 +524,287 @@ table(remainder1$primacy_agency_code,
 ```
 
 
+```{r}
+remainder1 %>% filter(primacy_agency_code == "CT") %>%
+  inner_join(., geographic_area, by = "pwsid") %>% 
+  filter(area_type_code == "CT")
 
 
+```
+
+#### do state by state GIS in another rmd, probably cleaner!
+
+*State = CT*
+
+```{r message=FALSE}
+
+CT_towns_ctrs_coords <- 
+  read_csv("C:/Users/Jim/Files/CFB/GIS/locations/CT/CT_towns_ctrs_coords.csv")
+
+```
+
+
+```{r}
+ga_r01_CT_1x_df_CTgisI <- ga_r01_CT_1x_df %>% 
+  filter(primacy_agency_code == "CT") %>% 
+  left_join(., CT_towns_ctrs_coords, by = c("city_served2" = "NAME10lwr"))
+
+
+ga_r01_CT_1x_df_CTgisI %>% filter(is.na(X)) %>% .$X %>% length()
+
+length(unique(ga_r01_CT_1x_df_CTgisI$pwsid)) == length(ga_r01_CT_1x_df_CTgisI$pwsid)
+
+```
+
+```{r}
+
+watsys_CTgisI_r01 <- water_system %>% filter(epa_region == "01") %>% 
+  inner_join(., ga_r01_CT_1x_df_CTgisI, by = "pwsid")
+
+
+# use unmatched (echo, zip, city/town over CTgisI)
+locations_CTgisI <- watsys_CTgisI_r01 %>% 
+  filter(!pwsid %in% locations_combined_I$pwsid) %>% 
+  select(primacy_agency_code.x, epa_region, pwsid, pws_type_code,
+         Y, X, city_served2) %>%
+  arrange(primacy_agency_code.x, pwsid) %>%
+  mutate(source = "CT_GIS_I", COMMENTS = "City/Town Polygon Centroid") %>%
+  select(primacy_agency_code.x, epa_region, pwsid, pws_type_code,
+         Y, X, source, city_served2, COMMENTS) %>% 
+  rename(primacy_agency_code = primacy_agency_code.x, LAT = Y, LON = X, 
+         SOURCE_MATCH = city_served2)
+
+
+```
+
+
+
+*State = ME*
+
+
+```{r}
+remainder1 %>% filter(primacy_agency_code == "ME") %>%
+  inner_join(., geographic_area, by = "pwsid") %>% 
+  filter(area_type_code == "CT")
+
+```
+
+```{r message=FALSE}
+
+ME_towns_pts_coords <- 
+  read_csv("C:/Users/Jim/Files/CFB/GIS/locations/ME/ME_towns_pts_coords.csv")
+
+```
+
+
+```{r}
+ga_r01_CT_1x_df_MEgisI <- ga_r01_CT_1x_df %>% 
+  filter(primacy_agency_code == "ME") %>% 
+  left_join(., ME_towns_pts_coords, by = c("city_served2" = "TOWNlwr"))
+
+
+ga_r01_CT_1x_df_MEgisI %>% filter(is.na(X)) %>% .$X %>% length()
+
+length(unique(ga_r01_CT_1x_df_MEgisI$pwsid)) == length(ga_r01_CT_1x_df_MEgisI$pwsid)
+
+```
+
+*some naming issues to fix probably*
+
+e.g.,
+
+newburg != 	Newburgh
+st agatha != Saint Agatha
+
+```{r}
+ga_r01_CT_1x_df_MEgisI %>% filter(is.na(X))
+```
+
+
+```{r}
+
+watsys_MEgisI_r01 <- water_system %>% filter(epa_region == "01") %>% 
+  inner_join(., ga_r01_CT_1x_df_MEgisI, by = "pwsid") %>% 
+  filter(!is.na(X))
+
+
+# use unmatched (echo, zip, city/town over MEgisI)
+locations_MEgisI <- watsys_MEgisI_r01 %>% 
+  filter(!pwsid %in% locations_combined_I$pwsid) %>% 
+  select(primacy_agency_code.x, epa_region, pwsid, pws_type_code,
+         Y, X, city_served2) %>%
+  arrange(primacy_agency_code.x, pwsid) %>%
+  mutate(source = "ME_GIS_I", COMMENTS = "City/Town Point") %>%
+  select(primacy_agency_code.x, epa_region, pwsid, pws_type_code,
+         Y, X, source, city_served2, COMMENTS) %>% 
+  rename(primacy_agency_code = primacy_agency_code.x, LAT = Y, LON = X, 
+         SOURCE_MATCH = city_served2)
+
+
+```
+
+
+
+
+*State = RI*
+
+
+```{r}
+remainder1 %>% filter(primacy_agency_code == "RI") %>%
+  inner_join(., geographic_area, by = "pwsid") %>% 
+  filter(area_type_code == "CT")
+
+```
+
+```{r message=FALSE}
+
+RI_towns_ctrs_coords <- 
+  read_csv("C:/Users/Jim/Files/CFB/GIS/locations/RI/RI_towns_ctrs_coords.csv")
+
+```
+
+
+
+```{r}
+ga_r01_CT_1x_df_RIgisI <- ga_r01_CT_1x_df %>% 
+  filter(primacy_agency_code == "RI") %>% 
+  left_join(., RI_towns_ctrs_coords, by = c("city_served2" = "NAMElwr"))
+
+
+ga_r01_CT_1x_df_RIgisI %>% filter(is.na(X)) %>% .$X %>% length()
+
+length(unique(ga_r01_CT_1x_df_RIgisI$pwsid)) == length(ga_r01_CT_1x_df_RIgisI$pwsid)
+
+```
+
+
+
+```{r}
+
+watsys_RIgisI_r01 <- water_system %>% filter(epa_region == "01") %>% 
+  inner_join(., ga_r01_CT_1x_df_RIgisI, by = "pwsid") %>% 
+  filter(!is.na(X))
+
+
+# use unmatched (echo, zip, city/town over RIgisI)
+locations_RIgisI <- watsys_RIgisI_r01 %>% 
+  filter(!pwsid %in% locations_combined_I$pwsid) %>% 
+  select(primacy_agency_code.x, epa_region, pwsid, pws_type_code,
+         Y, X, city_served2) %>%
+  arrange(primacy_agency_code.x, pwsid) %>%
+  mutate(source = "RI_GIS_I", COMMENTS = "City/Town Polygon Centroid") %>%
+  select(primacy_agency_code.x, epa_region, pwsid, pws_type_code,
+         Y, X, source, city_served2, COMMENTS) %>% 
+  rename(primacy_agency_code = primacy_agency_code.x, LAT = Y, LON = X, 
+         SOURCE_MATCH = city_served2)
+
+
+```
+
+
+*State = VT*
+
+
+```{r}
+remainder1 %>% filter(primacy_agency_code == "VT") %>%
+  inner_join(., geographic_area, by = "pwsid") %>% 
+  filter(area_type_code == "CT")
+
+```
+
+```{r message=FALSE}
+
+VT_towns_ctrs_coords <- 
+  read_csv("C:/Users/Jim/Files/CFB/GIS/locations/VT/VT_towns_ctrs_coords.csv")
+
+```
+
+
+
+```{r}
+ga_r01_CT_1x_df_VTgisI <- ga_r01_CT_1x_df %>% 
+  filter(primacy_agency_code == "VT") %>% 
+  left_join(., VT_towns_ctrs_coords, by = c("city_served2" = "TOWNNAMElwr"))
+
+
+ga_r01_CT_1x_df_VTgisI %>% filter(is.na(X)) %>% .$X %>% length()
+
+length(unique(ga_r01_CT_1x_df_MEgisI$pwsid)) == length(ga_r01_CT_1x_df_MEgisI$pwsid)
+
+```
+
+
+*some naming issues to fix probably*
+
+e.g.,
+
+alburg != 	alburgh
+
+
+```{r}
+ga_r01_CT_1x_df_VTgisI %>% filter(is.na(X))
+
+```
+
+
+
+```{r}
+
+watsys_VTgisI_r01 <- water_system %>% filter(epa_region == "01") %>% 
+  inner_join(., ga_r01_CT_1x_df_VTgisI, by = "pwsid") %>% 
+  filter(!is.na(X))
+
+
+# use unmatched (echo, zip, city/town over VTgisI)
+locations_VTgisI <- watsys_VTgisI_r01 %>% 
+  filter(!pwsid %in% locations_combined_I$pwsid) %>% 
+  select(primacy_agency_code.x, epa_region, pwsid, pws_type_code,
+         Y, X, city_served2) %>%
+  arrange(primacy_agency_code.x, pwsid) %>%
+  mutate(source = "VT_GIS_I", COMMENTS = "City/Town Polygon Centroid") %>%
+  select(primacy_agency_code.x, epa_region, pwsid, pws_type_code,
+         Y, X, source, city_served2, COMMENTS) %>% 
+  rename(primacy_agency_code = primacy_agency_code.x, LAT = Y, LON = X, 
+         SOURCE_MATCH = city_served2)
+
+
+```
+
+
+
+
+
+#### Bind all
+
+```{r}
+
+locations_combined_II <- bind_rows(locations_combined_I, 
+                                   locations_NHgisI, 
+                                   locations_CTgisI, 
+                                   locations_MEgisI, 
+                                   locations_RIgisI, 
+                                   locations_VTgisI)
+
+length(unique(locations_combined_II$pwsid)) == length(locations_combined_II$pwsid)
+
+write_csv(locations_combined_II, "data_export/locations_combined_II.csv", col_names = TRUE)
+
+
+```
+
+
+```{r}
+remainder2 <- water_system %>% 
+  filter(epa_region == "01", 
+         !pwsid %in% locations_combined_II$pwsid)
+
+table(remainder2$primacy_agency_code, 
+      remainder2$pws_type_code)
+
+# # print this from console to get simple rst text format (reStructuredText simple table)
+# knitr::kable(table(remainder2$primacy_agency_code,
+#       remainder2$pws_type_code), format = "rst")
+```
 
 
 
