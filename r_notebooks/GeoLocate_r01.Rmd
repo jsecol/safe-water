@@ -442,39 +442,17 @@ water_system %>% filter(epa_region == "01") %>%
 
 ## IV. Other data
 
-#### 1. NH shapefile to fill in some
+#### doing state by state GIS in another rmd
 
-```{r}
-library(sf)
+*State = NH*
 
-z_NH_centers <- 
-  st_read("C:/Users/Jim/Files/CFB/GIS/locations/NH/GRANIT_20190713073323/pbp_centers.shp")
+```{r message=FALSE}
 
-st_crs(z_NH_centers)
-
-z_NH_centers_ll <- st_transform(z_NH_centers, crs = 4326)
-
-st_crs(z_NH_centers_ll)
-
-z_NH_centers_ll_data <- cbind(st_drop_geometry(z_NH_centers_ll), 
-                            st_coordinates(z_NH_centers_ll))
-
-z_NH_centers_ll_data$NAME_fixed <- tolower(z_NH_centers_ll_data$NAME)
-
-#### Identified a few naming issues matching city_served to shapefile, so manual fixing:
-
-NH_nameupdates <- z_NH_centers_ll_data$NAME_fixed %>% 
-  str_replace_all(c("hart's location" = "harts location", 
-                  "thompson & meserve" = "thompson and meserves purchase",
-                  "pinkham's grant" = "pinkhams grant", 
-                  "low & burbanks" = "low and burbanks grant"))
-
-z_NH_centers_ll_data$NAME_fixed <- NH_nameupdates
-
-# write.csv(z_NH_centers_ll_data, 
-#           "data_export/z_NH_centers_ll_data.csv", row.names = FALSE, na = "")
+z_NH_centers_ll_data <- 
+  read_csv("C:/Users/Jim/Files/CFB/GIS/locations/NH/z_NH_centers_ll_data.csv")
 
 ```
+
 
 
 ```{r}
@@ -531,8 +509,6 @@ remainder1 %>% filter(primacy_agency_code == "CT") %>%
 
 
 ```
-
-#### do state by state GIS in another rmd, probably cleaner!
 
 *State = CT*
 
@@ -596,11 +572,11 @@ ME_towns_pts_coords <-
 
 ```
 
-
+*using fixed names, see _ME.Rmd*
 ```{r}
 ga_r01_CT_1x_df_MEgisI <- ga_r01_CT_1x_df %>% 
   filter(primacy_agency_code == "ME") %>% 
-  left_join(., ME_towns_pts_coords, by = c("city_served2" = "TOWNlwr"))
+  left_join(., ME_towns_pts_coords, by = c("city_served2" = "sdwis_name_match"))
 
 
 ga_r01_CT_1x_df_MEgisI %>% filter(is.na(X)) %>% .$X %>% length()
@@ -609,12 +585,8 @@ length(unique(ga_r01_CT_1x_df_MEgisI$pwsid)) == length(ga_r01_CT_1x_df_MEgisI$pw
 
 ```
 
-*some naming issues to fix probably*
+*a naming issue to fix*
 
-e.g.,
-
-newburg != 	Newburgh
-st agatha != Saint Agatha
 
 ```{r}
 ga_r01_CT_1x_df_MEgisI %>% filter(is.na(X))
@@ -724,7 +696,7 @@ VT_towns_ctrs_coords <-
 ```{r}
 ga_r01_CT_1x_df_VTgisI <- ga_r01_CT_1x_df %>% 
   filter(primacy_agency_code == "VT") %>% 
-  left_join(., VT_towns_ctrs_coords, by = c("city_served2" = "TOWNNAMElwr"))
+  left_join(., VT_towns_ctrs_coords, by = c("city_served2" = "sdwis_match"))
 
 
 ga_r01_CT_1x_df_VTgisI %>% filter(is.na(X)) %>% .$X %>% length()
@@ -734,15 +706,8 @@ length(unique(ga_r01_CT_1x_df_MEgisI$pwsid)) == length(ga_r01_CT_1x_df_MEgisI$pw
 ```
 
 
-*some naming issues to fix probably*
-
-e.g.,
-
-alburg != 	alburgh
-
-
 ```{r}
-ga_r01_CT_1x_df_VTgisI %>% filter(is.na(X))
+# ga_r01_CT_1x_df_VTgisI %>% filter(is.na(X))
 
 ```
 
