@@ -1,0 +1,312 @@
+---
+title: "GeoLocate_r01_map"
+author: "Jim Sheehan"
+date: "8/26/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+#### 0. Load packages
+
+```{r message=FALSE}
+library(readr)
+library(sf)
+library(dplyr)
+# library(ggplot2)
+library(ggmap)
+library(RPostgreSQL)
+library(zipcode)
+library(tmap)
+library(mapview)
+
+```
+
+
+#### I. Load data
+
+1. Geolocated water systems
+
+```{r message=FALSE}
+
+locations_combined_II <- read_csv("data_export/locations_combined_II.csv")
+
+locations_combined_II_pts <- st_as_sf(locations_combined_II, coords = c("LON", "LAT"), crs = 4326)
+str(locations_combined_II_pts)
+st_crs(locations_combined_II_pts)
+
+```
+
+2. SDWIS water systems (with lat lon added based on admin zip)
+
+```{r message=FALSE}
+
+#### My Postgres
+drv <- dbDriver("PostgreSQL")
+
+con <- dbConnect(drv, dbname = "postgres",
+                 host = "localhost", port = 5432,
+                 user = "postgres")
+
+# active PWS only
+water_system <- 
+  dbGetQuery(con, "SELECT * FROM sdwis.water_system WHERE pws_activity_code = 'A' AND 
+             epa_region = '01'")
+
+data("zipcode")
+  
+water_system <- water_system %>% 
+  left_join(., zipcode, by = c("zip_code5" = "zip")) %>% as_tibble()
+
+water_system_pts <- water_system %>% 
+  filter(!is.na(latitude)) %>% 
+  st_as_sf(coords = c("longitude", "latitude"), crs = 4326)
+
+# a few zip codes didn't match
+nrow(water_system) - nrow(water_system_pts)
+
+str(water_system_pts, list.len = 10)
+st_crs(water_system_pts)
+
+```
+
+3. Create matching objects for comparison
+
+```{r}
+locations_combined_II_pts_c1 <- locations_combined_II_pts %>% 
+  filter(pwsid %in% water_system_pts$pwsid) %>% 
+  arrange(pwsid)
+
+water_system_pts_c1 <- water_system_pts %>% 
+  filter(pwsid %in% locations_combined_II_pts$pwsid) %>% 
+  arrange(pwsid)
+
+
+# pairs order match for distances?
+sum(locations_combined_II_pts_c1$pwsid == water_system_pts_c1$pwsid) == nrow(locations_combined_II_pts_c1)
+
+nrow(locations_combined_II_pts_c1)
+
+```
+
+
+#### III. Analysis
+
+*raster::pointDistance much faster than sf::st_distance*
+
+```{r}
+compare_pt_dist <- raster::pointDistance(st_coordinates(locations_combined_II_pts_c1), 
+                      st_coordinates(water_system_pts_c1), 
+                      lonlat = TRUE,
+                      allpairs = FALSE)
+
+head(compare_pt_dist)
+summary(compare_pt_dist)
+```
+
+
+```{r}
+water_system_pts_c1$dist_to_geoloc <- compare_pt_dist
+
+water_system_pts_c1 %>% arrange(-dist_to_geoloc) %>% st_drop_geometry() %>% 
+  select(pwsid, pws_name, address_line1, city_name, state_code, zip_code5, 
+         primacy_agency_code, dist_to_geoloc) %>% slice(1:30) %>% print.data.frame()
+
+st_crs(water_system_pts_c1)
+```
+
+```{r}
+table(water_system_pts_c1$primacy_agency_code, water_system_pts_c1$state_code)
+```
+
+
+```{r}
+
+water_system_pts_c1 %>% st_drop_geometry() %>% 
+  summarise(sum(primacy_agency_code != state_code)) %>% 
+  print.data.frame()
+
+water_system_pts_c1 %>% st_drop_geometry() %>% 
+  group_by(primacy_agency_code) %>% 
+  summarise(sum(primacy_agency_code != state_code)) %>% 
+  print.data.frame()
+
+
+```
+
+
+
+
+#### IV. Mapping
+
+*ggmap had some CRS issue causing overlay offset, so using tmap*
+
+```{r message=FALSE}
+
+water_system_pts_c1_box <- st_bbox(water_system_pts_c1) %>% as.vector()
+names(water_system_pts_c1_box) <- c("left", "bottom", "right", "top")
+
+bmap1 <- get_stamenmap(water_system_pts_c1_box + c(-2, -2, 2, 2), "terrain-background", zoom = 5)
+
+# str(bmap1)
+
+# st_crs(bmap1)
+# probably EPSG 4326 (https://gis.stackexchange.com/questions/176629/shift-in-the-data-between-cartodb-and-stamen-layer-google-maps-api)
+
+water_system_pts_c1_stmatch_T <- water_system_pts_c1 %>% 
+  filter(state_code == primacy_agency_code)
+
+water_system_pts_c1_stmatch_F <- water_system_pts_c1 %>% 
+  filter(state_code != primacy_agency_code) 
+
+
+# note odd blue in PA, maybe a data entry zipcode error??
+# also at this scale seems off, ok if extent is NE though
+
+water_system_pts_c1_map1 <- ggmap(bmap1) +
+  geom_sf(data = water_system_pts_c1_stmatch_T, color = "blue",
+          size = 0.9, inherit.aes = FALSE) +
+  geom_sf(data = water_system_pts_c1_stmatch_F, color = "red",
+          size = 0.9, inherit.aes = FALSE)
+
+
+water_system_pts_c1_map1
+
+# ggsave("data_export/water_system_pts_c1_map1.png", plot = water_system_pts_c1_map1)
+
+```
+
+
+
+```{r}
+water_system_pts_c1_stmatch_T_df <- water_system_pts_c1_stmatch_T %>% 
+  st_coordinates() %>% as_tibble()
+
+water_system_pts_c1_stmatch_F_df <- water_system_pts_c1_stmatch_F %>% 
+  st_coordinates() %>% as_tibble()
+
+r01_pwsid_adminzip <- ggmap(bmap1) + 
+  geom_point(data = water_system_pts_c1_stmatch_T_df, mapping = aes(x = X, y = Y),
+                                        col = "blue", size = 0.9) +
+  geom_point(data = water_system_pts_c1_stmatch_F_df, mapping = aes(x = X, y = Y),
+                                        col = "red", size = 0.9)
+
+r01_pwsid_adminzip
+
+ggsave("image_export/r01_pwsid_adminzip.png", plot = r01_pwsid_adminzip, 
+       width = 6, height = 4)
+
+```
+
+
+
+
+
+
+
+```{r}
+# water_system_pts_c1_box <- st_bbox(water_system_pts_c1)
+# 
+# map <- 
+#   tm_view(bbox = water_system_pts_c1_box) + 
+# #  tm_basemap(leaflet::providers$Stamen.Watercolor) +
+# #  tm_basemap(leaflet::providers$Esri.WorldImagery, alpha = 1) + 
+#   tm_shape(water_system_pts_c1_stmatch_T) + 
+#   tm_dots(col = "blue") + 
+#   tm_shape(water_system_pts_c1_stmatch_F) + 
+#   tm_dots(col = "red")
+# 
+# map_lf <- tmap_leaflet(map)
+
+# map_lf
+```
+
+
+```{r}
+# mapshot(map_lf, file = "image_export/r01_pwsid_adminzip.png", vwidth = 800, vheight = 500,
+#             remove_controls = c("zoomControl", "layersControl", "homeButton"))
+
+```
+
+
+```{r}
+# 
+# map_lf[["sizingPolicy"]][["browser"]][["fill"]] <- FALSE
+# 
+# map_lf[["sizingPolicy"]][["browser"]][["defaultWidth"]] <- 600
+# 
+# map_lf[["sizingPolicy"]][["browser"]][["defaultHeight"]] <- 400
+# 
+# 
+# 
+# mapshot(map_lf, url = "image_export/r01_pwsid_adminzip.html", 
+#         vwidth = 992, vheight = 744, cliprect = "viewport")
+
+
+```
+
+
+
+```{r message=FALSE}
+
+# locations_combined_II_pts_c1_box <- st_bbox(locations_combined_II_pts_c1) %>% as.vector()
+# names(locations_combined_II_pts_c1_box) <- c("left", "bottom", "right", "top")
+# 
+# bmap2 <- get_stamenmap(locations_combined_II_pts_c1_box + c(-0.5, -0.5, 0.5, 0.5), 
+#                        "terrain-background", zoom = 6)
+# 
+# ggmap(bmap2) + 
+#   geom_sf(data = locations_combined_II_pts_c1, color = "blue", 
+#           size = 0.9, inherit.aes = FALSE)
+# 
+
+
+```
+
+```{r message=FALSE}
+# ggmap(bmap2) + 
+#   geom_sf(data = water_system_pts_c1_stmatch_T, color = "blue", 
+#           size = 0.9, inherit.aes = FALSE) +
+#   geom_sf(data = water_system_pts_c1_stmatch_F, color = "red", 
+#           size = 0.9, inherit.aes = FALSE)
+
+```
+
+
+```{r}
+locations_combined_II_pts_c1_box <- st_bbox(locations_combined_II_pts_c1)
+
+# library(tigris)
+# states <- states(cb = TRUE)
+
+map2 <- 
+#  tm_view(bbox = locations_combined_II_pts_c1_box) + 
+#  tm_layout() + 
+#  tm_basemap(leaflet::providers$Stamen.Watercolor) +
+  tm_basemap(leaflet::providers$Esri.WorldImagery) + 
+  tm_shape(locations_combined_II_pts_c1) + 
+  tm_dots(col = "primacy_agency_code", legend.show = FALSE) + 
+  tm_shape(states) +
+  tm_polygons(alpha = 0)
+
+map2_lf <- tmap_leaflet(map2)
+
+map2_lf
+```
+
+
+
+
+```{r}
+mapshot(map2_lf, file = "image_export/r01_pwsid_geoloc.png", vwidth = 500, vheight = 500,
+            remove_controls = c("zoomControl", "layersControl", "homeButton"))
+
+```
+
+
+
+
+
