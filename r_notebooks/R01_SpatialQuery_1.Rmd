@@ -1,231 +1,137 @@
 ---
-title: "CFB zipcode work"
-author: "Jim Sheehan"
-date: "April 3, 2019"
-output: github_document
+title: "Get spatial data for EPA region 1"
+date: "`r Sys.Date()`"
+output:
+  github_document:
+    toc: true
+    toc_depth: 3
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-<br>  
-  
-## 0. Load packages  
-  
-<br>  
+## 0 - Load packages  
 
 ```{r message=FALSE}
 
 # library(RMySQL)
-library(data.table)
+# library(data.table)
+library(googledrive)
+library(fs)
 library(readr)
-library(dplyr) # some masking of data.table: between, first, last
+library(RPostgreSQL)
+library(dplyr)
 library(ggplot2)
 library(maps) # has some basic vector basemaps
-library(zipcode) # for getting lat/lon coordinates where zipcode is available
+# library(zipcode) # for getting lat/lon coordinates where zipcode is available
 # library(lubridate)
 # library(noncensus) holding off for now, try ZCTA directly, can match to US Census data at that resolution
 
-#### TEMP
-# load("C:/Users/Jim/GitHub/safe-water/r_notebooks/WaterSystems_zipcodes.RData")
 ```
 
-<br>
+## I - Load data
 
-## I. Connect to the Google cloud database and load data
-
-<br>
-
-
-  + Google Cloud SDK steps (I'm in Windows so "\" not "/")  
-  
-<!-- gcloud auth login -->
-<!-- cd C:\temp\db -->
-<!-- .\cloud_sql_proxy -instances=safe-water-235819:us-east1:safe-water-db=tcp:3306 -->
-  
+1. Get available files from my google drive (public)
 
 ```{r}
-# kr_name <- "my_keyring"
-# kr_service <- "my_database"
-# kr_username <- "my_username"
-# kr_password <- "my_password"
-# 
-# db_name <- "safe_water"
-# db_host <- "127.0.0.1" # for local access
-# db_port <- 3306
-# 
-# mydb <-  dbConnect(MySQL(), 
-#                    user = keyring::backend_file$new()$get(service = kr_service,
-#                                 user = kr_username,
-#                                 keyring = kr_name), 
-#                    password = keyring::backend_file$new()$get(service = kr_service,
-#                                 user = kr_password,
-#                                 keyring = kr_name), 
-#                    dbname = db_name, host = db_host, port = db_port)
-# 
-# dbListTables(mydb)
-#   
+
+files <- drive_find(type = "csv", q = c("visibility = 'anyoneCanFind'"))
+
+files$name
 
 ```
 
-<br>
+2. Download into R
 
-#### Query Active PWS from WATER_SYSTEM
 ```{r}
 
-db_table <- 'WATER_SYSTEM'
-s <- paste0("SELECT * FROM ", db_table, " WHERE PWS_ACTIVITY_CODE = 'A'")
-rs <- dbSendQuery(mydb, s)
-water_system <-  fetch(rs, n = -1)
+dir_create("data_temp")
 
-dim(water_system)
-names(water_system)
-
-dbDisconnect(mydb)
+drive_download(file = files[1,], 
+               path = paste0("data_temp/", files[1,]$name),
+               overwrite = TRUE)
 
 ```
 
-<br>
+3. Read back in
 
-#### Looking for/at duplicates in primary key:
 ```{r}
-water_system %>% 
-  count(PWSID) %>% 
-  filter(n > 1)
+
+locations <- read_csv(paste0("data_temp/", files[1,]$name))
 
 ```
 
-<br>
-
-#### Set primary key:
-```{r}
-water_system <- as.data.table(water_system) # convert to data.table
-setkey(water_system, PWSID)
-key(water_system)
-
-```
-
-<br>
-
-#### Zipcode data from census zip code tabulation areas
-
- + can use these to match to demographics, etc, at a relatively fine scale
- 
-```{r}
-# data.table seems to be harder for .zip, using readr package
-zcta <- read_table2("../data/2016_Gaz_zcta_national.zip")
-
-# empty extra column dropped
-zcta <- zcta[, -8]
-
-```
-
-<br>
-
-#### Zipcode data from zipcode::zipcode
-
- + provides some "fill-in"
- 
-```{r}
-data(zipcode)
-sum(nchar(zipcode$zip) != 5) # all 5 character length
-
-```
-
-<br>
-
-#### Zipcode clean:
-```{r}
-
-# whoa, the zip codes in water_system are messy:
-unique(nchar(water_system$ZIP_CODE))
-nrow(water_system[nchar(water_system$ZIP_CODE) != 5 & nchar(water_system$ZIP_CODE) > 0, ])
-
-
-water_system$ZIP_CODE5 <- substr(water_system$ZIP_CODE, start = 1, stop = 5) 
-
-sum(is.na(water_system$ZIP_CODE5))
-
-# now using zipcode clean package function (which doesn't fix >5 character zips)
-# seems to remove mostly junk (zip codes "", with characters instead of #'s, etc.)
-water_system$ZIP_CODE5 <- clean.zipcodes(water_system$ZIP_CODE5)
-
-sum(is.na(water_system$ZIP_CODE5))
-
-water_system %>% filter(is.na(ZIP_CODE5), ZIP_CODE != "") %>% 
-  .$ZIP_CODE
-
-# Fixing one "5496O" should be "54960"
-
-water_system <- water_system %>% 
-  mutate(ZIP_CODE5 = case_when(ZIP_CODE == "5496O" ~ "54960", 
-                               TRUE ~ ZIP_CODE5))
-
-
-```
-
-<br>
-
-#### Rename some of the columns for zipcode::zipcode prior to join
-
-+ helps distinguish from similar SDWIS variable names, and other lat/lon sources (e.g., zipcode tabulation area centroids for comparison)
-```{r}
-colnames(zipcode)
-colnames(zipcode) <- c("zip", "Rzcpkg_city", "Rzcpkg_state", "Rzcpkg_lat", "Rzcpkg_lon")
-colnames(zipcode)
-
-```
-
-<br>
-
-#### Trying to ID where wrong State, etc. Zip Codes using echo
-
+4. Get other data
 
 ```{r}
-library(RPostgreSQL)
 
+#### My Postgres
 drv <- dbDriver("PostgreSQL")
 
 con <- dbConnect(drv, dbname = "postgres",
                  host = "localhost", port = 5432,
-                 user = "postgres") # local default user, no password needed apparently
+                 user = "postgres")
 
 dbListTables(con)
 
-# table is in the echo schema, which list doesmn't show
-
-dbExistsTable(con, c("echo", "echo_exporter")) 
-
-
 ```
 
-
++ Query Active R01 PWS from WATER_SYSTEM & Violations
 
 ```{r}
-df_echo <- dbGetQuery(con, "SELECT * FROM echo.echo_exporter WHERE sdwis_flag = 'Y'")
-# LIMIT 10 
+
+water_systems <- 
+  dbGetQuery(con, "SELECT * FROM sdwis.water_system WHERE pws_activity_code = 'A' 
+             AND epa_region = '01'")
+
+violations <- 
+  dbGetQuery(con, "SELECT * FROM sdwis.violation WHERE pws_activity_code = 'A' 
+             AND epa_region = '01'")
 
 dbDisconnect(con)
 
 ```
 
-+ some cleaning
++ ECHO Maybe useful later
 
 ```{r}
-
-head(df_echo[!is.na(df_echo$fac_zip), ], 10)
-
-# some bad
-sort(df_echo$fac_zip)[1:100]
-
-# ignoring some "00000" for now
-df_echo$fac_zip <- clean.zipcodes(df_echo$fac_zip)
+# df_echo <- dbGetQuery(con, "SELECT * FROM echo.echo_exporter WHERE sdwis_flag = 'Y'")
+# LIMIT 10 
 
 ```
 
 
-<br>
+
+## II - Process data (filter and join)
+
+1. focus on one contaminent
+
+
+
+
+
+## III - Get environmental data (worldclim - try to get just NE at highest resolution)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #### Starting with facs having a fac_zip, presumably is in reasonably correct location
 
