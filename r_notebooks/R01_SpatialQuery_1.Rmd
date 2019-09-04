@@ -24,8 +24,9 @@ library(RPostgreSQL)
 library(dplyr)
 library(ggplot2)
 library(maps) # has some basic vector basemaps
+library(mapdata)
 # library(zipcode) # for getting lat/lon coordinates where zipcode is available
-# library(lubridate)
+library(lubridate)
 # library(noncensus) holding off for now, try ZCTA directly, can match to US Census data at that resolution
 
 ```
@@ -83,17 +84,17 @@ dbListTables(con)
 
 water_systems <- 
   dbGetQuery(con, "SELECT * FROM sdwis.water_system WHERE pws_activity_code = 'A' 
-             AND epa_region = '01'")
+             AND epa_region = '01'") %>% filter(TRUE)
 
 violations <- 
   dbGetQuery(con, "SELECT * FROM sdwis.violation WHERE pws_activity_code = 'A' 
-             AND epa_region = '01'")
+             AND epa_region = '01'") %>% filter(TRUE)
 
 dbDisconnect(con)
 
 ```
 
-+ ECHO Maybe useful later
++ ECHO maybe useful later
 
 ```{r}
 # df_echo <- dbGetQuery(con, "SELECT * FROM echo.echo_exporter WHERE sdwis_flag = 'Y'")
@@ -105,25 +106,255 @@ dbDisconnect(con)
 
 ## II - Process data (filter and join)
 
-1. focus on one contaminent
+1. Convert to date fields
+
+```{r}
+
+violations <- violations %>% 
+  mutate(compl_per_begin_date = dmy(compl_per_begin_date), 
+         compl_per_end_date = dmy(compl_per_end_date), 
+         rtc_date = dmy(rtc_date))
+
+```
 
 
 
 
+2. focus on one contaminant
 
-## III - Get environmental data (worldclim - try to get just NE at highest resolution)
+```{r}
+
+viol_coli <- violations %>% filter(contaminant_code == 3100, 
+                                   pwsid %in% locations$pwsid)
+
+table(viol_coli$primacy_agency_code)
+
+summary(viol_coli$compl_per_begin_date)
+
+```
+
++ tallying health-based by primary source code
+```{r}
+
+viol_coli %>% filter(is_health_based_ind == "Y") %>% 
+  group_by(primacy_agency_code, primary_source_code) %>% 
+  tally() %>% tidyr::spread(primary_source_code, n)
+
+```
+
+
+
+```{r fig.width=5, fig.height=6}
+
+states <- map_data("state") %>% 
+  filter(region %in% c("connecticut", "maine", "massachusetts", 
+                       "new hampshire", "rhode island", "vermont"))
+
+viol_coli_sp <- viol_coli %>% 
+  filter(is_health_based_ind == "Y") %>% 
+  group_by(pwsid) %>% 
+  tally() %>% inner_join(., locations, by = "pwsid")
+  
+ggplot(states, aes(x = long, y = lat, group = group)) + 
+  geom_polygon(fill = NA, color = "black") + 
+  geom_point(data = viol_coli_sp, 
+             aes(x = LON, y = LAT), 
+             alpha = 0.2, color = "red", inherit.aes = FALSE) + 
+  coord_fixed(1.2) + 
+  ggtitle("Water systems with coliform health-based violations") + 
+  theme(panel.border = element_rect(fill = NA, color = "black"),
+        panel.background = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
+
+```
+
+## III - Get environmental data
+
++ Extreme Precipitation in New York & New England [ http://www.precip.net ]
+
+```{r}
+# change path eventually, google drive?
+library(raster)
+
+rpe_1d_1y <- raster("C:/GIS/raster/asc/rpe_1d_1y.asc")
+rpe_1d_1y
+
+library(sf)
+ne_shape <- 
+  st_read("C:/GIS/raster/asc/NE_states_counties_WGS72/NE_states_counties_WGS72.shp", 
+          stringsAsFactors = FALSE) %>% 
+  filter(TRUE)
+
+crs(rpe_1d_1y) <- crs(ne_shape)
+crs(rpe_1d_1y)
+
+```
+
+
+```{r}
+plot(rpe_1d_1y)
+
+plot(ne_shape[ne_shape$STATE %in% 
+                c("CT", "MA", "ME", "NH", "RI", "VT"), "STATE_ABBR"], 
+     add = TRUE, col = NA)
+
+```
+
+
+
+```{r}
+locations_rpe_1d_1y <- extract(x = rpe_1d_1y, 
+                               y = locations[, c("LON", "LAT")])
+
+locations_rpe_1d_1y[1:10]
+summary(locations_rpe_1d_1y)
+sum(is.na(locations_rpe_1d_1y))
+
+# join data
+locations_rpe_1d_1y <- tibble(pwsid = locations$pwsid, 
+                              rpe_1d_1y = locations_rpe_1d_1y)
+
+```
 
 
 
 
+## IV - Analysis
+
+1. get good pwsid sample
+
+  + hurdle 1: how to identify pwsid has/doesn't have prior violation (if no prior, was it in existence?? - clean history issue: would love to be able to identify "clean" pwsid's say for 10 year prior, but don't know when pwsid founded. Seems possible that the first time a water system gets in the sdwis data is the first time it has any violation data, not how long it's been out there)
+  
+  + solution 1: only use pwsid if it has (any) data in violations <= 2012, produces a decent sample size that, based on modeling 2017 as outcome, has at least a 5-year prior history
+
+
+```{r}
+# oops, something masked dplyr select
+
+pwsids_2012 <- violations %>% 
+  filter(pwsid %in% locations$pwsid) %>% 
+  mutate(cpbd_year = year(compl_per_begin_date)) %>% 
+  dplyr::select(pwsid, cpbd_year) %>% distinct() %>% 
+  filter(cpbd_year <= 2012) %>% 
+  mutate(value = 1) %>% 
+  tidyr::spread(key = cpbd_year, value = value, fill = 0, sep = "_")
+  # %>% slice(1:10)
+
+str(pwsids_2012)
+
+```
+
+2. Get 5-year coliform health-based violation history
+
++ restrictive analysis at this point, don't care about non-health based but could add it in later
+
+```{r}
+
+pwsids_coli_5y <- viol_coli %>% 
+  filter(pwsid %in% locations$pwsid) %>% 
+  filter(pwsid %in% pwsids_2012$pwsid) %>%   
+  mutate(cpbd_year = year(compl_per_begin_date)) %>% 
+  dplyr::select(pwsid, cpbd_year) %>% distinct() %>% 
+  filter(cpbd_year >= 2012) %>% 
+  mutate(value = 1) %>% 
+  tidyr::spread(key = cpbd_year, value = value, fill = 0, sep = "_")
+
+pwsids_coli_5y
+
+```
+
++ hurdle 2: whoa, too few in 2017!!
+
+```{r}
+
+sapply(pwsids_coli_5y[, 2:7], function(x) sum(x))
+
+```
+
++ solution 2: go further back and model 2014 as outcome (just a shot in the dark picking 2014, but hopefully data are closer to reality) - NOTE could use 2008 (see graph below)
+
+
+```{r}
+
+pwsids_2009 <- violations %>% 
+  filter(pwsid %in% locations$pwsid) %>% 
+  mutate(cpbd_year = year(compl_per_begin_date)) %>% 
+  dplyr::select(pwsid, cpbd_year) %>% distinct() %>% 
+  filter(cpbd_year <= 2009) %>% 
+  mutate(value = 1) %>% 
+  tidyr::spread(key = cpbd_year, value = value, fill = 0, sep = "_")
+
+pwsids_coli_5y_2009 <- viol_coli %>% 
+  filter(pwsid %in% pwsids_2009$pwsid) %>%   
+  mutate(cpbd_year = year(compl_per_begin_date)) %>% 
+  dplyr::select(pwsid, cpbd_year) %>% distinct() %>% 
+  filter(cpbd_year >= 2009) %>% 
+  mutate(value = 1) %>% 
+  tidyr::spread(key = cpbd_year, value = value, fill = 0, sep = "_")
+
+pwsids_coli_5y_2009
+
+```
+
+
+```{r}
+
+sapply(pwsids_coli_5y_2009[, 2:10], function(x) sum(x))
+
+```
+
+
+```{r warning=FALSE}
+violations %>% 
+  filter(pwsid %in% locations$pwsid) %>% 
+  mutate(cpbd_year = year(compl_per_begin_date)) %>% 
+  dplyr::select(pwsid, cpbd_year) %>% distinct() %>% 
+  group_by(cpbd_year) %>% 
+  tally() %>% 
+  ggplot(aes(x = cpbd_year, y = n)) +
+  geom_bar(stat = "identity", fill = "grey80", color = "grey20") + 
+  scale_x_continuous(breaks = 1990:2018, limits = c(1990, 2019)) +
+  ggtitle("Health-based coliform violations pwsid count by year 1990-2018") + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5), 
+        panel.background = element_blank(), 
+        axis.line = element_line(colour = "black"))
+
+```
 
 
 
+```{r}
+
+glm1 <- glm(cpbd_year_2014 ~ cpbd_year_2013, 
+            family = binomial(), 
+            data = pwsids_coli_5y_2009)
+summary(glm1)
+
+table(pwsids_coli_5y_2009$cpbd_year_2014, 
+      pwsids_coli_5y_2009$cpbd_year_2013, 
+      deparse.level = 2)
+
+```
+
+
+```{r}
+
+glm2 <- locations %>% 
+  inner_join(., water_systems, by = "pwsid") %>% 
+  inner_join(., locations_rpe_1d_1y, by = "pwsid") %>% 
+  inner_join(., pwsids_coli_5y_2009, by = "pwsid") %>% 
+  glm(cpbd_year_2015 ~ cpbd_year_2014 + rpe_1d_1y + pws_type_code.x, 
+            family = binomial(), 
+            data = .)
+
+summary(glm2)
+
+```
 
 
 
-
-
++ solution 2: just model single year (2017 for starters) and ignore prior history altogther (use spatial data/get counties and use county-level data etc.)
 
 
 
