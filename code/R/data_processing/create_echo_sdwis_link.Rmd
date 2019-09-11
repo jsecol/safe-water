@@ -1,0 +1,285 @@
+---
+title: "Create the PWSID link between ECHO and SDWIS"
+date: "`r Sys.Date()`"
+output:
+  github_document:
+    toc: true
+    toc_depth: 3
+---
+
+### Description
+
+The link to join SDWIS data to ECHO data (SDWIS.PWSID = ECHO.SDWA_IDS) requires some work because ECHO.SDWA_IDS can contain multiple (space-separated) PWSIDs.
+
+Data sources:
+
+1. SDWIS.zip from Slack #water channel
+2. echo_exporter.zip from https://echo.epa.gov/tools/data-downloads#exporter
+
+Coding outline:
+
+1. Extract data from zip-compressed .csv files
+2. Load select data (ECHO is pretty large initially, ~2 mill rows)
+3. Filter data
+4. Loop to dissagregate ECHO.SDWA_IDS
+5. Loop to join SDWIS and ECHO
+6. Export .csv to facilitate joining SDWIS and ECHO directly elsewhere
++ *Q: where should this be kept?*
+
+
+### Load packages
+
+```{r message=FALSE}
+
+library(dplyr)
+library(data.table)
+library(stringr)
+
+```
+
+
+### Load data
+
++ assumes zip files already stored in C:/temp folder
+
+```{r}
+
+base_dir <- "C:/temp"
+
+path_SDWIS <- paste0(base_dir, "/SDWIS.zip")
+
+path_ECHO <- paste0(base_dir, "/echo_exporter.zip")
+
+
+SDWIS.zip_names <- grep('\\.csv$', unzip(path_SDWIS, list=TRUE)$Name, 
+                           ignore.case=TRUE, value=TRUE)
+SDWIS.zip_names
+
+```
+
++ extraction to a common directory (overwrite = F: only if not already present)
+
+```{r}
+
+unzip(path_SDWIS, exdir = paste0(base_dir, "/sdwis_echo"), 
+      files = SDWIS.zip_names[9],
+      junkpaths = TRUE,
+      overwrite = FALSE)
+
+unzip(path_ECHO, exdir = paste0(base_dir, "/sdwis_echo"), 
+      overwrite = FALSE)
+  
+```
+
++ read data (only select columns for ECHO to speed up)
+*data.table fread nThread = 1 was fastest on my machine*
+ 
+```{r}
+
+# data.table::getDTthreads()
+
+echo_exporter <- fread("C:/temp/sdwis_echo/ECHO_EXPORTER.csv", 
+                       colClasses = "character",
+                       sep = ",",
+                       nThread = 1, 
+                       select = c("SDWIS_FLAG", "SDWA_IDS")) %>% 
+  as_tibble()
+
+# blank field detected, so fill = TRUE
+water_system <- fread("C:/temp/sdwis_echo/WATER_SYSTEM.csv", 
+                      sep = ",", 
+                      nThread = 1, 
+                      fill = TRUE) %>% 
+  as_tibble()
+
+```
+
++ filter data
+
+```{r}
+
+echo_exporter <- echo_exporter %>% 
+  filter(SDWIS_FLAG == "Y") 
+
+head(echo_exporter)
+```
+ 
++ view some SDWA_IDS with multiples
+
+```{r}
+echo_exporter %>% 
+  filter(str_length(SDWA_IDS) > 10) %>% 
+  slice(1:10) %>% .$SDWA_IDS
+```
+
++ number of SDWA_IDS to dissaggregate
+
+```{r}
+echo_exporter %>% 
+  filter(str_length(SDWA_IDS) > 9) %>% 
+  tally()
+```
+
+#START HERE
+
+*string matching for single water system pwsid's within multiple echo sdwa's*
+
+```{r}
+multi_echo_sdwa_ids <- echo_sdwa_ids %>% 
+  filter(sdwa_ids_count > 1) %>% 
+  .$sdwa_ids
+length(multi_echo_sdwa_ids)
+pwsids_noecho <- watsys_echoloc_1to1 %>% 
+  filter(is.na(sdwa_ids_count)) %>% 
+  .$pwsid
+length(pwsids_noecho)
+```
+
+
+```{r}
+# loop
+n1 <- length(multi_echo_sdwa_ids)
+matchlist1 <- list()
+for(i in 1:n1){
+  
+  match <- str_match(multi_echo_sdwa_ids[i], pattern = pwsids_noecho)
+  match <- match[which(!is.na(match[,1])),]
+  matchlist1[[i]] <- match
+  }
+names(matchlist1) <- multi_echo_sdwa_ids
+# Results Note: this sdwa_ids matches to multiple pwsids
+multi_echo_sdwa_ids[4]; matchlist1[[4]]
+# Results Note: this sdwa_ids matches to one pwsids
+multi_echo_sdwa_ids[5]; matchlist1[[5]]
+```
+
+## stacking pwsids
+
+```{r}
+# # potential alternate approach
+# library(splitstackshape)
+# cSplit
+# remove empty list elements (those w/no matches found)
+matchlist2 <- compact(matchlist1)
+n2 <- length(matchlist2)
+matchlist3 <- list()
+for(i in 1:n2) {
+  items <- cbind(matchlist2[[i]])
+  id <- names(matchlist2[i])
+  items_id <- cbind(items, id)
+  matchlist3[[i]] <- items_id
+}
+# conversion, tidying up
+matchlist3_df <- data.frame(do.call(rbind, matchlist3))
+names(matchlist3_df) <- c("pwsid", "sdwa_ids")
+matchlist3_df[] <- lapply(matchlist3_df, as.character)
+# join this back to water_system (select fields?)
+matchlist3_df <- left_join(matchlist3_df, water_system, by = "pwsid")
+# create new inner join to echo_sdwa_ids
+watsys_echoloc_1toM <- inner_join(matchlist3_df, echo_sdwa_ids, by = "sdwa_ids") %>% 
+  mutate(sdwa_ids_type = "multi")
+watsys_echoloc_1toM_acc01 <- watsys_echoloc_1toM %>% 
+  filter(fac_accuracy_meters <= 10000)
+nrow(watsys_echoloc_1toM_acc01)
+```
+
+
+
+
+
+
+
+
+```{r}
+
+echo_sdwa_ids <- echo_sdwa_ids %>% 
+  mutate(sdwa_ids_count = str_count(sdwa_ids, pattern = " ") + 1)
+
+table(echo_sdwa_ids$sdwa_ids_count > 1)
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+***
+
+#### Draft: Example usage
+
+```{r}
+echo_exporter[echo_exporter==''] <- NA
+```
+
+
+
+```{r}
+
+field_NAs <- sapply(echo_exporter, 
+                    function(x) (sum(is.na(x))/nrow(echo_exporter)*100))
+
+field_NAs90 <- field_NAs[field_NAs == 0]
+
+field_NAs90 <- names(field_NAs90)
+field_NAs90
+```
+
+
+
+```{r}
+
+echo_exporter_f1 <- echo_exporter[, ..field_NAs90]
+
+```
+
+
+
+```{r}
+field_variety <- sapply(echo_exporter_f1, 
+                    function(x) length(unique(x)))
+
+field_variety1 <- field_variety[field_variety > 1]
+
+field_variety1 <- names(field_variety1)
+
+```
+
+
+```{r}
+
+echo_exporter_f2 <- echo_exporter_f1[, -..field_variety1]
+
+```
+
+
+```{r}
+
+readr::write_csv(echo_exporter_f2, "echo_exporter_f2.csv")
+
+```
+
+
+
+ 
