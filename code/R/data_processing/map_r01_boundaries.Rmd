@@ -50,18 +50,20 @@ library(readr)
 
 ```{r warning=FALSE}
 
-zipdir <- dir_ls("zipped/tl", glob = "*.zip")
+zipdir1 <- dir_ls("C:/temp/CFB/vector/zipped", glob = "*.zip")
 
-for(i in 1:length(zipdir)) {
-unzip(zipdir[i],
-      exdir = "unzipped/tl",
+for(i in 1:length(zipdir1)) {
+unzip(zipdir1[i],
+      exdir = "C:/temp/CFB/vector/unzipped",
       junkpaths = TRUE,
       overwrite = FALSE)
 }
 
-# shapefile list
-shpdir <- dir_ls("unzipped/tl", glob = "*.shp")
-basename(shpdir)
+# unzipped shapefile dir
+shpdir <- dir_ls("C:/temp/CFB/vector/unzipped", glob = "*.shp") 
+
+shpdir %>% 
+  basename()
 
 ```
 
@@ -99,8 +101,8 @@ names(shp_list)
 # gdfiles$name
 # gdfiles$id
 
-locations <- drive_get("WaterSystem_Locations")
-locations_dat <- read_sheet(locations, sheet = "Region01")
+locations_dat <- drive_get("WaterSystem_Locations") %>% 
+  read_sheet(sheet = "Region01")
 
 ```
 
@@ -164,8 +166,11 @@ locations_dat %>% filter(PWSID == "MA2115001")
 
 ```{r}
 
-# do in github
-joined_df %>% write_csv("processed/r01_pwsid_cosub.csv")
+# put in github data folder eventually?
+
+dir_create("C:/temp/CFB/data/processed")
+
+joined_df %>% write_csv("C:/temp/CFB/data/processed/r01_pwsid_cosub.csv")
 
 ```
 
@@ -176,17 +181,17 @@ joined_df %>% write_csv("processed/r01_pwsid_cosub.csv")
 ```{r}
 
 
-zipdir2 <- dir_ls("../../table", glob = "*.zip")
+zipdir2 <- dir_ls("C:/temp/CFB/table/zipped", glob = "*.zip")
 
 for(i in 1:length(zipdir2)) {
 unzip(zipdir2[i],
-      exdir = paste0("../../table/unzipped", "/", "folder", i),
+      exdir = paste0("C:/temp/CFB/table/unzipped", "/", "folder", i),
       junkpaths = TRUE,
       overwrite = FALSE)
 }
 
 
-census_files <- dir_ls("../../table/unzipped", 
+census_files <- dir_ls("C:/temp/CFB/table/unzipped", 
                        recurse = TRUE, 
                        glob = "*ACS_17_5YR_DP03.csv")
 
