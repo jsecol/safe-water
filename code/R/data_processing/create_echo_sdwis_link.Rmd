@@ -71,8 +71,11 @@ unzip(path_ECHO, exdir = paste0(base_dir, "/sdwis_echo"),
   
 ```
 
-+ read data (only select columns for ECHO to speed up)
-*data.table fread nThread = 1 was fastest on my machine*
++ read data (only select columns for ECHO for speed)
+
+The compliance history could be valuable for documenting recent lifespan -will compare to sdwis violations history. The fac major flag may indicate a subset to focus on for some analyses -e.g., presumably these have reasonably thorough data and may make a valuable comparison to water systems that are less thoroughly documented.
+
+*Note: data.table fread nThread = 1 was fastest on my machine*
  
 ```{r}
 
@@ -82,7 +85,10 @@ echo_exporter <- fread("C:/temp/sdwis_echo/ECHO_EXPORTER.csv",
                        colClasses = "character",
                        sep = ",",
                        nThread = 1, 
-                       select = c("SDWIS_FLAG", "SDWA_IDS")) %>% 
+                       select = c("SDWIS_FLAG", "SDWA_IDS", 
+                                  "FAC_3YR_COMPLIANCE_HISTORY", 
+                                  "CWA_13QTRS_COMPL_HISTORY", 
+                                  "FAC_MAJOR_FLAG")) %>% 
   as_tibble()
 
 # blank field detected, so fill = TRUE
