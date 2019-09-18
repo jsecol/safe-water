@@ -40,6 +40,8 @@ library(fs)
 library(googledrive)
 library(googlesheets4)
 library(readr)
+library(data.table)
+library(lubridate)
 
 ```
 
@@ -178,8 +180,7 @@ joined_df %>% write_csv("C:/temp/CFB/data/processed/r01_pwsid_cosub.csv")
 
 ### Join to census data
 
-```{r}
-
+```{r warning=FALSE}
 
 zipdir2 <- dir_ls("C:/temp/CFB/table/zipped", glob = "*.zip")
 
@@ -205,9 +206,192 @@ census_dat <- do.call(bind_rows, census_list)
 
 # lots of columns, trim down and convert to numeric where necessary
 
+# HC03_VC161,Percent; PERCENTAGE OF FAMILIES AND PEOPLE WHOSE INCOME IN THE PAST 12 MONTHS IS BELOW THE POVERTY LEVEL - All families
+
+
+census_dat1 <- census_dat %>% 
+  select(GEO.id, GEO.id2, HC03_VC161) %>% 
+  mutate(HC03_VC161 = as.numeric(HC03_VC161))
+
+```
+
+
+
+```{r}
+joined_df1 <- joined_df %>% 
+  left_join(., census_dat1, by = c("GEOID" = "GEO.id2"))
+
+summary(joined_df1$HC03_VC161)
+
+```
+
+*not too many*
+```{r}
+
+joined_df1 %>% filter(is.na(HC03_VC161))
+
+```
+
+### Get SDWIS data
+
+
+```{r}
+
+base_dir <- "C:/temp"
+
+path_SDWIS <- paste0(base_dir, "/SDWIS.zip")
+
+SDWIS.zip_names <- grep('\\.csv$', unzip(path_SDWIS, list=TRUE)$Name, 
+                           ignore.case=TRUE, value=TRUE)
+SDWIS.zip_names
+
+```
+
++ extraction to a common directory (overwrite = F: only if not already present)
+
+```{r}
+
+unzip(path_SDWIS, exdir = paste0(base_dir, "/sdwis_echo"), 
+      files = SDWIS.zip_names[c(9, 7)],
+      junkpaths = TRUE,
+      overwrite = FALSE)
+
+```
+
+
+```{r}
+library(data.table)
+
+# blank field detected, so fill = TRUE
+water_system <- fread("C:/temp/sdwis_echo/WATER_SYSTEM.csv", 
+                      sep = ",", 
+                      colClasses=c("character"),
+                      nThread = 1, 
+                      fill = TRUE) %>% 
+  as_tibble() %>% 
+  filter(WATER_SYSTEM.EPA_REGION == "01", WATER_SYSTEM.PWS_ACTIVITY_CODE == "A")
+
+viols <- fread("C:/temp/sdwis_echo/VIOLATION.csv", 
+               sep = ",", 
+               colClasses=c("character"),
+               nThread = 1, 
+               fill = TRUE) %>% 
+  as_tibble() %>% 
+  filter(VIOLATION.EPA_REGION == "01", VIOLATION.PWS_ACTIVITY_CODE == "A")
 
 
 ```
+
+
+
+```{r}
+
+viols <- viols %>%
+  mutate(VIOLATION.COMPL_PER_BEGIN_DATE = dmy(VIOLATION.COMPL_PER_BEGIN_DATE), 
+         VIOLATION.COMPL_PER_END_DATE = dmy(VIOLATION.COMPL_PER_END_DATE), 
+         VIOLATION.RTC_DATE = dmy(VIOLATION.RTC_DATE)) %>% 
+  filter(TRUE)
+
+```
+
+
+
+```{r}
+
+viol_coli <- viols %>% filter(VIOLATION.CONTAMINANT_CODE == "3100", 
+                              VIOLATION.PWSID %in% locations_dat$PWSID)
+
+
+table(viol_coli$VIOLATION.PRIMACY_AGENCY_CODE)
+
+summary(viol_coli$VIOLATION.COMPL_PER_BEGIN_DATE)
+
+```
+
+
+```{r}
+
+viol_coli_n <- viol_coli %>% 
+  filter(VIOLATION.IS_HEALTH_BASED_IND == "Y", 
+         between(year(VIOLATION.COMPL_PER_BEGIN_DATE), 2013, 2017)) %>% 
+  group_by(VIOLATION.PWSID) %>% 
+  tally()
+
+viol_coli_n
+
+joined_df1 %>% 
+  left_join(., viol_coli_n, by = c("PWSID" = "VIOLATION.PWSID")) %>% 
+  mutate(n = tidyr::replace_na(n, 0))
+
+# %>% tidyr::spread(primary_source_code, n)
+
+
+```
+
+
+1. get good pwsid sample
+
+  + hurdle 1: how to identify pwsid has/doesn't have prior violation (if no prior, was it in existence?? - clean history issue: would love to be able to identify "clean" pwsid's say for 10 year prior, but don't know when pwsid founded. Seems possible that the first time a water system gets in the sdwis data is the first time it has any violation data, not how long it's been out there)
+  
+  + solution 1: only use pwsid if it has (any) data in violations <= 2012, produces a decent sample size that, based on modeling 2017 as outcome, has at least a 5-year prior history
+
+
+```{r}
+# oops, something masked dplyr select
+pwsids_2012 <- violations %>% 
+  filter(pwsid %in% locations$pwsid) %>% 
+  mutate(cpbd_year = year(compl_per_begin_date)) %>% 
+  dplyr::select(pwsid, cpbd_year) %>% distinct() %>% 
+  filter(cpbd_year <= 2012) %>% 
+  mutate(value = 1) %>% 
+  tidyr::spread(key = cpbd_year, value = value, fill = 0, sep = "_")
+  # %>% slice(1:10)
+str(pwsids_2012)
+
+
+viols_all_5yrs_n <- viols %>% 
+  filter(VIOLATION.PWSID %in% locations_dat$PWSID, 
+         between(year(VIOLATION.COMPL_PER_BEGIN_DATE), 2013, 2017)) %>% 
+  mutate(CPBD_YEAR = year(VIOLATION.COMPL_PER_BEGIN_DATE)) %>% 
+  group_by(VIOLATION.PWSID, CPBD_YEAR) %>% 
+  tally() %>% 
+  mutate(n = 1) %>% 
+  tidyr::spread(key = CPBD_YEAR, value = n, fill = 0, sep = "_")
+
+
+viols_all_5yrs_n
+
+```
+
+
+```{r}
+
+viols_all_5yrs_n %>% filter(CPBD_YEAR_2013 == 1)
+
+
+```
+
+
+#### Next, join the coliform HB back to this, get modeling pop
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
