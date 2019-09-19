@@ -93,7 +93,7 @@ names(shp_list)
 
 ```
 
-### Load points 
+### Load locations data
 *(from water shared drive, need to login/authenticate in web browser when run)*
 
 ```{r}
@@ -108,6 +108,9 @@ locations_dat <- drive_get("WaterSystem_Locations") %>%
 
 ```
 
+### Create spatial points
+
+*same coordinate reference system as county subdivisions*
 
 ```{r}
 
@@ -119,22 +122,14 @@ locations_pts <- st_as_sf(locations_dat, coords = c("LON", "LAT"), crs = 4163) %
 ```
 
 
-### Combine them (or join points in them state by state first? probably better)
+### Combine them (join points state by state)
 
 see: 
 https://ryanpeek.github.io/mapping-in-R-workshop/vig_spatial_joins.html
 
 ```{r}
 
-# # do in a loop to list instead
-
-# locations_pts_VT <- 
-#   st_join(locations_pts[locations_pts$PRIMACY_AGENCY_CODE == "VT",], 
-#           left = TRUE, shp_list[[6]])
-# 
-# sum(is.na(locations_pts_VT$INTPTLAT))
-
-# # Note: this skips PRIMACY_AGENCY_CODE "01", only 1 so get others with this one separately
+# Note: this skips PRIMACY_AGENCY_CODE "01", only 1 so will do them later
 
 joined_list <- list()
 
@@ -162,13 +157,15 @@ locations_dat %>% filter(PWSID == "MA2115001")
 
 ```
 
-
-
-### Export
+### View and export
 
 ```{r}
 
 # put in github data folder eventually?
+
+joined_df %>% 
+  select(PRIMACY_AGENCY_CODE:PWSID, GEOID:NAME) %>% 
+  head()
 
 dir_create("C:/temp/CFB/data/processed")
 
@@ -176,9 +173,9 @@ joined_df %>% write_csv("C:/temp/CFB/data/processed/r01_pwsid_cosub.csv")
 
 ```
 
-
-
 ### Join to census data
+
+*need better process/location for this, maybe combine first and add to Github data processed (along with spatial data?)*
 
 ```{r warning=FALSE}
 
@@ -208,14 +205,13 @@ census_dat <- do.call(bind_rows, census_list)
 
 # HC03_VC161,Percent; PERCENTAGE OF FAMILIES AND PEOPLE WHOSE INCOME IN THE PAST 12 MONTHS IS BELOW THE POVERTY LEVEL - All families
 
-
 census_dat1 <- census_dat %>% 
   select(GEO.id, GEO.id2, HC03_VC161) %>% 
   mutate(HC03_VC161 = as.numeric(HC03_VC161))
 
 ```
 
-
+*a few missing*
 
 ```{r}
 joined_df1 <- joined_df %>% 
@@ -225,15 +221,17 @@ summary(joined_df1$HC03_VC161)
 
 ```
 
-*not too many*
 ```{r}
 
 joined_df1 %>% filter(is.na(HC03_VC161))
 
 ```
 
-### Get SDWIS data
+***
 
+### Example modeling use
+
++ Get SDWIS data
 
 ```{r}
 
@@ -258,6 +256,7 @@ unzip(path_SDWIS, exdir = paste0(base_dir, "/sdwis_echo"),
 
 ```
 
++ load (using data.table for speed)
 
 ```{r}
 library(data.table)
@@ -282,7 +281,7 @@ viols <- fread("C:/temp/sdwis_echo/VIOLATION.csv",
 
 ```
 
-
++ convert to date fields
 
 ```{r}
 
@@ -294,7 +293,7 @@ viols <- viols %>%
 
 ```
 
-
++ get coliform data
 
 ```{r}
 
@@ -308,6 +307,7 @@ summary(viol_coli$VIOLATION.COMPL_PER_BEGIN_DATE)
 
 ```
 
++ reduce to counts and join all to location/cosub data
 
 ```{r}
 
@@ -333,21 +333,10 @@ joined_df1 %>%
 
   + hurdle 1: how to identify pwsid has/doesn't have prior violation (if no prior, was it in existence?? - clean history issue: would love to be able to identify "clean" pwsid's say for 10 year prior, but don't know when pwsid founded. Seems possible that the first time a water system gets in the sdwis data is the first time it has any violation data, not how long it's been out there)
   
-  + solution 1: only use pwsid if it has (any) data in violations <= 2012, produces a decent sample size that, based on modeling 2017 as outcome, has at least a 5-year prior history
+  + solution 1: only use pwsid if it has (any) data in violations over some time interval, produces a decent sample size that, e.g., based on modeling 2017 as outcome, has at least a 5-year prior history
 
 
 ```{r}
-# oops, something masked dplyr select
-pwsids_2012 <- violations %>% 
-  filter(pwsid %in% locations$pwsid) %>% 
-  mutate(cpbd_year = year(compl_per_begin_date)) %>% 
-  dplyr::select(pwsid, cpbd_year) %>% distinct() %>% 
-  filter(cpbd_year <= 2012) %>% 
-  mutate(value = 1) %>% 
-  tidyr::spread(key = cpbd_year, value = value, fill = 0, sep = "_")
-  # %>% slice(1:10)
-str(pwsids_2012)
-
 
 viols_all_5yrs_n <- viols %>% 
   filter(VIOLATION.PWSID %in% locations_dat$PWSID, 
@@ -363,20 +352,69 @@ viols_all_5yrs_n
 
 ```
 
++ sample for modeling has data in violations in 2013
 
 ```{r}
 
 viols_all_5yrs_n %>% filter(CPBD_YEAR_2013 == 1)
 
-
 ```
 
 
-#### Next, join the coliform HB back to this, get modeling pop
++ Join the coliform HB back to this, and model
+
+```{r}
+
+modeldata <- viols_all_5yrs_n %>% filter(CPBD_YEAR_2013 == 1) 
 
 
+modeldata <- viol_coli %>% 
+  filter(VIOLATION.IS_HEALTH_BASED_IND == "Y", 
+         between(year(VIOLATION.COMPL_PER_BEGIN_DATE), 2013, 2017)) %>% 
+  select(VIOLATION.PWSID) %>% 
+  distinct() %>% 
+  mutate(COLI_HB_FLAG = 1) %>% 
+  left_join(modeldata, ., by = "VIOLATION.PWSID") %>% 
+  mutate(COLI_HB_FLAG = tidyr::replace_na(COLI_HB_FLAG, 0))
 
 
+modeldata <- joined_df1 %>% 
+  select(PWSID, PWS_TYPE_CODE, PRIMACY_AGENCY_CODE, 
+         NAME, GEOID, HC03_VC161) %>% 
+  left_join(modeldata, ., by = c("VIOLATION.PWSID" = "PWSID"))
+
+modeldata
+
+```
+
++ summary stats
+
+```{r}
+
+modeldata %>%
+  group_by(PWS_TYPE_CODE, COLI_HB_FLAG) %>%
+  tally() %>%
+  tidyr::pivot_wider(names_from = COLI_HB_FLAG,
+                     values_from = n,
+                     names_prefix = "COLI_HB_FLAG_") %>%
+  mutate(COLI_HB_prp = round(COLI_HB_FLAG_1 /
+                               (COLI_HB_FLAG_0 + COLI_HB_FLAG_1), 2))
+  
+```
+
+
+```{r}
+
+modeldata %>%
+  group_by(PRIMACY_AGENCY_CODE, COLI_HB_FLAG) %>%
+  tally() %>%
+  tidyr::pivot_wider(names_from = COLI_HB_FLAG,
+                     values_from = n,
+                     names_prefix = "COLI_HB_FLAG_") %>%
+  mutate(COLI_HB_prp = round(COLI_HB_FLAG_1 /
+                               (COLI_HB_FLAG_0 + COLI_HB_FLAG_1), 2))
+  
+```
 
 
 
