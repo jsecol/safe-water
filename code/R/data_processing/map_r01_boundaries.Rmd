@@ -30,8 +30,8 @@ Coding outline:
 
 ```{r message=FALSE}
 
-# # this package can work with googledrive to get a specific worksheet in a google sheet
-# # (currently in development, not on CRAN)
+# # googlesheets4 can work with googledrive to get a specific worksheet in a google sheet
+# # it's currently in development, get devtools, uncomment and run this first if needed:
 # devtools::install_github("tidyverse/googlesheets4")
 
 library(dplyr)
@@ -42,6 +42,7 @@ library(googlesheets4)
 library(readr)
 library(data.table)
 library(lubridate)
+library(jtools)
 
 ```
 
@@ -69,14 +70,18 @@ shpdir %>%
 
 ```
 
-### Load shapefiles
+### Load shapefiles to a list object
+
++ `st_cast` b/c one (RI) is polygon, not multipolygon (affects later merge)
++ `st_transform` geographic coordinate reference system transformed to UTM meters
 
 ```{r}
 
 shp_list <- list()
 
 for(i in 1:length(shpdir)) {
-  shp <- st_read(shpdir[i], stringsAsFactors = FALSE, quiet = TRUE)
+  shp <- st_read(shpdir[i], stringsAsFactors = FALSE, quiet = TRUE) %>% 
+    st_cast("MULTIPOLYGON")
   shp <- st_transform(shp, crs = 26918)
   shp_list[[i]] <- shp
 }
@@ -206,8 +211,9 @@ census_dat <- do.call(bind_rows, census_list)
 # HC03_VC161,Percent; PERCENTAGE OF FAMILIES AND PEOPLE WHOSE INCOME IN THE PAST 12 MONTHS IS BELOW THE POVERTY LEVEL - All families
 
 census_dat1 <- census_dat %>% 
-  select(GEO.id, GEO.id2, HC03_VC161) %>% 
-  mutate(HC03_VC161 = as.numeric(HC03_VC161))
+  select(GEO.id, GEO.id2, HC03_VC161, HC01_VC85) %>% 
+  mutate(HC03_VC161 = as.numeric(HC03_VC161),
+         HC01_VC85 = as.numeric(HC01_VC85))
 
 ```
 
@@ -218,6 +224,7 @@ joined_df1 <- joined_df %>%
   left_join(., census_dat1, by = c("GEOID" = "GEO.id2"))
 
 summary(joined_df1$HC03_VC161)
+summary(joined_df1$HC01_VC85)
 
 ```
 
@@ -245,7 +252,7 @@ SDWIS.zip_names
 
 ```
 
-+ extraction to a common directory (overwrite = F: only if not already present)
++ extraction to a common directory (`overwrite = FALSE`: only if not already present)
 
 ```{r}
 
@@ -328,45 +335,54 @@ joined_df1 %>%
 
 ```
 
++ are census data (linearly) correlated?
+
+```{r}
+plot(HC03_VC161 ~ HC01_VC85, joined_df1)
+
+round(cor(joined_df1[, c("HC03_VC161", "HC01_VC85")], 
+    use = "pairwise.complete.obs"), 2)
+
+```
+
+*somewhat*
+
 
 1. get good pwsid sample
 
   + hurdle 1: how to identify pwsid has/doesn't have prior violation (if no prior, was it in existence?? - clean history issue: would love to be able to identify "clean" pwsid's say for 10 year prior, but don't know when pwsid founded. Seems possible that the first time a water system gets in the sdwis data is the first time it has any violation data, not how long it's been out there)
   
-  + solution 1: only use pwsid if it has (any) data in violations over some time interval, produces a decent sample size that, e.g., based on modeling 2017 as outcome, has at least a 5-year prior history
-
+  + solution 1: only use pwsid if it has (any) data in violations prior to a year, produces a decent sample size that, e.g., based on modeling 2017 as outcome, has at least a 5-year prior history
+  
 
 ```{r}
 
-viols_all_5yrs_n <- viols %>% 
-  filter(VIOLATION.PWSID %in% locations_dat$PWSID, 
-         between(year(VIOLATION.COMPL_PER_BEGIN_DATE), 2013, 2017)) %>% 
-  mutate(CPBD_YEAR = year(VIOLATION.COMPL_PER_BEGIN_DATE)) %>% 
-  group_by(VIOLATION.PWSID, CPBD_YEAR) %>% 
-  tally() %>% 
-  mutate(n = 1) %>% 
-  tidyr::spread(key = CPBD_YEAR, value = n, fill = 0, sep = "_")
+# viols_all_5yrs_n <- viols %>% 
+# #  filter(VIOLATION.PWSID %in% locations_dat$PWSID, 
+# #         between(year(VIOLATION.COMPL_PER_BEGIN_DATE), 2013, 2017)) %>% 
+#   filter(VIOLATION.PWSID %in% locations_dat$PWSID, 
+#          year(VIOLATION.COMPL_PER_BEGIN_DATE) <= 2013) %>% 
+#   mutate(CPBD_YEAR = year(VIOLATION.COMPL_PER_BEGIN_DATE)) %>% 
+#   group_by(VIOLATION.PWSID, CPBD_YEAR) %>% 
+#   tally() %>% 
+#   mutate(n = 1) %>% 
+#   tidyr::spread(key = CPBD_YEAR, value = n, fill = 0, sep = "_")
 
+
+viols_all_5yrs_n <- viols %>%
+  filter(VIOLATION.PWSID %in% locations_dat$PWSID,
+         year(VIOLATION.COMPL_PER_BEGIN_DATE) <= 2012) %>%
+  mutate(CPBD_YEAR = year(VIOLATION.COMPL_PER_BEGIN_DATE)) %>% 
+  group_by(VIOLATION.PWSID) %>% 
+  summarise(YEAR_N = length(unique(CPBD_YEAR)))
 
 viols_all_5yrs_n
 
 ```
 
-+ sample for modeling has data in violations in 2013
-
-```{r}
-
-viols_all_5yrs_n %>% filter(CPBD_YEAR_2013 == 1)
-
-```
-
-
 + Join the coliform HB back to this, and model
 
 ```{r}
-
-modeldata <- viols_all_5yrs_n %>% filter(CPBD_YEAR_2013 == 1) 
-
 
 modeldata <- viol_coli %>% 
   filter(VIOLATION.IS_HEALTH_BASED_IND == "Y", 
@@ -374,13 +390,13 @@ modeldata <- viol_coli %>%
   select(VIOLATION.PWSID) %>% 
   distinct() %>% 
   mutate(COLI_HB_FLAG = 1) %>% 
-  left_join(modeldata, ., by = "VIOLATION.PWSID") %>% 
+  left_join(viols_all_5yrs_n, ., by = "VIOLATION.PWSID") %>% 
   mutate(COLI_HB_FLAG = tidyr::replace_na(COLI_HB_FLAG, 0))
 
 
 modeldata <- joined_df1 %>% 
   select(PWSID, PWS_TYPE_CODE, PRIMACY_AGENCY_CODE, 
-         NAME, GEOID, HC03_VC161) %>% 
+         NAME, GEOID, HC03_VC161, HC01_VC85) %>% 
   left_join(modeldata, ., by = c("VIOLATION.PWSID" = "PWSID"))
 
 modeldata
@@ -417,38 +433,179 @@ modeldata %>%
 ```
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-### Map them
-
-
 ```{r}
-# just one, for example
 
-plot(shp_list[[6]]$geometry)
+modeldata2 <- modeldata %>% filter(PWS_TYPE_CODE == "CWS") %>% 
+  group_by(PRIMACY_AGENCY_CODE, GEOID, COLI_HB_FLAG) %>% 
+  tally() %>% 
+  tidyr::pivot_wider(names_from = COLI_HB_FLAG,
+                     values_from = n,
+                     names_prefix = "COLI_HB_FLAG_",
+                     values_fill = list(n = 0))  %>% 
+  mutate(COLI_HB_prp = round(COLI_HB_FLAG_1 / 
+                               (COLI_HB_FLAG_0 + COLI_HB_FLAG_1), 2), 
+         PWS_N = COLI_HB_FLAG_0 + COLI_HB_FLAG_1)
 
-plot(locations_pts[locations_pts$PRIMACY_AGENCY_CODE == "VT",]["PRIMACY_AGENCY_CODE"], 
-     add = TRUE, col = "red")
+modeldata2 <- modeldata2 %>% 
+  left_join(., census_dat1, by = c("GEOID" = "GEO.id2"))
+
+modeldata2
 
 ```
 
+
++ logistic regression
+
+```{r}
+
+PWS_TYPE_CODES <- unique(modeldata$PWS_TYPE_CODE)
+
+for(i in 1:length(PWS_TYPE_CODES)){
+  data <- modeldata %>% filter(PWS_TYPE_CODE == PWS_TYPE_CODES[i]) 
+  model <- glm(COLI_HB_FLAG ~ PRIMACY_AGENCY_CODE + HC03_VC161,
+      data = data, family = binomial(link = "logit"))
+  cat("\n\n", "PWS_TYPE_CODE = ", PWS_TYPE_CODES[i], "\n\n")
+  print(summ(model))
+}
+  
+
+```
+
++ `PWS_TYPE == "CWS"`
+
+```{r}
+
+model2 <- glm(cbind(COLI_HB_FLAG_1, COLI_HB_FLAG_0) ~ 
+                PRIMACY_AGENCY_CODE + 
+                HC03_VC161,
+              weight = PWS_N,
+             data = modeldata2, family = binomial(link = "logit"))
+summ(model2)
+
+```
+
+
+
+
+
++ merge list of shapes
+
+```{r}
+
+# shp_list[[5]] %>% st_cast("MULTIPOLYGON")
+
+shape_combined <- st_as_sf(data.table::rbindlist(shp_list))
+
+```
+
++ update extent (data.table merge doesn't do it?)
+
+```{r}
+bbox_vals <- list()
+for(i in 1:length(shp_list)){
+  bbox <- shp_list[[i]] %>% st_bbox
+  min_x <- bbox[[1]]
+  min_y <- bbox[[2]]
+  max_x <- bbox[[3]]
+  max_y <- bbox[[4]]
+  bbox_vals[[i]] <- cbind(min_x, min_y, max_x, max_y)
+}
+
+bbox_vals <- data.frame(do.call(rbind, bbox_vals))
+
+new_bb <- c(xmin = min(bbox_vals[,1]), ymin = min(bbox_vals$min_y), 
+            xmax = max(bbox_vals$max_x), ymax = max(bbox_vals$max_y))
+
+attr(st_geometry(shape_combined), "bbox") <- new_bb
+
+st_bbox(shape_combined)
+
+```
+
+```{r}
+plot(shape_combined["STATEFP"])
+```
+
+#### Maybe add to GitHub as geojson, so anyone can use it more easily?
+
+
+```{r}
+
+shape_combined_cdat1 <- left_join(shape_combined, census_dat1, 
+                                  by = c("GEOID" = "GEO.id2"))
+
+
+hist(shape_combined_cdat1$HC03_VC161)
+
+```
+
+
+
+```{r}
+
+plot(shape_combined_cdat1["HC03_VC161"], 
+     breaks = c(0, 5, 10, 15, 20, 25, 
+                max(r01_shape_cdat1$HC03_VC161, na.rm = TRUE)))
+
+shape_combined %>%
+  st_write("../../../data/geography/epa01_cosub2018.geojson")
+
+```
+
+
+```{r}
+
+shape_combined_mdat2 <- left_join(shape_combined, modeldata2, 
+                                  by = "GEOID")
+
+
+hist(shape_combined_mdat2$COLI_HB_prp)
+
+
+```
+
+
+```{r}
+
+plot(shape_combined_mdat2["COLI_HB_prp"])
+     
+     # , 
+     # breaks = c(0, 5, 10, 15, 20, 25, 
+     #            max(r01_shape_cdat1$HC03_VC161, na.rm = TRUE)))
+
+```
+
+
+```{r}
+viol_coli_n_all1 <- viol_coli %>% 
+  filter(VIOLATION.IS_HEALTH_BASED_IND == "Y") %>% 
+  group_by(VIOLATION.PWSID) %>% 
+  tally() %>% 
+  mutate(n = 1)
+
+# viol_coli_n_all1
+
+shape_combined_mapdat1 <- joined_df1 %>% 
+  left_join(., viol_coli_n_all1, by = c("PWSID" = "VIOLATION.PWSID")) %>% 
+  mutate(n = tidyr::replace_na(n, 0)) %>% 
+  group_by(GEOID, n) %>% 
+  tally() %>% 
+  tidyr::pivot_wider(names_from = n, 
+                     values_from = nn, 
+                     names_prefix = "COLI_HB_",
+                     values_fill = list(nn = 0)) %>% 
+  mutate(COLI_HB_PRP = COLI_HB_1 / (COLI_HB_1 + COLI_HB_0)) %>% 
+  left_join(shape_combined, ., by = "GEOID")
+
+```
+
+
+
+```{r}
+
+plot(shape_combined_mapdat1["COLI_HB_PRP"])
+
+```
 
 
 
