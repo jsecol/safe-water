@@ -1,5 +1,5 @@
 ---
-title: "Map region 01 (New England) boundaries"
+title: "Spatial join of region 01 (New England) county subdivisions to SDWIS/External data"
 date: "`r Sys.Date()`"
 output:
   github_document:
@@ -47,59 +47,33 @@ library(jtools)
 ```
 
 
-### Unzip data (if needed)
+### Load spatial boundary data
 
-+ if already have, can change `overwrite = FALSE`
-
-```{r warning=FALSE}
-
-zipdir1 <- dir_ls("C:/temp/CFB/vector/zipped", glob = "*.zip")
-
-for(i in 1:length(zipdir1)) {
-unzip(zipdir1[i],
-      exdir = "C:/temp/CFB/vector/unzipped",
-      junkpaths = TRUE,
-      overwrite = FALSE)
-}
-
-# unzipped shapefile dir
-shpdir <- dir_ls("C:/temp/CFB/vector/unzipped", glob = "*.shp") 
-
-shpdir %>% 
-  basename()
-
-```
-
-### Load shapefiles to a list object
-
-+ `st_cast` b/c one (RI) is polygon, not multipolygon (affects later merge)
-+ `st_transform` geographic coordinate reference system transformed to UTM meters
+* geoprocessing can get pretty involved and files can be large, so working in another GitHub repo for the time being
+    + loaded using https://raw.githack.com/
 
 ```{r}
 
-shp_list <- list()
+# reprojected to epsg: 26918
 
-for(i in 1:length(shpdir)) {
-  shp <- st_read(shpdir[i], stringsAsFactors = FALSE, quiet = TRUE) %>% 
-    st_cast("MULTIPOLYGON")
-  shp <- st_transform(shp, crs = 26918)
-  shp_list[[i]] <- shp
-}
+epa01_cosub2018 <- 
+  st_read("https://raw.githack.com/jsecol/spatial/master/data/epa01_cosub2018.geojson") %>% 
+  st_transform(26918)
 
-names(shp_list) <- basename(shpdir)
-
-names(shp_list)
-
-state_byfips <- c("CT", "ME", "MA", "NH", "RI", "VT")
-
-names(shp_list) <- state_byfips
-
-names(shp_list)
+st_crs(epa01_cosub2018)
 
 ```
 
+
+```{r}
+plot(epa01_cosub2018["STATEFP"])
+```
+
+
 ### Load locations data
-*(from water shared drive, need to login/authenticate in web browser when run)*
+
+* From water shared drive
+    + need to login/authenticate in web browser when run
 
 ```{r}
 
@@ -111,6 +85,8 @@ names(shp_list)
 locations_dat <- drive_get("WaterSystem_Locations") %>% 
   read_sheet(sheet = "Region01")
 
+head(locations_dat)
+
 ```
 
 ### Create spatial points
@@ -119,82 +95,70 @@ locations_dat <- drive_get("WaterSystem_Locations") %>%
 
 ```{r}
 
-st_crs(shp_list[[1]])
-
 locations_pts <- st_as_sf(locations_dat, coords = c("LON", "LAT"), crs = 4163) %>% 
-  st_transform(crs = st_crs(shp_list[[1]]))
+  st_transform(crs = st_crs(st_crs(epa01_cosub2018)))
+
+st_crs(locations_pts)
 
 ```
 
-
-### Combine them (join points state by state)
-
-see: 
-https://ryanpeek.github.io/mapping-in-R-workshop/vig_spatial_joins.html
+### Do spatial join
 
 ```{r}
 
-# Note: this skips PRIMACY_AGENCY_CODE "01", only 1 so will do them later
-
-joined_list <- list()
-
-for(i in 1:length(state_byfips)) {
-  joined <- locations_pts %>% 
-    filter(PRIMACY_AGENCY_CODE == state_byfips[i]) %>% 
-    st_join(., left = TRUE, shp_list[[state_byfips[i]]]) %>% 
+joined_df <- locations_pts %>% 
+    st_join(., left = TRUE, epa01_cosub2018) %>% 
     st_drop_geometry()
-  joined_list[[i]] <- joined
-  
-}
 
-names(joined_list) <- state_byfips
-
-joined_df <- do.call(bind_rows, joined_list)
-
-# check if any not matched
 sum(is.na(joined_df$INTPTLAT))
 
-joined_df %>% filter(is.na(joined_df$INTPTLAT))
-
-locations_dat %>% filter(PWSID == "MA2115001")
-
-# 42.70396, -71.60161 appears to be bad, over border in NH
-
+head(joined_df)
+  
 ```
 
-### View and export
+* pretty good, but 1 in MA put in 33:NH
 
 ```{r}
 
-# put in github data folder eventually?
-
-joined_df %>% 
-  select(PRIMACY_AGENCY_CODE:PWSID, GEOID:NAME) %>% 
-  head()
-
-dir_create("C:/temp/CFB/data/processed")
-
-joined_df %>% write_csv("C:/temp/CFB/data/processed/r01_pwsid_cosub.csv")
+table(joined_df$PRIMACY_AGENCY_CODE, joined_df$STATEFP)
 
 ```
 
-### Join to census data
++ try to fix later (update locations sheet on shared drive)
 
-*need better process/location for this, maybe combine first and add to Github data processed (along with spatial data?)*
+```{r}
+
+joined_df %>% filter(PRIMACY_AGENCY_CODE == "MA", 
+                     STATEFP == "33")
+
+```
+
+### Load US Census data
+
+* There appears to be no API for US Census county subdivision data on American FactFinder, so resorted to downloading individual .zip files for each state (adding state abbreviation to the .zip filename b/c all named the same (ugh!)), then combining them.
+    + Used advanced search at: [American FactFinder](https://factfinder.census.gov/faces/nav/jsf/pages/searchresults.xhtml?refresh=t)   **warning: American FactFinder scheduled to go away spring 2020, the new site https://data.census.gov/cedsci/ maybe can be scraped*
+    + Table name: DP03 - SELECTED ECONOMIC CHARACTERISTICS
+    + Saved them to a temp folder
+
+* for `unzip` if already have, can change `overwrite = FALSE`
+
+* *maybe add combined table w/columns of interest to Github data processed*
 
 ```{r warning=FALSE}
 
-zipdir2 <- dir_ls("C:/temp/CFB/table/zipped", glob = "*.zip")
+zipdir1 <- dir_ls("C:/temp/CFB/table/zipped", glob = "*.zip")
 
-for(i in 1:length(zipdir2)) {
-unzip(zipdir2[i],
-      exdir = paste0("C:/temp/CFB/table/unzipped", "/", "folder", i),
+tempdir1 <- tempdir()
+
+for(i in 1:length(zipdir1)) {
+unzip(zipdir1[i],
+      exdir = paste0(tempdir1, "/", "folder", i),
       junkpaths = TRUE,
       overwrite = FALSE)
 }
 
 
-census_files <- dir_ls("C:/temp/CFB/table/unzipped", 
+census_files <- dir_ls(tempdir1, 
                        recurse = TRUE, 
                        glob = "*ACS_17_5YR_DP03.csv")
 
@@ -215,7 +179,12 @@ census_dat1 <- census_dat %>%
   mutate(HC03_VC161 = as.numeric(HC03_VC161),
          HC01_VC85 = as.numeric(HC01_VC85))
 
+# GEO.id2 matches to epa01_cosub2018:GEOID
+head(census_dat1)
+
 ```
+
+### Do US Census data join
 
 *a few missing*
 
@@ -233,6 +202,7 @@ summary(joined_df1$HC01_VC85)
 joined_df1 %>% filter(is.na(HC03_VC161))
 
 ```
+
 
 ***
 
@@ -610,7 +580,63 @@ plot(shape_combined_mapdat1["COLI_HB_PRP"])
 
 
 
+***
 
+### MISC
+
+
++ Combine them (join points state by state)
+
+see: 
+https://ryanpeek.github.io/mapping-in-R-workshop/vig_spatial_joins.html
+
+```{r}
+
+# # Note: this skips PRIMACY_AGENCY_CODE "01", only 1 so will do them later
+# 
+# state_byfips <- unique(epa01_cosub2018$STATEFP)
+# 
+# joined_list <- list()
+# 
+# for(i in 1:length(state_byfips)) {
+#   joined <- locations_pts %>% 
+#     filter(PRIMACY_AGENCY_CODE == state_byfips[i]) %>% 
+#     st_join(., left = TRUE, shp_list[[state_byfips[i]]]) %>% 
+#     st_drop_geometry()
+#   joined_list[[i]] <- joined
+#   
+# }
+# 
+# names(joined_list) <- state_byfips
+# 
+# joined_df <- do.call(bind_rows, joined_list)
+# 
+# # check if any not matched
+# sum(is.na(joined_df$INTPTLAT))
+# 
+# joined_df %>% filter(is.na(joined_df$INTPTLAT))
+# 
+# locations_dat %>% filter(PWSID == "MA2115001")
+
+# 42.70396, -71.60161 appears to be bad, over border in NH
+
+```
+
++ Export
+
+```{r}
+
+# # put in github data folder eventually?
+# 
+# joined_df %>% 
+#   select(PRIMACY_AGENCY_CODE:PWSID, GEOID:NAME) %>% 
+#   head()
+# 
+# dir_create("C:/temp/CFB/data/processed")
+# 
+# joined_df %>% write_csv("C:/temp/CFB/data/processed/r01_pwsid_cosub.csv")
+
+```
 
 
 
