@@ -137,7 +137,7 @@ joined_df %>% filter(PRIMACY_AGENCY_CODE == "MA",
 ### Load US Census data
 
 * There appears to be no API for US Census county subdivision data on American FactFinder, so resorted to downloading individual .zip files for each state (adding state abbreviation to the .zip filename b/c all named the same (ugh!)), then combining them.
-    + Used advanced search at: [American FactFinder](https://factfinder.census.gov/faces/nav/jsf/pages/searchresults.xhtml?refresh=t)   **warning: American FactFinder scheduled to go away spring 2020, the new site https://data.census.gov/cedsci/ maybe can be scraped*
+    + Used advanced search at: [American FactFinder](https://factfinder.census.gov/faces/nav/jsf/pages/searchresults.xhtml?refresh=t)   *warning: American FactFinder scheduled to go away spring 2020, the new site https://data.census.gov/cedsci/ maybe can be scraped*
     + Table name: DP03 - SELECTED ECONOMIC CHARACTERISTICS
     + Saved them to a temp folder ("C:/temp/CFB/table/zipped")
 
