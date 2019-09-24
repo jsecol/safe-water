@@ -57,8 +57,9 @@ library(jtools)
 # reprojected to epsg: 26918
 
 epa01_cosub2018 <- 
-  st_read("https://raw.githack.com/jsecol/spatial/master/data/epa01_cosub2018.geojson") %>% 
-  st_transform(26918)
+  st_read("https://raw.githack.com/jsecol/spatial/master/data/epa01_cosub2018.geojson", 
+          stringsAsFactors = FALSE) %>% 
+  st_transform(26918) %>% filter(TRUE)
 
 st_crs(epa01_cosub2018)
 
@@ -116,7 +117,7 @@ head(joined_df)
   
 ```
 
-* pretty good, but 1 in MA put in 33:NH
+* pretty good, but 1 in MA (09) put in NH (33)
 
 ```{r}
 
@@ -138,7 +139,7 @@ joined_df %>% filter(PRIMACY_AGENCY_CODE == "MA",
 * There appears to be no API for US Census county subdivision data on American FactFinder, so resorted to downloading individual .zip files for each state (adding state abbreviation to the .zip filename b/c all named the same (ugh!)), then combining them.
     + Used advanced search at: [American FactFinder](https://factfinder.census.gov/faces/nav/jsf/pages/searchresults.xhtml?refresh=t)   **warning: American FactFinder scheduled to go away spring 2020, the new site https://data.census.gov/cedsci/ maybe can be scraped*
     + Table name: DP03 - SELECTED ECONOMIC CHARACTERISTICS
-    + Saved them to a temp folder
+    + Saved them to a temp folder ("C:/temp/CFB/table/zipped")
 
 * for `unzip` if already have, can change `overwrite = FALSE`
 
@@ -170,9 +171,15 @@ for(i in 1:length(census_files)){
 
 census_dat <- do.call(bind_rows, census_list)
 
-# lots of columns, trim down and convert to numeric where necessary
+```
 
-# HC03_VC161,Percent; PERCENTAGE OF FAMILIES AND PEOPLE WHOSE INCOME IN THE PAST 12 MONTHS IS BELOW THE POVERTY LEVEL - All families
+
+* lots of columns, trim down and convert to numeric where necessary
+    + HC03_VC161, Percent; PERCENTAGE OF FAMILIES AND PEOPLE WHOSE INCOME IN THE PAST 12 MONTHS IS BELOW THE POVERTY LEVEL - All families
+    + HC01_VC85, Estimate; INCOME AND BENEFITS (IN 2017 INFLATION-ADJUSTED DOLLARS) - Total households - Median household income (dollars)
+
+
+```{r}
 
 census_dat1 <- census_dat %>% 
   select(GEO.id, GEO.id2, HC03_VC161, HC01_VC85) %>% 
@@ -199,7 +206,7 @@ summary(joined_df1$HC01_VC85)
 
 ```{r}
 
-joined_df1 %>% filter(is.na(HC03_VC161))
+joined_df1 %>% filter(is.na(HC03_VC161) | is.na(HC01_VC85))
 
 ```
 
@@ -236,7 +243,6 @@ unzip(path_SDWIS, exdir = paste0(base_dir, "/sdwis_echo"),
 + load (using data.table for speed)
 
 ```{r}
-library(data.table)
 
 # blank field detected, so fill = TRUE
 water_system <- fread("C:/temp/sdwis_echo/WATER_SYSTEM.csv", 
@@ -258,7 +264,7 @@ viols <- fread("C:/temp/sdwis_echo/VIOLATION.csv",
 
 ```
 
-+ convert to date fields
++ convert some fields to date fields
 
 ```{r}
 
@@ -294,14 +300,11 @@ viol_coli_n <- viol_coli %>%
   group_by(VIOLATION.PWSID) %>% 
   tally()
 
-viol_coli_n
+head(viol_coli_n)
 
 joined_df1 %>% 
   left_join(., viol_coli_n, by = c("PWSID" = "VIOLATION.PWSID")) %>% 
   mutate(n = tidyr::replace_na(n, 0))
-
-# %>% tidyr::spread(primary_source_code, n)
-
 
 ```
 
@@ -317,7 +320,6 @@ round(cor(joined_df1[, c("HC03_VC161", "HC01_VC85")],
 
 *somewhat*
 
-
 1. get good pwsid sample
 
   + hurdle 1: how to identify pwsid has/doesn't have prior violation (if no prior, was it in existence?? - clean history issue: would love to be able to identify "clean" pwsid's say for 10 year prior, but don't know when pwsid founded. Seems possible that the first time a water system gets in the sdwis data is the first time it has any violation data, not how long it's been out there)
@@ -327,18 +329,6 @@ round(cor(joined_df1[, c("HC03_VC161", "HC01_VC85")],
 
 ```{r}
 
-# viols_all_5yrs_n <- viols %>% 
-# #  filter(VIOLATION.PWSID %in% locations_dat$PWSID, 
-# #         between(year(VIOLATION.COMPL_PER_BEGIN_DATE), 2013, 2017)) %>% 
-#   filter(VIOLATION.PWSID %in% locations_dat$PWSID, 
-#          year(VIOLATION.COMPL_PER_BEGIN_DATE) <= 2013) %>% 
-#   mutate(CPBD_YEAR = year(VIOLATION.COMPL_PER_BEGIN_DATE)) %>% 
-#   group_by(VIOLATION.PWSID, CPBD_YEAR) %>% 
-#   tally() %>% 
-#   mutate(n = 1) %>% 
-#   tidyr::spread(key = CPBD_YEAR, value = n, fill = 0, sep = "_")
-
-
 viols_all_5yrs_n <- viols %>%
   filter(VIOLATION.PWSID %in% locations_dat$PWSID,
          year(VIOLATION.COMPL_PER_BEGIN_DATE) <= 2012) %>%
@@ -346,7 +336,7 @@ viols_all_5yrs_n <- viols %>%
   group_by(VIOLATION.PWSID) %>% 
   summarise(YEAR_N = length(unique(CPBD_YEAR)))
 
-viols_all_5yrs_n
+head(viols_all_5yrs_n)
 
 ```
 
@@ -369,7 +359,7 @@ modeldata <- joined_df1 %>%
          NAME, GEOID, HC03_VC161, HC01_VC85) %>% 
   left_join(modeldata, ., by = c("VIOLATION.PWSID" = "PWSID"))
 
-modeldata
+head(modeldata)
 
 ```
 
@@ -419,7 +409,7 @@ modeldata2 <- modeldata %>% filter(PWS_TYPE_CODE == "CWS") %>%
 modeldata2 <- modeldata2 %>% 
   left_join(., census_dat1, by = c("GEOID" = "GEO.id2"))
 
-modeldata2
+head(modeldata2)
 
 ```
 
@@ -448,64 +438,22 @@ for(i in 1:length(PWS_TYPE_CODES)){
 model2 <- glm(cbind(COLI_HB_FLAG_1, COLI_HB_FLAG_0) ~ 
                 PRIMACY_AGENCY_CODE + 
                 HC03_VC161,
-              weight = PWS_N,
              data = modeldata2, family = binomial(link = "logit"))
 summ(model2)
 
 ```
 
 
++ mapping
 
-
-
-+ merge list of shapes
-
-```{r}
-
-# shp_list[[5]] %>% st_cast("MULTIPOLYGON")
-
-shape_combined <- st_as_sf(data.table::rbindlist(shp_list))
-
-```
-
-+ update extent (data.table merge doesn't do it?)
-
-```{r}
-bbox_vals <- list()
-for(i in 1:length(shp_list)){
-  bbox <- shp_list[[i]] %>% st_bbox
-  min_x <- bbox[[1]]
-  min_y <- bbox[[2]]
-  max_x <- bbox[[3]]
-  max_y <- bbox[[4]]
-  bbox_vals[[i]] <- cbind(min_x, min_y, max_x, max_y)
-}
-
-bbox_vals <- data.frame(do.call(rbind, bbox_vals))
-
-new_bb <- c(xmin = min(bbox_vals[,1]), ymin = min(bbox_vals$min_y), 
-            xmax = max(bbox_vals$max_x), ymax = max(bbox_vals$max_y))
-
-attr(st_geometry(shape_combined), "bbox") <- new_bb
-
-st_bbox(shape_combined)
-
-```
-
-```{r}
-plot(shape_combined["STATEFP"])
-```
-
-#### Maybe add to GitHub as geojson, so anyone can use it more easily?
 
 
 ```{r}
 
-shape_combined_cdat1 <- left_join(shape_combined, census_dat1, 
+epa01_cosub2018 <- left_join(epa01_cosub2018, census_dat1, 
                                   by = c("GEOID" = "GEO.id2"))
 
-
-hist(shape_combined_cdat1$HC03_VC161)
+hist(epa01_cosub2018$HC03_VC161)
 
 ```
 
@@ -513,37 +461,12 @@ hist(shape_combined_cdat1$HC03_VC161)
 
 ```{r}
 
-plot(shape_combined_cdat1["HC03_VC161"], 
-     breaks = c(0, 5, 10, 15, 20, 25, 
-                max(r01_shape_cdat1$HC03_VC161, na.rm = TRUE)))
-
-shape_combined %>%
-  st_write("../../../data/geography/epa01_cosub2018.geojson")
+plot(epa01_cosub2018["HC03_VC161"], 
+     breaks = c(0, 2, 4, 6, 8, 10, 15, 20, 25,
+                max(epa01_cosub2018$HC03_VC161, na.rm = TRUE)))
 
 ```
 
-
-```{r}
-
-shape_combined_mdat2 <- left_join(shape_combined, modeldata2, 
-                                  by = "GEOID")
-
-
-hist(shape_combined_mdat2$COLI_HB_prp)
-
-
-```
-
-
-```{r}
-
-plot(shape_combined_mdat2["COLI_HB_prp"])
-     
-     # , 
-     # breaks = c(0, 5, 10, 15, 20, 25, 
-     #            max(r01_shape_cdat1$HC03_VC161, na.rm = TRUE)))
-
-```
 
 
 ```{r}
@@ -555,7 +478,7 @@ viol_coli_n_all1 <- viol_coli %>%
 
 # viol_coli_n_all1
 
-shape_combined_mapdat1 <- joined_df1 %>% 
+epa01_cosub2018_2 <- joined_df1 %>% 
   left_join(., viol_coli_n_all1, by = c("PWSID" = "VIOLATION.PWSID")) %>% 
   mutate(n = tidyr::replace_na(n, 0)) %>% 
   group_by(GEOID, n) %>% 
@@ -565,7 +488,7 @@ shape_combined_mapdat1 <- joined_df1 %>%
                      names_prefix = "COLI_HB_",
                      values_fill = list(nn = 0)) %>% 
   mutate(COLI_HB_PRP = COLI_HB_1 / (COLI_HB_1 + COLI_HB_0)) %>% 
-  left_join(shape_combined, ., by = "GEOID")
+  left_join(epa01_cosub2018, ., by = "GEOID")
 
 ```
 
@@ -573,7 +496,7 @@ shape_combined_mapdat1 <- joined_df1 %>%
 
 ```{r}
 
-plot(shape_combined_mapdat1["COLI_HB_PRP"])
+plot(epa01_cosub2018_2["COLI_HB_PRP"])
 
 ```
 
