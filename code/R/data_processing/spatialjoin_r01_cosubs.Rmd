@@ -37,8 +37,6 @@ Coding outline:
 library(dplyr)
 library(sf)
 library(fs)
-library(googledrive)
-library(googlesheets4)
 library(readr)
 library(data.table)
 library(lubridate)
@@ -51,6 +49,7 @@ library(jtools)
 
 * geoprocessing can get pretty involved and files can be large, so working in another GitHub repo for the time being
     + loaded using https://raw.githack.com/
+    + has US Census data attributes also pre-joined (again a bit too involved)
 
 ```{r}
 
@@ -67,39 +66,23 @@ st_crs(epa01_cosub2018)
 
 
 ```{r}
-plot(epa01_cosub2018["STATEFP"])
+plot(epa01_cosub2018["HC01_VC85"], main = "HC01_VC85: median income in 2017") 
 ```
 
 
 ### Load locations data
 
-* From water shared drive
-    + need to login/authenticate in web browser when run
+* also from spatial repo
+    + from google  sheet
 
 ```{r}
 
-# # another way, but also can explore what's in the drive (includes any shared files)
-# gdfiles <- drive_find(pattern = "Water", type = "spreadsheet")
-# gdfiles$name
-# gdfiles$id
+epa01_watersystems <- 
+  st_read("https://raw.githack.com/jsecol/spatial/master/data/epa01_watersystems.geojson", 
+          stringsAsFactors = FALSE) %>% 
+  st_transform(26918) %>% filter(TRUE)
 
-locations_dat <- drive_get("WaterSystem_Locations") %>% 
-  read_sheet(sheet = "Region01")
-
-head(locations_dat)
-
-```
-
-### Create spatial points
-
-*same coordinate reference system as county subdivisions*
-
-```{r}
-
-locations_pts <- st_as_sf(locations_dat, coords = c("LON", "LAT"), crs = 4163) %>% 
-  st_transform(crs = st_crs(st_crs(epa01_cosub2018)))
-
-st_crs(locations_pts)
+st_crs(epa01_cosub2018)
 
 ```
 
@@ -107,7 +90,7 @@ st_crs(locations_pts)
 
 ```{r}
 
-joined_df <- locations_pts %>% 
+joined_df <- epa01_watersystems %>% 
     st_join(., left = TRUE, epa01_cosub2018) %>% 
     st_drop_geometry()
 
@@ -134,79 +117,9 @@ joined_df %>% filter(PRIMACY_AGENCY_CODE == "MA",
 
 ```
 
-### Load US Census data
-
-* There appears to be no API for US Census county subdivision data on American FactFinder, so resorted to downloading individual .zip files for each state (adding state abbreviation to the .zip filename b/c all named the same (ugh!)), then combining them.
-    + Used advanced search at: [American FactFinder](https://factfinder.census.gov/faces/nav/jsf/pages/searchresults.xhtml?refresh=t)   *warning: American FactFinder scheduled to go away spring 2020, the new site https://data.census.gov/cedsci/ maybe can be scraped*
-    + Table name: DP03 - SELECTED ECONOMIC CHARACTERISTICS
-    + Saved them to a temp folder ("C:/temp/CFB/table/zipped")
-
-* for `unzip` if already have, can change `overwrite = FALSE`
-
-* *maybe add combined table w/columns of interest to Github data processed*
-
-```{r warning=FALSE}
-
-zipdir1 <- dir_ls("C:/temp/CFB/table/zipped", glob = "*.zip")
-
-tempdir1 <- tempdir()
-
-for(i in 1:length(zipdir1)) {
-unzip(zipdir1[i],
-      exdir = paste0(tempdir1, "/", "folder", i),
-      junkpaths = TRUE,
-      overwrite = FALSE)
-}
-
-
-census_files <- dir_ls(tempdir1, 
-                       recurse = TRUE, 
-                       glob = "*ACS_17_5YR_DP03.csv")
-
-census_list <- list()
-for(i in 1:length(census_files)){
-  dat <- read_csv(census_files[i], col_types = cols(.default = "c"))
-  census_list[[i]] <- dat
-}
-
-census_dat <- do.call(bind_rows, census_list)
-
-```
-
-
-* lots of columns, trim down and convert to numeric where necessary
-    + HC03_VC161, Percent; PERCENTAGE OF FAMILIES AND PEOPLE WHOSE INCOME IN THE PAST 12 MONTHS IS BELOW THE POVERTY LEVEL - All families
-    + HC01_VC85, Estimate; INCOME AND BENEFITS (IN 2017 INFLATION-ADJUSTED DOLLARS) - Total households - Median household income (dollars)
-
-
 ```{r}
 
-census_dat1 <- census_dat %>% 
-  select(GEO.id, GEO.id2, HC03_VC161, HC01_VC85) %>% 
-  mutate(HC03_VC161 = as.numeric(HC03_VC161),
-         HC01_VC85 = as.numeric(HC01_VC85))
-
-# GEO.id2 matches to epa01_cosub2018:GEOID
-head(census_dat1)
-
-```
-
-### Do US Census data join
-
-*a few missing*
-
-```{r}
-joined_df1 <- joined_df %>% 
-  left_join(., census_dat1, by = c("GEOID" = "GEO.id2"))
-
-summary(joined_df1$HC03_VC161)
-summary(joined_df1$HC01_VC85)
-
-```
-
-```{r}
-
-joined_df1 %>% filter(is.na(HC03_VC161) | is.na(HC01_VC85))
+joined_df %>% filter(is.na(HC03_VC161) | is.na(HC01_VC85))
 
 ```
 
@@ -281,7 +194,7 @@ viols <- viols %>%
 ```{r}
 
 viol_coli <- viols %>% filter(VIOLATION.CONTAMINANT_CODE == "3100", 
-                              VIOLATION.PWSID %in% locations_dat$PWSID)
+                              VIOLATION.PWSID %in% epa01_watersystems$PWSID)
 
 
 table(viol_coli$VIOLATION.PRIMACY_AGENCY_CODE)
@@ -302,18 +215,18 @@ viol_coli_n <- viol_coli %>%
 
 head(viol_coli_n)
 
-joined_df1 %>% 
+joined_df %>% 
   left_join(., viol_coli_n, by = c("PWSID" = "VIOLATION.PWSID")) %>% 
-  mutate(n = tidyr::replace_na(n, 0))
+  mutate(n = tidyr::replace_na(n, 0)) %>% slice(1:6)
 
 ```
 
 + are census data (linearly) correlated?
 
 ```{r}
-plot(HC03_VC161 ~ HC01_VC85, joined_df1)
+plot(HC03_VC161 ~ HC01_VC85, joined_df)
 
-round(cor(joined_df1[, c("HC03_VC161", "HC01_VC85")], 
+round(cor(joined_df[, c("HC03_VC161", "HC01_VC85")], 
     use = "pairwise.complete.obs"), 2)
 
 ```
@@ -330,7 +243,7 @@ round(cor(joined_df1[, c("HC03_VC161", "HC01_VC85")],
 ```{r}
 
 viols_all_5yrs_n <- viols %>%
-  filter(VIOLATION.PWSID %in% locations_dat$PWSID,
+  filter(VIOLATION.PWSID %in% epa01_watersystems$PWSID,
          year(VIOLATION.COMPL_PER_BEGIN_DATE) <= 2012) %>%
   mutate(CPBD_YEAR = year(VIOLATION.COMPL_PER_BEGIN_DATE)) %>% 
   group_by(VIOLATION.PWSID) %>% 
@@ -354,7 +267,7 @@ modeldata <- viol_coli %>%
   mutate(COLI_HB_FLAG = tidyr::replace_na(COLI_HB_FLAG, 0))
 
 
-modeldata <- joined_df1 %>% 
+modeldata <- joined_df %>% 
   select(PWSID, PWS_TYPE_CODE, PRIMACY_AGENCY_CODE, 
          NAME, GEOID, HC03_VC161, HC01_VC85) %>% 
   left_join(modeldata, ., by = c("VIOLATION.PWSID" = "PWSID"))
@@ -407,7 +320,7 @@ modeldata2 <- modeldata %>% filter(PWS_TYPE_CODE == "CWS") %>%
          PWS_N = COLI_HB_FLAG_0 + COLI_HB_FLAG_1)
 
 modeldata2 <- modeldata2 %>% 
-  left_join(., census_dat1, by = c("GEOID" = "GEO.id2"))
+  left_join(., st_drop_geometry(epa01_cosub2018), by = "GEOID")
 
 head(modeldata2)
 
@@ -443,15 +356,9 @@ summ(model2)
 
 ```
 
-
 + mapping
 
-
-
 ```{r}
-
-epa01_cosub2018 <- left_join(epa01_cosub2018, census_dat1, 
-                                  by = c("GEOID" = "GEO.id2"))
 
 hist(epa01_cosub2018$HC03_VC161)
 
@@ -478,7 +385,7 @@ viol_coli_n_all1 <- viol_coli %>%
 
 # viol_coli_n_all1
 
-epa01_cosub2018_2 <- joined_df1 %>% 
+epa01_cosub2018_2 <- joined_df %>% 
   left_join(., viol_coli_n_all1, by = c("PWSID" = "VIOLATION.PWSID")) %>% 
   mutate(n = tidyr::replace_na(n, 0)) %>% 
   group_by(GEOID, n) %>% 
@@ -539,7 +446,7 @@ https://ryanpeek.github.io/mapping-in-R-workshop/vig_spatial_joins.html
 # 
 # joined_df %>% filter(is.na(joined_df$INTPTLAT))
 # 
-# locations_dat %>% filter(PWSID == "MA2115001")
+# epa01_watersystems %>% filter(PWSID == "MA2115001")
 
 # 42.70396, -71.60161 appears to be bad, over border in NH
 
