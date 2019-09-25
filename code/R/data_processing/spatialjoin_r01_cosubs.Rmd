@@ -7,6 +7,12 @@ output:
     toc_depth: 3
 ---
 
+```{r opts, echo = FALSE}
+knitr::opts_chunk$set(
+  fig.path = "md_files/spatialjoin_r01_cosubs/"
+)
+```
+
 ### Description
 
 Brief description.
