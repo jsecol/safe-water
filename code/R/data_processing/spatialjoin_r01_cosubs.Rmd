@@ -4,7 +4,7 @@ date: "`r Sys.Date()`"
 output:
   github_document:
     toc: true
-    toc_depth: 3
+    toc_depth: 4
 ---
 
 ```{r opts, echo = FALSE}
@@ -13,7 +13,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-### Description
+## Description
 
 Spatial join of water system locations (improved) for epa region 01 to county subdivisions and associated data (US Census and environmental).
 
@@ -28,9 +28,8 @@ Data sources:
 Coding outline:
 
 1. Load and spatially join pre-processed spatial data (county subdivisions and improved locations data).
-2. Join this to SDWIS water systems table data.
-    + new table: `joined_df` of water systems with associated spatial data
-3. Example modeling use: exploratory logistic regression and hotspot analysis using coliform violations data.
+    + Join this to SDWIS water systems table data as new table: `joined_df` of water systems with associated spatial data
+2. Example modeling use: exploratory logistic regression and heatmap using coliform violations data.
 
 
 ### Load packages
@@ -46,15 +45,15 @@ library(data.table)
 library(lubridate)
 library(jtools)
 library(ggplot2)
-# library(reticulate) # allows python code; e.g., US Census API if decide to use it here
+library(car)
 
 ```
 
-
+## I. Load and join data
 
 ### Load spatial boundary data
 
-* geoprocessing can get pretty involved and files can be large, so working in another GitHub repo for the time being
+* Geoprocessing can get pretty involved and files can be large, so working in another GitHub repo [spatial](https://github.com/jsecol/spatial) for the time being
     + loaded using https://raw.githack.com/
     + has US Census data attributes also pre-joined
         + HC01_VC85: median income in 2017
@@ -73,12 +72,23 @@ st_crs(epa01_cosub2018)
 
 ```
 
-+ example chloropleth map to view the boundaries (some missing data, probably low population)
++ Join extreme rainfall projections data also from spatial repo
 
-```{r}
-plot(epa01_cosub2018["HC01_VC85"], main = "HC01_VC85: median income in 2017") 
+```{r message=FALSE}
+
+raindata <- read_csv("https://raw.githack.com/jsecol/spatial/master/data/epa01_cosub2018_rain.csv")
+
+epa01_cosub2018 <- epa01_cosub2018 %>% 
+  left_join(., raindata[, c(1, 4)], by = "GEOID")
+
 ```
 
++ Example chloropleth map to view the boundaries
+
+```{r}
+plot(epa01_cosub2018["rpe_1d_1y"], 
+     main = "Extreme Precipitation Estimates (1 day/1 year") 
+```
 
 ### Load locations data
 
@@ -134,17 +144,19 @@ joined_df %>% filter(PRIMACY_AGENCY_CODE == "MA",
 ```{r}
 
 joined_df %>% filter(is.na(HC03_VC161) | is.na(HC01_VC85)) %>% 
-  select(PRIMACY_AGENCY_CODE, PWSID, NAME, HC03_VC161, HC01_VC85) %>% 
+  select(PRIMACY_AGENCY_CODE, NAME, HC03_VC161, HC01_VC85) %>% 
+  distinct() %>% 
   print.data.frame()
 
 ```
 
-
 ***
 
-### Example modeling use
+## II. Example modeling use
 
-+ Get SDWIS data (assuming it's in "C:/temp/SDWIS.zip")
+### Get SDWIS data
+
++ Assuming it's in "C:/temp/SDWIS.zip"
 
 ```{r}
 
@@ -190,7 +202,6 @@ viols <- fread("C:/temp/sdwis_echo/VIOLATION.csv",
   as_tibble() %>% 
   filter(VIOLATION.EPA_REGION == "01", VIOLATION.PWS_ACTIVITY_CODE == "A")
 
-
 ```
 
 + convert some fields to date fields
@@ -214,11 +225,18 @@ viol_coli <- viols %>% filter(VIOLATION.CONTAMINANT_CODE == "3100",
 
 table(viol_coli$VIOLATION.PRIMACY_AGENCY_CODE)
 
+```
+
+
+```{r}
+
 summary(viol_coli$VIOLATION.COMPL_PER_BEGIN_DATE)
 
 table(year(viol_coli$VIOLATION.COMPL_PER_BEGIN_DATE))
 
 ```
+
+### Generate dataset
 
 * tabulate years over 2010-2015 period with a health based violation and join to `joined_df` (note that b/c there can be multiple violations per PWSID in one year, reducing that via `distinct` to 1/yr)
     + year range selected b/c no HB viols in 2017 (why?)
@@ -243,15 +261,11 @@ viol_hb_coli_by_year <- viols %>%
   mutate(COLI_HB_FLAG = 1) %>% 
   arrange(VIOLATION.PWSID, VIOLYEAR)
 
-head(viol_hb_coli_by_year) 
-
 # get panel data
 viol_hb_coli <- viol_hb_coli_by_year %>% 
   expand(VIOLATION.PWSID, VIOLYEAR) %>% 
   left_join(., viol_hb_coli_by_year, by = c("VIOLATION.PWSID", "VIOLYEAR")) %>% 
   mutate(COLI_HB_FLAG = replace_na(COLI_HB_FLAG, 0))
-
-head(viol_hb_coli, 10) 
 
 # get and expand water systems with no violations
 viol_nonhb_coli <- viols %>% 
@@ -267,10 +281,9 @@ modeldata1 = bind_rows(viol_hb_coli, viol_nonhb_coli)
 
 # join to joined_df
 modeldata1_cosub <- joined_df %>% 
-  select(PWSID, PRIMACY_AGENCY_CODE, PWS_TYPE_CODE, GEOID, HC01_VC85, HC03_VC161) %>% 
+  select(PWSID, PRIMACY_AGENCY_CODE, PWS_TYPE_CODE, GEOID, 
+         HC01_VC85, HC03_VC161, rpe_1d_1y) %>% 
   inner_join(., modeldata1, by = c("PWSID" = "VIOLATION.PWSID"))
-
-head(modeldata1_cosub, 10)
 
 ```
 
@@ -290,46 +303,29 @@ modeldata1_cosub %>% select(PWSID, GEOID:LAG_1) %>%
 
 ### Model 1
 
-+ separate by `PWS_TYPE_CODE`
-+ year considered catagorical (2011 = baseline)
-+ state CT = baseline
-
+* Explore continuous data
+    + skewed, leaving as is for now in model
 
 ```{r}
 
-joined_df %>% select(GEOID, HC03_VC161:HC01_VC85) %>% 
-  pivot_longer(cols = HC03_VC161:HC01_VC85, names_to = "variable") %>% 
+joined_df %>% select(GEOID, HC03_VC161:rpe_1d_1y) %>% 
+  pivot_longer(cols = HC03_VC161:rpe_1d_1y, names_to = "variable") %>% 
 #  mutate(value = log(value + 1)) %>% 
   ggplot(aes(x = value)) + 
   geom_histogram(na.rm = TRUE, color = "orange", bins = 30) +
-  facet_wrap(~variable, scales = "free")
+  facet_wrap(~variable, scales = "free", ncol = 2)
 
 ```
-
-+ poverty more strongly skewed, leaving as is for now in model
-+ poverty and income centered and scaled (mean = 0, sd = 1)
 
 ```{r}
 
-PWS_TYPE_CODES <- unique(modeldata1_cosub$PWS_TYPE_CODE)
-
-for(i in 1:length(PWS_TYPE_CODES)){
-  data <- modeldata1_cosub %>% na.omit() %>% 
-    filter(PWS_TYPE_CODE == PWS_TYPE_CODES[i]) 
-  model <- glm(COLI_HB_FLAG ~ 
-                 factor(VIOLYEAR) + 
-                 PRIMACY_AGENCY_CODE + 
-                 scale(HC03_VC161) + 
-                 scale(HC01_VC85) + 
-                 LAG_1,
-      data = data, family = binomial(link = "logit"))
-  cat("\n\n", "PWS_TYPE_CODE = ", PWS_TYPE_CODES[i], "\n\n")
-  print(summ(model))
-}
+round(cor(joined_df[c("HC03_VC161", "HC01_VC85", "rpe_1d_1y")], 
+    use = "pairwise.complete.obs"), 2)
 
 ```
 
-+ are census data (linearly) correlated?
+* Are census data (linearly) correlated?
+    + linear fit is negative; but non-linear appears more appropriate
 
 ```{r}
 
@@ -352,287 +348,96 @@ joined_df %>% select(GEOID, HC01_VC85, HC03_VC161) %>%
 
 ```
 
-*linear fit is moderate, negative; but non-linear appears more appropriate*
-
-
-### Hotspot analysis
-
-```{r}
-
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-1. get good pwsid sample
-
-  + hurdle 1: how to identify pwsid has/doesn't have prior violation (if no prior, was it in existence?? - clean history issue: would love to be able to identify "clean" pwsid's say for 10 year prior, but don't know when pwsid founded. Seems possible that the first time a water system gets in the sdwis data is the first time it has any violation data, not how long it's been out there)
-  
-  + solution 1: only use pwsid if it has (any) data in violations prior to a year, produces a decent sample size that, e.g., based on modeling 2017 as outcome, has at least a 5-year prior history
-  
+* Loop to separately model by `PWS_TYPE_CODE` and show summary output 
+    + year considered catagorical (2011 = baseline)
+    + state CT = baseline
+    + poverty, income, and rainfall centered and scaled (mean = 0, sd = 1)
 
 ```{r}
 
-viols_all_5yrs_n <- viols %>%
-  filter(VIOLATION.PWSID %in% epa01_watersystems$PWSID,
-         year(VIOLATION.COMPL_PER_BEGIN_DATE) <= 2012) %>%
-  mutate(CPBD_YEAR = year(VIOLATION.COMPL_PER_BEGIN_DATE)) %>% 
-  group_by(VIOLATION.PWSID) %>% 
-  summarise(YEAR_N = length(unique(CPBD_YEAR)))
-
-head(viols_all_5yrs_n)
-
-```
-
-+ Join the coliform HB back to this, and model
-
-```{r}
-
-modeldata <- viol_coli %>% 
-  filter(VIOLATION.IS_HEALTH_BASED_IND == "Y", 
-         between(year(VIOLATION.COMPL_PER_BEGIN_DATE), 2013, 2017)) %>% 
-  select(VIOLATION.PWSID) %>% 
-  distinct() %>% 
-  mutate(COLI_HB_FLAG = 1) %>% 
-  left_join(viols_all_5yrs_n, ., by = "VIOLATION.PWSID") %>% 
-  mutate(COLI_HB_FLAG = tidyr::replace_na(COLI_HB_FLAG, 0))
-
-
-modeldata <- joined_df %>% 
-  select(PWSID, PWS_TYPE_CODE, PRIMACY_AGENCY_CODE, 
-         NAME, GEOID, HC03_VC161, HC01_VC85) %>% 
-  left_join(modeldata, ., by = c("VIOLATION.PWSID" = "PWSID"))
-
-head(modeldata)
-
-```
-
-+ summary stats
-
-```{r}
-
-modeldata %>%
-  group_by(PWS_TYPE_CODE, COLI_HB_FLAG) %>%
-  tally() %>%
-  tidyr::pivot_wider(names_from = COLI_HB_FLAG,
-                     values_from = n,
-                     names_prefix = "COLI_HB_FLAG_") %>%
-  mutate(COLI_HB_prp = round(COLI_HB_FLAG_1 /
-                               (COLI_HB_FLAG_0 + COLI_HB_FLAG_1), 2))
-  
-```
-
-
-```{r}
-
-modeldata %>%
-  group_by(PRIMACY_AGENCY_CODE, COLI_HB_FLAG) %>%
-  tally() %>%
-  tidyr::pivot_wider(names_from = COLI_HB_FLAG,
-                     values_from = n,
-                     names_prefix = "COLI_HB_FLAG_") %>%
-  mutate(COLI_HB_prp = round(COLI_HB_FLAG_1 /
-                               (COLI_HB_FLAG_0 + COLI_HB_FLAG_1), 2))
-  
-```
-
-
-```{r}
-
-modeldata2 <- modeldata %>% filter(PWS_TYPE_CODE == "CWS") %>% 
-  group_by(PRIMACY_AGENCY_CODE, GEOID, COLI_HB_FLAG) %>% 
-  tally() %>% 
-  tidyr::pivot_wider(names_from = COLI_HB_FLAG,
-                     values_from = n,
-                     names_prefix = "COLI_HB_FLAG_",
-                     values_fill = list(n = 0))  %>% 
-  mutate(COLI_HB_prp = round(COLI_HB_FLAG_1 / 
-                               (COLI_HB_FLAG_0 + COLI_HB_FLAG_1), 2), 
-         PWS_N = COLI_HB_FLAG_0 + COLI_HB_FLAG_1)
-
-modeldata2 <- modeldata2 %>% 
-  left_join(., st_drop_geometry(epa01_cosub2018), by = "GEOID")
-
-head(modeldata2)
-
-```
-
-
-+ logistic regression
-
-```{r}
-
-PWS_TYPE_CODES <- unique(modeldata$PWS_TYPE_CODE)
+PWS_TYPE_CODES <- unique(modeldata1_cosub$PWS_TYPE_CODE)
 
 for(i in 1:length(PWS_TYPE_CODES)){
-  data <- modeldata %>% filter(PWS_TYPE_CODE == PWS_TYPE_CODES[i]) 
-  model <- glm(COLI_HB_FLAG ~ PRIMACY_AGENCY_CODE + HC03_VC161,
+  data <- modeldata1_cosub %>% na.omit() %>% 
+    filter(PWS_TYPE_CODE == PWS_TYPE_CODES[i]) 
+  model <- glm(COLI_HB_FLAG ~ 
+                 factor(VIOLYEAR) + 
+                 PRIMACY_AGENCY_CODE + 
+                 scale(HC03_VC161) + 
+                 scale(HC01_VC85) + 
+                 scale(rpe_1d_1y) +
+                 LAG_1,
       data = data, family = binomial(link = "logit"))
   cat("\n\n", "PWS_TYPE_CODE = ", PWS_TYPE_CODES[i], "\n\n")
   print(summ(model))
+  print(Anova(model))
+#  print(vif(model))
 }
-  
 
 ```
 
-+ `PWS_TYPE == "CWS"`
+* Results overview
+    + Year, State, and lag effects throughout
+    + For CWS only, a negative effect for the poverty indicator and for extreme rainfall estimates
+
+### Heatmap
+
+* **All violations data**, deriving proportion of PWS with HB coliform violation
 
 ```{r}
 
-model2 <- glm(cbind(COLI_HB_FLAG_1, COLI_HB_FLAG_0) ~ 
-                PRIMACY_AGENCY_CODE + 
-                HC03_VC161,
-             data = modeldata2, family = binomial(link = "logit"))
-summ(model2)
+COLI_HB_hmdat1 <- viols %>%
+  mutate(
+    COLI_HB_FLAG =
+      case_when(
+        VIOLATION.IS_HEALTH_BASED_IND == "Y" &
+          VIOLATION.CONTAMINANT_CODE == "3100" ~ 1,
+        TRUE ~ 0
+      )
+  ) %>% 
+  select(VIOLATION.PWSID, COLI_HB_FLAG) %>% 
+  distinct() %>% 
+  pivot_wider(names_from = COLI_HB_FLAG, values_from = COLI_HB_FLAG, 
+              names_prefix = "COLI_HB_FLAG_", 
+              values_fill = list(COLI_HB_FLAG = 0)) %>% 
+  select(-COLI_HB_FLAG_0) %>% 
+  inner_join(., joined_df, by = c("VIOLATION.PWSID" = "PWSID")) %>%
+  select(GEOID, VIOLATION.PWSID, PWS_TYPE_CODE, COLI_HB_FLAG_1) 
+
+
+head(COLI_HB_hmdat1)
+
+
+COLI_HB_hmdat2 <- COLI_HB_hmdat1 %>% 
+  group_by(GEOID) %>% 
+  summarise(sum_COLI_HB = sum(COLI_HB_FLAG_1), 
+            n_PWS = n(), 
+            COLI_HB_prp = sum_COLI_HB / n_PWS)
+
+head(COLI_HB_hmdat2)
 
 ```
 
-+ mapping
+* join to spatial data
 
 ```{r}
 
-hist(epa01_cosub2018$HC03_VC161)
-
-```
-
-
-
-```{r}
-
-plot(epa01_cosub2018["HC03_VC161"], 
-     breaks = c(0, 2, 4, 6, 8, 10, 15, 20, 25,
-                max(epa01_cosub2018$HC03_VC161, na.rm = TRUE)))
-
-```
-
-
-
-```{r}
-viol_coli_n_all1 <- viol_coli %>% 
-  filter(VIOLATION.IS_HEALTH_BASED_IND == "Y") %>% 
-  group_by(VIOLATION.PWSID) %>% 
-  tally() %>% 
-  mutate(n = 1)
-
-# viol_coli_n_all1
-
-epa01_cosub2018_2 <- joined_df %>% 
-  left_join(., viol_coli_n_all1, by = c("PWSID" = "VIOLATION.PWSID")) %>% 
-  mutate(n = tidyr::replace_na(n, 0)) %>% 
-  group_by(GEOID, n) %>% 
-  tally() %>% 
-  tidyr::pivot_wider(names_from = n, 
-                     values_from = nn, 
-                     names_prefix = "COLI_HB_",
-                     values_fill = list(nn = 0)) %>% 
-  mutate(COLI_HB_PRP = COLI_HB_1 / (COLI_HB_1 + COLI_HB_0)) %>% 
+epa01_cosub2018_hmdat <- COLI_HB_hmdat2 %>% 
   left_join(epa01_cosub2018, ., by = "GEOID")
 
-```
-
-
-
-```{r}
-
-plot(epa01_cosub2018_2["COLI_HB_PRP"])
+hist(epa01_cosub2018_hmdat$COLI_HB_prp)
 
 ```
 
+* heat map
 
+```{r fig.height=7, fig.width=7}
 
-
-***
-
-### MISC
-
-
-+ Combine them (join points state by state)
-
-see: 
-https://ryanpeek.github.io/mapping-in-R-workshop/vig_spatial_joins.html
-
-```{r}
-
-# # Note: this skips PRIMACY_AGENCY_CODE "01", only 1 so will do them later
-# 
-# state_byfips <- unique(epa01_cosub2018$STATEFP)
-# 
-# joined_list <- list()
-# 
-# for(i in 1:length(state_byfips)) {
-#   joined <- locations_pts %>% 
-#     filter(PRIMACY_AGENCY_CODE == state_byfips[i]) %>% 
-#     st_join(., left = TRUE, shp_list[[state_byfips[i]]]) %>% 
-#     st_drop_geometry()
-#   joined_list[[i]] <- joined
-#   
-# }
-# 
-# names(joined_list) <- state_byfips
-# 
-# joined_df <- do.call(bind_rows, joined_list)
-# 
-# # check if any not matched
-# sum(is.na(joined_df$INTPTLAT))
-# 
-# joined_df %>% filter(is.na(joined_df$INTPTLAT))
-# 
-# epa01_watersystems %>% filter(PWSID == "MA2115001")
-
-# 42.70396, -71.60161 appears to be bad, over border in NH
+ggplot(epa01_cosub2018_hmdat) +
+  geom_sf(aes(fill = COLI_HB_prp)) +
+  scale_fill_viridis_c(na.value="transparent")
 
 ```
 
-+ Export
-
-```{r}
-
-# # put in github data folder eventually?
-# 
-# joined_df %>% 
-#   select(PRIMACY_AGENCY_CODE:PWSID, GEOID:NAME) %>% 
-#   head()
-# 
-# dir_create("C:/temp/CFB/data/processed")
-# 
-# joined_df %>% write_csv("C:/temp/CFB/data/processed/r01_pwsid_cosub.csv")
-
-```
-
-
-
+* Higher proportions in MA overall, and VT? 
+    + patterns within states; e.g., MA (northeast vs. rest of state) and CT (eastern vs. western, relatively)
