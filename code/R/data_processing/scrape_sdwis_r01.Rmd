@@ -1,0 +1,216 @@
+---
+title: "scrape_sdwis_r01"
+author: "Jim Sheehan"
+date: "10/4/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+https://heads0rtai1s.github.io/2019/10/03/reticulate-intro/
+
+
+```{r message=FALSE}
+
+library(readr)
+library(xml2)
+library(lubridate)
+library(dplyr)
+
+```
+
+
+#### too many viols, need to loop
+
++ loop by state, well under 100000 max
++ warning is for extra empty column, ignore
+
+```{r}
+
+datetime <- gsub(" ", "_", Sys.time())
+datetime <- gsub(":", "-", datetime)
+
+
+url_epa01_wsys <-
+  "https://data.epa.gov/efservice/WATER_SYSTEM/EPA_REGION/01/PWS_ACTIVITY_CODE/A/CSV"
+
+water_system_fresh <- read_csv(url_epa01_wsys, col_types = cols(.default = "c"))
+
+
+pac_vals <- sort(unique(water_system_fresh$WATER_SYSTEM.PRIMACY_AGENCY_CODE))
+
+url_base_viol <- "https://data.epa.gov/efservice/VIOLATION/PWS_ACTIVITY_CODE/A/PRIMACY_AGENCY_CODE/"
+
+violation_fresh <- list()
+
+for (i in 1:length(pac_vals)) {
+  viols <- read_csv(paste0(url_base_viol, pac_vals[i], "/CSV"),
+                    col_types = cols(.default = "c"))
+  violation_fresh[[i]] <- viols
+  
+}
+
+
+violation_fresh <- do.call(bind_rows, violation_fresh)
+
+
+violation_fresh %>% 
+  group_by(VIOLATION.PRIMACY_AGENCY_CODE) %>% 
+  tally()
+
+
+violation_fresh %>% 
+  write_csv(paste0("C:/Users/Jim/OneDrive/CFB/R_exports/SDWIS_tracking/violation_", 
+                   datetime, ".csv"))
+water_system_fresh %>% 
+  write_csv(paste0("C:/Users/Jim/OneDrive/CFB/R_exports/SDWIS_tracking/water_system_", datetime, ".csv"))
+
+
+```
+
+
+
+
+*try public notification tier*
+
+*try scheduler addin*
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+*** 
+
+OLD
+
+```{r}
+
+url1 <- "https://data.epa.gov/efservice/WATER_SYSTEM/PRIMACY_AGENCY_CODE/MA/CITY_NAME/ANDOVER/ROWS/0:10/CSV"
+
+url2 <- "https://data.epa.gov/efservice/WATER_SYSTEM/PRIMACY_AGENCY_CODE/MA/CSV"
+
+url3 <- "https://data.epa.gov/efservice/WATER_SYSTEM/PRIMACY_AGENCY_CODE/MA/CITY_NAME/BRAINTREE/VIOLATION/CSV"
+
+url4 <- "https://data.epa.gov/efservice/VIOLATION/PRIMACY_AGENCY_CODE/MA/CSV"
+
+
+url5 <- "https://data.epa.gov/efservice/VIOLATION/PRIMACY_AGENCY_CODE/MA/PWSID/MA4239049"
+
+url6 <- "https://data.epa.gov/efservice/VIOLATION/PRIMACY_AGENCY_CODE/MA/PWSID/MA4239049/CSV"
+
+url7 <- "https://data.epa.gov/efservice/LCR_SAMPLE/PRIMACY_AGENCY_CODE/MA/CSV"
+
+
+url8 <- "https://data.epa.gov/efservice/VIOLATION/EPA_REGION/01/CONTAMINANT_CODE/BEGINNING/28/CSV"
+
+
+# BEGINNING
+# can't do?:
+# "COMPL_PER_BEGIN_DATE/>"
+
+```
+
+
+
+
+
+```{r}
+
+tmp_xml <- xml2::read_xml(url5)
+
+# xml_child(tmp_xml, 1)
+
+```
+
+
+
+```{r}
+url4
+violations_fresh <- read_csv(url4, col_types = cols(.default = "c")) %>% 
+  mutate(VIOLATION.COMPL_PER_BEGIN_DATE = dmy(VIOLATION.COMPL_PER_BEGIN_DATE)) %>% 
+  filter(TRUE)
+names(violations_fresh)
+```
+
+
+```{r}
+
+summary(violations_fresh$VIOLATION.COMPL_PER_BEGIN_DATE)
+
+
+```
+
+
+
+
+
+
+```{r}
+url7
+lcr_sample_fresh <- read_csv(url7, col_types = cols(.default = "c")) %>% 
+  mutate(VIOLATION.COMPL_PER_BEGIN_DATE = dmy(VIOLATION.COMPL_PER_BEGIN_DATE))
+
+```
+
+
+
+```{r}
+url8 <- "https://data.epa.gov/efservice/VIOLATION/EPA_REGION/01/CONTAMINANT_CODE/BEGINNING/40/CSV"
+violations_fresh_cont <- read_csv(url8, col_types = cols(.default = "c"))
+
+```
+
+#### too many viols!!, need to loop
+
+```{r}
+
+datetime <- gsub(" ", "_", Sys.time())
+datetime <- gsub(":", "-", datetime)
+
+url_epa01_viol <- "https://data.epa.gov/efservice/VIOLATION/EPA_REGION/01/CSV"
+url_epa01_wsys <- "https://data.epa.gov/efservice/WATER_SYSTEM/EPA_REGION/01/CSV"
+
+violation_fresh <- read_csv(url_epa01_viol, col_types = cols(.default = "c"))
+water_system_fresh <- read_csv(url_epa01_wsys, col_types = cols(.default = "c"))
+
+
+violations_fresh %>% write_csv(paste0("export/r01/violation_", datetime, ".csv"))
+water_system_fresh %>% write_csv(paste0("export/r01/water_system_", datetime, ".csv"))
+
+
+```
+
+
+
+
+
+
+
