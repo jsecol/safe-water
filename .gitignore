@@ -38,3 +38,5 @@ epa-webscraper.log
 .Rproj.user
 
 site/
+code/python/notebooks/data_processing/config.py
+*.pyc
