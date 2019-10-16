@@ -28,7 +28,7 @@ library(dplyr)
 + loop by state, well under 100000 max
 + warning is for extra empty column, ignore
 
-```{r}
+```{r warning=FALSE}
 
 datetime <- gsub(" ", "_", Sys.time())
 datetime <- gsub(":", "-", datetime)
@@ -81,17 +81,58 @@ water_system_fresh %>%
 
 
 
+```{r}
+
+violation_fresh <- violation_fresh %>% 
+  mutate(VIOLATION.COMPL_PER_BEGIN_DATE = dmy(VIOLATION.COMPL_PER_BEGIN_DATE)) %>% 
+  filter(TRUE)
+
+
+```
 
 
 
 
 
+```{r}
+
+summary(violation_fresh$VIOLATION.COMPL_PER_BEGIN_DATE)
+
+```
 
 
 
+```{r}
+
+library(ggplot2)
+
+violation_fresh %>% filter(VIOLATION.CONTAMINANT_CODE == "1005", 
+                           VIOLATION.IS_HEALTH_BASED_IND == "Y") %>% 
+  mutate(YEAR = year(VIOLATION.COMPL_PER_BEGIN_DATE)) %>% 
+  group_by(VIOLATION.PRIMACY_AGENCY_CODE, YEAR) %>% 
+  tally() %>% 
+  ggplot(aes(x = YEAR, y = n, color = VIOLATION.PRIMACY_AGENCY_CODE)) +
+  geom_line(size = 1.5) +
+  theme(legend.position = "top") +
+  scale_x_continuous(breaks = 2002:2019)
+  
+  
 
 
 
+```
+
+
+
+```{r}
+
+violation_fresh %>% filter(VIOLATION.CONTAMINANT_CODE == "1005", 
+                           VIOLATION.IS_HEALTH_BASED_IND == "Y") %>% 
+  group_by(VIOLATION.PRIMARY_SOURCE_CODE, year(VIOLATION.COMPL_PER_BEGIN_DATE)) %>% 
+  tally()
+
+
+```
 
 
 
@@ -207,7 +248,6 @@ water_system_fresh %>% write_csv(paste0("export/r01/water_system_", datetime, ".
 
 
 ```
-
 
 
 
