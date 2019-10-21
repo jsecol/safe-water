@@ -87,37 +87,82 @@ violation_fresh <- violation_fresh %>%
   mutate(VIOLATION.COMPL_PER_BEGIN_DATE = dmy(VIOLATION.COMPL_PER_BEGIN_DATE)) %>% 
   filter(TRUE)
 
-
-```
-
-
-
-
-
-```{r}
-
 summary(violation_fresh$VIOLATION.COMPL_PER_BEGIN_DATE)
 
 ```
 
 
 
+
+#### MISC
+
+
+*What is easiest way to get violation for PWSID and model it?*
+
+
+
 ```{r}
 
-library(ggplot2)
+violations <- violation_fresh %>% 
+  rename_all(~sub(".*\\.", "", .))
 
-violation_fresh %>% filter(VIOLATION.CONTAMINANT_CODE == "1005", 
-                           VIOLATION.IS_HEALTH_BASED_IND == "Y") %>% 
-  mutate(YEAR = year(VIOLATION.COMPL_PER_BEGIN_DATE)) %>% 
-  group_by(VIOLATION.PRIMACY_AGENCY_CODE, YEAR) %>% 
+water_systems <- water_system_fresh %>% 
+  rename_all(~sub(".*\\.", "", .))
+
+
+
+violhistory <- violations %>%
+  mutate(CPBD_YEAR = year(COMPL_PER_BEGIN_DATE)) %>% 
+  group_by(PWSID, CPBD_YEAR, IS_HEALTH_BASED_IND) %>% 
   tally() %>% 
-  ggplot(aes(x = YEAR, y = n, color = VIOLATION.PRIMACY_AGENCY_CODE)) +
-  geom_line(size = 1.5) +
-  theme(legend.position = "top") +
-  scale_x_continuous(breaks = 2002:2019)
-  
-  
+  tidyr::pivot_wider(names_from = IS_HEALTH_BASED_IND,
+                     names_prefix = "HB_",
+                     values_from = n,
+                     values_fill = list(n = 0))
 
+violhistory
+
+```
+
+
+
+
+```{r}
+
+fulldata <- violhistory %>% 
+  right_join(water_systems, ., by = "PWSID") %>% 
+  select(PWSID, NPM_CANDIDATE, PRIMACY_AGENCY_CODE, 
+                    PWS_TYPE_CODE, GW_SW_CODE, 
+                    OWNER_TYPE_CODE:SERVICE_CONNECTIONS_COUNT, 
+                    CPBD_YEAR:HB_Y) %>% 
+  mutate_at(vars(HB_N, HB_Y), ~if_else(. > 0, 1, 0)) %>% 
+  mutate(POPULATION_SERVED_COUNT = as.numeric(POPULATION_SERVED_COUNT))
+
+fulldata
+
+```
+
+## (potential) feature engineering
+
+```{r}
+
+feat1 <- fulldata %>% 
+  group_by(PWS_TYPE_CODE, PWSID) %>% 
+  summarise(min_CPBD_YEAR = min(CPBD_YEAR),
+            max_CPBD_YEAR = max(CPBD_YEAR),
+            dif_CPBD_YEAR = max_CPBD_YEAR - min_CPBD_YEAR,
+            sum_HB_N = sum(HB_N),
+            sum_HB_Y = sum(HB_Y)) 
+
+feat1 %>% 
+  ggplot(aes(x = dif_CPBD_YEAR, y = sum_HB_Y, color = PWS_TYPE_CODE)) +
+  geom_jitter(shape = 1) +
+  geom_smooth(method = "lm")
+
+
+feat1 %>% 
+  ggplot(aes(x = dif_CPBD_YEAR, fill = PWS_TYPE_CODE)) +
+  geom_histogram(binwidth = 1)
 
 
 ```
@@ -126,10 +171,147 @@ violation_fresh %>% filter(VIOLATION.CONTAMINANT_CODE == "1005",
 
 ```{r}
 
-violation_fresh %>% filter(VIOLATION.CONTAMINANT_CODE == "1005", 
-                           VIOLATION.IS_HEALTH_BASED_IND == "Y") %>% 
-  group_by(VIOLATION.PRIMARY_SOURCE_CODE, year(VIOLATION.COMPL_PER_BEGIN_DATE)) %>% 
-  tally()
+YearMod <- 2016
+
+traintestdat <- list()
+
+PWS_TYPE_CODES <- unique(fulldata$PWS_TYPE_CODE)
+
+for(i in 1:length(PWS_TYPE_CODES)) {
+  index <- fulldata %>% 
+  filter(CPBD_YEAR == YearMod, 
+         PWS_TYPE_CODE == PWS_TYPE_CODES[i]) %>% 
+  .$PRIMACY_AGENCY_CODE %>% 
+  caret::createDataPartition(., times = 1, p = 0.33, list = FALSE)
+  test <- fulldata %>% 
+    filter(CPBD_YEAR == YearMod, 
+         PWS_TYPE_CODE == PWS_TYPE_CODES[i]) %>% 
+    slice(index) %>% 
+    mutate(set = "test")
+  train <- fulldata %>% 
+    filter(CPBD_YEAR == YearMod, 
+         PWS_TYPE_CODE == PWS_TYPE_CODES[i]) %>% 
+    slice(-index) %>% 
+    mutate(set = "train")
+  traintestdat[[i]] <- bind_rows(train, test)
+}
+
+traintestdat <- do.call(bind_rows, traintestdat)
+
+traintestdat %>% 
+  mutate()
+
+```
+
+*if need be, can put 01 in train*
+
+```{r}
+
+traintestdat %>% 
+  group_by(PWS_TYPE_CODE, set, PRIMACY_AGENCY_CODE) %>% 
+  tally() %>% 
+  tidyr::spread(set, n)
+
+```
+
+
+```{r}
+
+round(prop.table(
+  table(traintestdat[traintestdat$PWS_TYPE_CODE == "CWS", ]$PRIMACY_AGENCY_CODE,
+        traintestdat[traintestdat$PWS_TYPE_CODE == "CWS", ]$set),
+  margin = 2
+), 3)
+
+```
+
+
+```{r}
+
+feat1_toyear <- fulldata %>% 
+  filter(CPBD_YEAR <= YearMod) %>% 
+  group_by(PWS_TYPE_CODE, PWSID) %>% 
+  summarise(min_CPBD_YEAR = min(CPBD_YEAR),
+            max_CPBD_YEAR = max(CPBD_YEAR),
+            dif_CPBD_YEAR = max_CPBD_YEAR - min_CPBD_YEAR,
+            sum_HB_N = sum(HB_N),
+            sum_HB_Y = sum(HB_Y)) 
+
+```
+
+
+
+```{r}
+
+traintestdat <- feat1_toyear %>% ungroup() %>% 
+  select(-PWS_TYPE_CODE) %>% 
+  inner_join(traintestdat, ., by = "PWSID")
+
+traintestdat
+
+```
+
+
+```{r}
+
+predmodel <- traintestdat %>% 
+  filter(PWS_TYPE_CODE == "CWS", set == "train") %>% 
+  glm(dif_CPBD_YEAR ~ HB_Y, data = .)
+
+summary(predmodel)
+
+```
+
+
+
+```{r}
+
+pred <- traintestdat %>% 
+  filter(PWS_TYPE_CODE == "CWS", set == "test") %>% 
+  select(PWSID, HB_Y) %>% 
+  predict(predmodel, newdata = ., type = "response", se.fit = TRUE) %>% 
+  as.data.frame()
+
+
+traintestdat %>% 
+  filter(PWS_TYPE_CODE == "CWS", set == "test") %>% 
+  bind_cols(., pred) %>% 
+  ggplot(aes(x = factor(HB_Y), y = dif_CPBD_YEAR, group = HB_Y)) +
+  geom_boxplot() +
+  geom_errorbar(aes(x = factor(HB_Y), ymin = fit - se.fit, ymax = fit + se.fit), 
+                color = "red") +
+  geom_point(aes(x = factor(HB_Y), y = fit), color = "red")
+  
+
+
+
+```
+
+
+
+**Just a test of partitioning, better to bootstrap diff in means by year using all data I believe**
+
+
+```{r}
+
+YearModBoot <- 2015
+
+
+bootdat <- fulldata %>% 
+  filter(CPBD_YEAR <= YearModBoot) %>% 
+  group_by(PWSID) %>% 
+  summarise(min_CPBD_YEAR = min(CPBD_YEAR),
+            max_CPBD_YEAR = max(CPBD_YEAR),
+            dif_CPBD_YEAR = max_CPBD_YEAR - min_CPBD_YEAR,
+            sum_HB_N = sum(HB_N),
+            sum_HB_Y = sum(HB_Y)) %>% 
+  filter(max_CPBD_YEAR == YearModBoot) %>% 
+  inner_join(., fulldata[fulldata$CPBD_YEAR == YearModBoot, ], by = "PWSID") %>% 
+  select(dif_CPBD_YEAR, HB_Y) %>% 
+  mutate(HB_Y = factor(HB_Y)) %>% 
+  as.data.frame()
+
+
 
 
 ```
@@ -137,11 +319,37 @@ violation_fresh %>% filter(VIOLATION.CONTAMINANT_CODE == "1005",
 
 
 
+```{r}
+
+library(boot)
+
+
+meanDiff =function(x, w){
+    y <- tapply(x[w,1], x[w,2], mean)
+    y[1]-y[2]}
+
+
+totalBoot = boot(bootdat, meanDiff, R = 10000, strata = bootdat[,2])
+
+# Takes a while, need high R = 10000
+totalBootCI = boot.ci(totalBoot)
+
+totalBoot
+
+totalBootCI
+```
 
 
 
+```{r}
 
+bootdat %>% 
+  group_by(HB_Y) %>% 
+  summarise(meandif_CPBD_YEAR = mean(dif_CPBD_YEAR)) %>% 
+  tidyr::spread(HB_Y, meandif_CPBD_YEAR) %>% 
+  mutate(meandif = `0` - `1`)
 
+```
 
 
 
