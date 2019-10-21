@@ -1,0 +1,40 @@
+---
+title: "ListWater_GD"
+author: "Jim Sheehan"
+date: "10/21/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+
+library(googledrive)
+
+
+```
+
+
+```{r}
+
+folders_list <- drive_ls(path = "Water", type = "folder")
+folders_list
+
+```
+
+
+```{r}
+
+folder_files <- drive_ls(path = "Water/Partner Outreach")
+folder_files
+
+
+```
+
+
+
+
+
