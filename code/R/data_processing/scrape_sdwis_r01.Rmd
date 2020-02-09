@@ -19,6 +19,7 @@ library(readr)
 library(xml2)
 library(lubridate)
 library(dplyr)
+library(ggplot2)
 
 ```
 
@@ -62,10 +63,10 @@ violation_fresh %>%
   tally()
 
 
-violation_fresh %>% 
-  write_csv(paste0("C:/Users/Jim/OneDrive/CFB/R_exports/SDWIS_tracking/violation_", 
+violation_fresh %>%
+  write_csv(paste0("C:/Users/Jim/OneDrive/CFB/R_exports/SDWIS_tracking/violation_",
                    datetime, ".csv"))
-water_system_fresh %>% 
+water_system_fresh %>%
   write_csv(paste0("C:/Users/Jim/OneDrive/CFB/R_exports/SDWIS_tracking/water_system_", datetime, ".csv"))
 
 
@@ -120,9 +121,29 @@ violhistory <- violations %>%
                      values_from = n,
                      values_fill = list(n = 0))
 
-violhistory
+head(violhistory)
 
 ```
+
+#### more violation table features (one column to 0/1 in function or after)
+
+```{r}
+
+# violhistory <- 
+NHB_VCC <- violations %>%
+  mutate(CPBD_YEAR = year(COMPL_PER_BEGIN_DATE)) %>% 
+  filter(IS_HEALTH_BASED_IND == "N") %>% 
+  group_by(PWSID, CPBD_YEAR, VIOLATION_CATEGORY_CODE) %>% 
+  tally() %>% 
+  tidyr::pivot_wider(names_from = VIOLATION_CATEGORY_CODE,
+                     names_prefix = "NHB_",
+                     values_from = n,
+                     values_fill = list(n = 0))
+
+head(NHB_VCC)
+
+```
+
 
 
 
@@ -138,7 +159,7 @@ fulldata <- violhistory %>%
   mutate_at(vars(HB_N, HB_Y), ~if_else(. > 0, 1, 0)) %>% 
   mutate(POPULATION_SERVED_COUNT = as.numeric(POPULATION_SERVED_COUNT))
 
-fulldata
+head(fulldata)
 
 ```
 
@@ -182,7 +203,7 @@ for(i in 1:length(PWS_TYPE_CODES)) {
   filter(CPBD_YEAR == YearMod, 
          PWS_TYPE_CODE == PWS_TYPE_CODES[i]) %>% 
   .$PRIMACY_AGENCY_CODE %>% 
-  caret::createDataPartition(., times = 1, p = 0.33, list = FALSE)
+  caret::createDataPartition(., times = 1, p = 0.20, list = FALSE)
   test <- fulldata %>% 
     filter(CPBD_YEAR == YearMod, 
          PWS_TYPE_CODE == PWS_TYPE_CODES[i]) %>% 
@@ -198,10 +219,31 @@ for(i in 1:length(PWS_TYPE_CODES)) {
 
 traintestdat <- do.call(bind_rows, traintestdat)
 
-traintestdat %>% 
-  mutate()
+traintestdat
 
 ```
+
+
+#### adding in systems with a violation history as of the modelled year
+
+
+```{r}
+
+violations %>% 
+  mutate(CPBD_YEAR = year(COMPL_PER_BEGIN_DATE)) %>% 
+  filter(CPBD_YEAR <= YearMod) %>% 
+  select(PWSID) %>% 
+  distinct() %>% 
+  filter(!PWSID %in% traintestdat$PWSID)
+  
+
+
+```
+
+
+
+
+
 
 *if need be, can put 01 in train*
 
@@ -234,8 +276,11 @@ feat1_toyear <- fulldata %>%
   summarise(min_CPBD_YEAR = min(CPBD_YEAR),
             max_CPBD_YEAR = max(CPBD_YEAR),
             dif_CPBD_YEAR = max_CPBD_YEAR - min_CPBD_YEAR,
+            first_YEAR = as.numeric(dif_CPBD_YEAR == 0),
             sum_HB_N = sum(HB_N),
             sum_HB_Y = sum(HB_Y)) 
+
+head(feat1_toyear)
 
 ```
 
@@ -252,19 +297,35 @@ traintestdat
 ```
 
 
+
+
+
+
+
+
+
+
+
 ```{r}
 
 predmodel <- traintestdat %>% 
+  mutate(HB_Yf = factor(HB_Y)) %>% 
   filter(PWS_TYPE_CODE == "CWS", set == "train") %>% 
-  glm(dif_CPBD_YEAR ~ HB_Y, data = .)
+  glm(dif_CPBD_YEAR ~ HB_Yf, data = .)
 
 summary(predmodel)
+
+plot(allEffects(predmodel))
 
 ```
 
 
 
 ```{r}
+
+predmodel <- traintestdat %>% 
+  filter(PWS_TYPE_CODE == "CWS", set == "train") %>% 
+  glm(dif_CPBD_YEAR ~ HB_Y, data = .)
 
 pred <- traintestdat %>% 
   filter(PWS_TYPE_CODE == "CWS", set == "test") %>% 
@@ -286,6 +347,126 @@ traintestdat %>%
 
 
 ```
+
+
+
+
+#### Logistic regression with effects plot
+
+
+```{r}
+table(traintestdat$PWS_TYPE_CODE)
+
+model1 <- glm(HB_Y ~
+                log(POPULATION_SERVED_COUNT) + 
+#                POPULATION_SERVED_COUNT +
+#                sum_HB_N +
+                dif_CPBD_YEAR +
+                first_YEAR +
+                PWS_TYPE_CODE +
+                GW_SW_CODE,
+              family = binomial(),
+              data = traintestdat,
+              subset = set == "train")
+
+summary(model1)
+
+car::vif(model1)
+
+```
+
+
+```{r}
+
+lmtest::lrtest(model1, . ~ . - dif_CPBD_YEAR)
+
+```
+
+
+
+```{r}
+model1 <- glm(HB_Y ~
+                dif_CPBD_YEAR +
+                first_YEAR +
+                PWS_TYPE_CODE +
+                GW_SW_CODE,
+              family = binomial(),
+              data = trainset)
+
+jtools::summ(model1)
+```
+
+
+
+
+
+
+```{r}
+
+library(effects)
+
+
+
+```
+
+
+```{r}
+
+plot(predictorEffect("dif_CPBD_YEAR", model1))
+
+pe1 <- predictorEffects(model1, ~dif_CPBD_YEAR + PWS_TYPE_CODE)
+
+plot(pe1)
+
+# plot(pe1[[1]], main = "dif_CPBD_YEAR effect")
+# plot(pe1[[2]], main = "PWS_TYPE_CODE effect")
+
+```
+
+
+### Accuracy
+
+
+
+```{r}
+
+pred_model1 <- predict(model1, 
+                       newdata = traintestdat[traintestdat$set == "test",], 
+                       type = "response")
+
+summary(pred_model1)
+
+```
+
+
+
+```{r}
+
+roc_df <- rbind(
+  data.frame(
+    predictor =
+    predict(model1, 
+            traintestdat[traintestdat$set == "train", ]),
+    known.truth = traintestdat[traintestdat$set == "train", ]$HB_Y,
+    model = "train"
+  ),
+  data.frame(
+    predictor = predict(model1, 
+            traintestdat[traintestdat$set == "test", ]),
+    known.truth = traintestdat[traintestdat$set == "test", ]$HB_Y,
+    model = "test"
+  )
+)
+
+
+
+ggplot(roc_df, aes(d = known.truth, m = predictor, color = model)) + 
+  plotROC::geom_roc(n.cuts = 0)
+
+
+
+```
+
 
 
 
@@ -350,8 +531,6 @@ bootdat %>%
   mutate(meandif = `0` - `1`)
 
 ```
-
-
 
 
 
@@ -458,6 +637,348 @@ water_system_fresh %>% write_csv(paste0("export/r01/water_system_", datetime, ".
 ```
 
 
+
+*** 
+
+#### Random sample method
+
+**slow loop, try to speed up with apply (first)**
+
+```{r}
+set.seed(145)
+index_ws <- sample(nrow(water_systems), size = 100)
+
+system.time({
+  ws_list <- list()
+  for (i in 1:length(index_ws)) {
+    vtable <- violations %>%
+      filter(PWSID %in% water_systems[index_ws[i], ]$PWSID) %>%
+      mutate(cpbd_year = year(COMPL_PER_BEGIN_DATE),
+             IS_HEALTH_BASED_IND = IS_HEALTH_BASED_IND)
+    
+    vtable_hb <- vtable %>%
+      group_by(PWSID, cpbd_year, IS_HEALTH_BASED_IND) %>%
+      tally() %>%
+      tidyr::pivot_wider(
+        names_from = IS_HEALTH_BASED_IND,
+        names_prefix = "HB_",
+        values_from = n,
+        values_fill = list(n = 0)
+      )
+    
+    vtable_yhb_cont <- vtable %>%
+      filter(IS_HEALTH_BASED_IND == "Y") %>%
+      group_by(cpbd_year, IS_HEALTH_BASED_IND, CONTAMINANT_CODE) %>%
+      tally()
+    
+    vtable_nhb_cont <- vtable %>%
+      filter(IS_HEALTH_BASED_IND == "N") %>%
+      group_by(cpbd_year, IS_HEALTH_BASED_IND, CONTAMINANT_CODE) %>%
+      tally()
+    
+    # use nrow, no error if 0 rows
+    set.seed(123) ####! just for speed comparison with loop, comment out final
+    pick1 <- sample(nrow(vtable_hb), size = 1)
+    
+    hb_pick <- vtable_hb[pick1, ]
+    
+    hb_pick <- hb_pick %>%
+      mutate(
+        HB_Y_prioryear = if_else((cpbd_year - 1) %in% vtable_yhb_cont$cpbd_year, 1, 0),
+        HB_N_prioryear = if_else((cpbd_year - 1) %in% vtable_nhb_cont$cpbd_year, 1, 0)
+      )
+    
+    
+    if (nrow(vtable) > 0) {
+      hist <-
+        cbind(
+          minYear = min(vtable$cpbd_year),
+          maxYear = max(vtable$cpbd_year)
+        )
+    } else{
+      hist <- c(minYear = NA, maxYear = NA)
+    }
+    
+    
+    if (!is.na(hist[1])) {
+      hb_pick <- hb_pick %>%
+        mutate(ViolTableAge = cpbd_year - hist[1])
+    } else{
+      hb_pick <- hb_pick %>%
+        mutate(ViolTableAge = NA)
+    }
+    
+    # if no violation table data, make a table for PWSID with cpbd_year = code 9999
+    if (nrow(hb_pick) == 0) {
+      hb_pick <-
+        tibble(PWSID = water_systems[index_ws[i], ]$PWSID, cpbd_year = 9999) %>% 
+        group_by(PWSID)
+    }
+    
+    ws_list[[i]] <-
+      list(
+        hb_pick = hb_pick,
+        vtable_yhb_cont = vtable_yhb_cont,
+        vtable_nhb_cont = vtable_nhb_cont,
+        hist = hist
+      )
+  }
+})
+
+
+
+```
+
+
+
+```{r}
+
+SampleFun <- function(x){
+      
+    vtable <- violations %>%
+      filter(PWSID %in% water_systems[index_ws[x], ]$PWSID) %>%
+      mutate(cpbd_year = year(COMPL_PER_BEGIN_DATE),
+             IS_HEALTH_BASED_IND = IS_HEALTH_BASED_IND)
+    
+    vtable_hb <- vtable %>%
+      group_by(PWSID, cpbd_year, IS_HEALTH_BASED_IND) %>%
+      tally() %>%
+      tidyr::pivot_wider(
+        names_from = IS_HEALTH_BASED_IND,
+        names_prefix = "HB_",
+        values_from = n,
+        values_fill = list(n = 0)
+      )
+    
+    vtable_yhb_cont <- vtable %>%
+      filter(IS_HEALTH_BASED_IND == "Y") %>%
+      group_by(cpbd_year, IS_HEALTH_BASED_IND, CONTAMINANT_CODE) %>%
+      tally()
+    
+    vtable_nhb_cont <- vtable %>%
+      filter(IS_HEALTH_BASED_IND == "N") %>%
+      group_by(cpbd_year, IS_HEALTH_BASED_IND, CONTAMINANT_CODE) %>%
+      tally()
+    
+    # use nrow, no error if 0 rows
+    set.seed(123) ####! just for speed comparison with loop, comment out final
+    pick1 <- sample(nrow(vtable_hb), size = 1)
+    
+    hb_pick <- vtable_hb[pick1, ]
+    
+    hb_pick <- hb_pick %>%
+      mutate(
+        HB_Y_prioryear = if_else((cpbd_year - 1) %in% vtable_yhb_cont$cpbd_year, 1, 0),
+        HB_N_prioryear = if_else((cpbd_year - 1) %in% vtable_nhb_cont$cpbd_year, 1, 0)
+      )
+    
+    
+    if (nrow(vtable) > 0) {
+      hist <-
+        cbind(
+          minYear = min(vtable$cpbd_year),
+          maxYear = max(vtable$cpbd_year)
+        )
+    } else{
+      hist <- c(minYear = NA, maxYear = NA)
+    }
+    
+    
+    if (!is.na(hist[1])) {
+      hb_pick <- hb_pick %>%
+        mutate(ViolTableAge = cpbd_year - hist[1])
+    } else{
+      hb_pick <- hb_pick %>%
+        mutate(ViolTableAge = NA)
+    }
+    
+    # if no violation table data, make a table for PWSID with cpbd_year = code 9999
+    if (nrow(hb_pick) == 0) {
+      hb_pick <-
+        tibble(PWSID = water_systems[index_ws[x], ]$PWSID, cpbd_year = 9999) %>% 
+        group_by(PWSID)
+    }
+    
+    
+    list(
+        hb_pick = hb_pick,
+        vtable_yhb_cont = vtable_yhb_cont,
+        vtable_nhb_cont = vtable_nhb_cont,
+        hist = hist
+      )
+    
+  }
+
+
+
+system.time({
+  
+  
+ ws_list2 <- lapply(1:length(index_ws), SampleFun)
+  
+  
+  
+})
+
+```
+
+
+
+```{r}
+
+lapply(1, SampleFun)
+
+
+```
+
+
+```{r}
+water_systems[1, ]
+```
+
+
+
+
+
+```{r}
+ws_list[[i]]
+
+ws_list[[8]]
+
+```
+
+
+```{r}
+
+hb_pick_df <- do.call(rbind, lapply(ws_list[1:length(ws_list)], '[[', 1))
+head(hb_pick_df)
+
+```
+
+
+
+
+
+***
+
+## MISC
+
+#### Inactives
+
+```{r warning=FALSE}
+
+datetime <- gsub(" ", "_", Sys.time())
+datetime <- gsub(":", "-", datetime)
+
+
+url_epa01_iwsys <-
+  "https://data.epa.gov/efservice/WATER_SYSTEM/EPA_REGION/01/PWS_ACTIVITY_CODE/I/CSV"
+
+iwater_system_fresh <- read_csv(url_epa01_iwsys, col_types = cols(.default = "c"))
+
+
+ipac_vals <- sort(unique(iwater_system_fresh$WATER_SYSTEM.PRIMACY_AGENCY_CODE))
+
+url_base_iviol <- "https://data.epa.gov/efservice/VIOLATION/PWS_ACTIVITY_CODE/I/PRIMACY_AGENCY_CODE/"
+
+iviolation_fresh <- list()
+
+for (i in 1:length(ipac_vals)) {
+  viols <- read_csv(paste0(url_base_iviol, ipac_vals[i], "/CSV"),
+                    col_types = cols(.default = "c"))
+  iviolation_fresh[[i]] <- viols
+  
+}
+
+
+iviolation_fresh <- do.call(bind_rows, iviolation_fresh)
+
+
+iviolation_fresh %>% 
+  group_by(VIOLATION.PRIMACY_AGENCY_CODE) %>% 
+  tally()
+
+
+# iviolation_fresh %>% 
+#   write_csv(paste0("C:/Users/Jim/OneDrive/CFB/R_exports/SDWIS_tracking/iviolation_", 
+#                    datetime, ".csv"))
+# iwater_system_fresh %>% 
+#   write_csv(paste0("C:/Users/Jim/OneDrive/CFB/R_exports/SDWIS_tracking/iwater_system_", datetime, ".csv"))
+
+
+```
+
+
+
+```{r}
+
+iviolation_fresh <- iviolation_fresh %>% 
+  mutate(VIOLATION.COMPL_PER_BEGIN_DATE = dmy(VIOLATION.COMPL_PER_BEGIN_DATE)) %>% 
+  filter(TRUE)
+
+summary(iviolation_fresh$VIOLATION.COMPL_PER_BEGIN_DATE)
+
+```
+
+
+#### From Mika 2017
+
+**try for interactions, univariate testing, etc.**
+
+```{r}
+library(modelr)
+set.seed(1) 
+folds <- crossv_kfold(sleep_data, k = 5)
+folds
+```
+
+
+```{r}
+library(dplyr)
+library(purrr)
+folds <- folds %>% mutate(model = map(train, ~ lm(dur ~ ., data = .)))
+folds
+```
+
+```{r}
+folds %>% mutate(predicted = map2(model, test, ~ augment(.x, newdata = .y)))
+```
+
+```{r}
+library(tidyr)
+cv.pred <- folds %>% mutate(predicted = map2(model, test, ~ augment(.x, newdata = .y))) %>% unnest(predicted)
+head(cv.pred)
+```
+
+#### This, paste "*"
+
+```{r}
+vars <- colnames(select(sleep_data,-dur))
+allsubmodels <- combn(vars,6)
+Formulas <- apply(allsubmodels,2, function(x) paste("dur ~",paste(x,collapse="+")))
+head(Formulas)
+```
+
+
+```{r}
+library(broom)
+library(dplyr)
+library(tidyr)
+set.seed(1)
+folds <- crossv_kfold(sleep_data, k = 6) # start over
+
+Model_validation <- list()
+
+for(i in seq_along(Formulas)){
+  SSE <- folds %>% 
+    mutate(model = map(train, ~ lm(as.formula(Formulas[i]), data = .))) %>%
+    unnest(predicted = map2(model, test, ~ augment(.x, newdata = .y))) %>%
+    summarize(SSE =  sum(dur - .fitted)^2)
+  Model_validation[[i]] <- tibble(formula = Formulas[i], SSE = as_vector(SSE))
+}
+
+bind_rows(Model_validation) %>% arrange(SSE) %>% head()
+```
 
 
 

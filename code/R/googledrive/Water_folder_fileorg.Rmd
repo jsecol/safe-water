@@ -12,7 +12,10 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 
+library(dplyr)
 library(googledrive)
+library(stringr)
+library(writexl)
 
 
 ```
@@ -20,10 +23,314 @@ library(googledrive)
 
 ```{r}
 
-folders_list <- drive_ls(path = "Water", type = "folder")
+WaterFolderID <- tibble(id = "1FbQE9_NP664lkz4d-Xu4omijLl-HNklz")
+
+### **this is important to new process**
+folders_list <- drive_ls(path = "Water", type = "folder", recursive = TRUE)
 folders_list
 
+
+all_list <- drive_ls(path = "Water", recursive = TRUE)
+
+saveRDS(all_list, 
+        "C:/Users/Jim/OneDrive/CFB/R_exports/GoogleDrive_organization/WaterDirectory_2019-10-22.rds")
+
 ```
+
+
+```{r}
+
+names(all_list[1,]$drive_resource[[1]])
+
+```
+
+
+
+
+
+```{r}
+
+all_list[1,]$drive_resource[[1]]$kind
+all_list[1,]$drive_resource[[1]]$mimeType
+all_list[1,]$drive_resource[[1]]$id
+all_list[1,]$drive_resource[[1]]$name
+all_list[1,]$drive_resource[[1]]$trashed
+all_list[1,]$drive_resource[[1]]$explicitlyTrashed
+all_list[1,]$drive_resource[[1]]$createdTime
+all_list[1,]$drive_resource[[1]]$modifiedTime
+# # not useful:
+# all_list[1,]$drive_resource[[1]]$lastModifyingUser$displayName
+all_list[1,]$drive_resource[[1]]$parents
+
+
+```
+
+
+
+```{r}
+
+DirectoryData <- list()
+
+for (i in 1:nrow(all_list)) {
+  kind <- all_list[i,]$drive_resource[[1]]$kind
+  mimeType <- all_list[i,]$drive_resource[[1]]$mimeType
+  id <- all_list[i,]$drive_resource[[1]]$id
+  name <- all_list[i,]$drive_resource[[1]]$name
+  createdTime <- all_list[i, ]$drive_resource[[1]]$createdTime
+  modifiedTime <- all_list[i, ]$drive_resource[[1]]$modifiedTime
+  trashed <- all_list[i,]$drive_resource[[1]]$trashed
+  explicitlyTrashed <- all_list[i,]$drive_resource[[1]]$explicitlyTrashed
+  parents <- all_list[i,]$drive_resource[[1]]$parents
+  
+  ItemData <- tibble(
+    kind = kind,
+    mimeType = mimeType,
+    id = id,
+    name = name,
+    createdTime = createdTime,
+    modifiedTime = modifiedTime,
+    trashed = trashed,
+    explicitlyTrashed = explicitlyTrashed,
+    parents = parents
+  )
+  DirectoryData[[i]] <- ItemData
+}
+
+DirectoryData <- do.call(bind_rows, DirectoryData)
+
+if(length(unlist(DirectoryData$parents)) == nrow(DirectoryData)){
+  DirectoryData$parents <- unlist(DirectoryData$parents)
+}
+
+
+```
+
+
+
+
+```{r}
+
+Folders_LinkingData <- DirectoryData %>% 
+  filter(str_detect(mimeType, pattern = "folder")) %>% 
+  select(id, name, parents)
+
+Files_LinkingData <- DirectoryData %>% 
+  filter(!str_detect(mimeType, pattern = "folder")) %>% 
+  select(id, name, parents)
+
+```
+
+
+```{r}
+
+MainDirFolders <- inner_join(Folders_LinkingData, WaterFolderID, by = c("parents" = "id"))
+MainDirFolders %>% 
+  arrange(name) %>% 
+  print.data.frame()
+
+MainDirFiles <- inner_join(Files_LinkingData, WaterFolderID, by = c("parents" = "id"))
+MainDirFiles %>% 
+  arrange(name) %>% 
+  print.data.frame()
+
+```
+
+
+```{r}
+
+DirPart1 <- DirectoryData %>% 
+  rename_all(function(x) paste0("r_", x)) %>% 
+  inner_join(DirectoryData, ., by = c("id" = "r_parents"))
+
+```
+
+
+
+```{r}
+
+DirPart2 <- DirectoryData %>% 
+  inner_join(., WaterFolderID, by = c("parents" = "id"))
+
+```
+
+
+```{r}
+
+DirPart12 <- bind_rows(DirPart1, DirPart2)
+
+write_xlsx(DirPart12, "C:/temp/WaterDirectory_2019-10-22.xlsx")
+
+
+```
+
+
+
+```{r}
+
+folder_folder1 <- DirPart12 %>% 
+  filter(str_detect(mimeType, pattern = "folder"), 
+                     str_detect(r_mimeType, pattern = "folder")) %>% 
+  select(name, r_name)
+
+folder_folder2 <- folder_folder1 %>% 
+  inner_join(., folder_folder1, by = c("r_name" = "name"))
+
+bind_rows(folder_folder1, folder_folder2)
+
+
+```
+
+
+
+
+```{r}
+
+ByFolder_list <- list()
+
+folder_ids <- folders_list$id
+folder_names <- folders_list$name
+
+for (i in 1:length(folder_ids)) {
+  contents <- drive_ls(path = as_id(folder_ids[i]), recursive = FALSE)
+  ByFolder_list[[i]] <- contents
+
+}
+
+names(ByFolder_list) <- folder_ids
+
+```
+
+
+
+
+
+```{r}
+
+names(ByFolder_list[1])
+folder_names[1]
+ByFolder_list[[1]][1,]$drive_resource[[1]]$id
+ByFolder_list[[1]][1,]$drive_resource[[1]]$name
+ByFolder_list[[1]][1,]$drive_resource[[1]]$mimeType
+ByFolder_list[[1]][1,]$drive_resource[[1]]$trashed
+ByFolder_list[[1]][1,]$drive_resource[[1]]$explicitlyTrashed
+ByFolder_list[[1]][1,]$drive_resource[[1]]$createdTime
+ByFolder_list[[1]][1,]$drive_resource[[1]]$modifiedTime
+
+
+
+```
+
+
+```{r}
+
+folder_fullcontents <- list()
+
+for (i in 1:length(ByFolder_list)) {
+  folderID <- names(ByFolder_list[i])
+  folderName <- folder_names[i]
+  folder <- ByFolder_list[[i]]
+  folder_contents <- list()
+  
+  for (j in 1:nrow(folder)) {
+    id <- folder$drive_resource[[j]]$id
+    name <- folder$drive_resource[[j]]$name
+    mimeType <- folder$drive_resource[[j]]$mimeType
+    trashed <- folder$drive_resource[[j]]$trashed
+    explicitlyTrashed <- folder$drive_resource[[j]]$explicitlyTrashed
+    createdTime <- folder$drive_resource[[j]]$createdTime
+    modifiedTime <- folder$drive_resource[[j]]$modifiedTime
+    item <- tibble(
+      id = id,
+      name = name,
+      mimeType = mimeType,
+      trashed = trashed,
+      explicitlyTrashed = explicitlyTrashed,
+      createdTime = createdTime,
+      modifiedTime = modifiedTime,
+      folderID = folderID,
+      folderName = folderName
+    )
+    folder_contents[[j]] <- item
+    
+  }
+  
+  folder_fullcontents[[i]] <- folder_contents
+}
+
+folder_fullcontents
+
+folder_data <- do.call(bind_rows, folder_fullcontents)
+
+```
+
+
+
+
+```{r}
+
+folder_data_folders <- folder_data %>% 
+  filter(str_detect(mimeType, pattern = "folder"))
+
+subfolders <- folder_data %>% 
+  filter(str_detect(mimeType, pattern = "folder")) %>% 
+  inner_join(., ., by = c("folderID" = "id")) %>% 
+  mutate(path_id = paste0(folderID.y, "/", folderID, "/", id),
+         path_name = paste0(folderName.y, "/", folderName.x, "/", name.x)) %>% 
+  select(id, name.x, path_id, path_name) %>% 
+  rename(name = name.x)
+
+subfolders <- folder_data %>% 
+  filter(str_detect(mimeType, pattern = "folder")) %>% 
+  anti_join(., ., by = c("folderID" = "id")) %>% 
+  mutate(path_id = paste0(folderID, "/", id),
+         path_name = paste0(folderName, "/", name)) %>% 
+  select(id, name, path_id, path_name) %>% 
+  bind_rows(., subfolders) %>% 
+  arrange(path_name)
+
+subfolders
+
+```
+
+
+```{r}
+
+subfolders %>%
+  select(-name) %>% 
+  left_join(., folder_data, by = c("id" = "folderID")) %>% 
+  write_xlsx("C:/temp/part1.xlsx")
+
+```
+
+
+```{r}
+
+folders_list %>% 
+  select(-drive_resource) %>% 
+  filter(!id %in% subfolders$id) %>% 
+  left_join(., folder_data, by = c("id" = "folderID")) %>% 
+  write_xlsx("C:/temp/part2.xlsx")
+
+
+```
+
+
+```{r}
+
+DirectoryData %>% 
+  filter(id %in% MainDirFiles$id) %>% 
+  arrange(name) %>% 
+  write_xlsx("C:/temp/part3.xlsx")
+
+
+```
+
+
+
+
+
+
+
 
 
 ```{r}
